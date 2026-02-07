@@ -1,0 +1,79 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-07T23:41:17.462Z",
+  "summary": "Backend categories CRUD is partially implemented (Category type + create/update/delete + getAll with sorting and admin-gated writes), and frontend React Query wiring for fetching/creating categories with Nat/Int bigint conversions is added. However, persistence across upgrades, delete semantics, and some required backend methods/behaviors are missing or not evidenced in the diff summary; dropdown hardcoded list removal is not evidenced either.",
+  "missing_requirements": [
+    {
+      "id": "REQ-33",
+      "requirement": "Persistent Categories storage in backend/main.mo using an in-memory Map<Nat, Category> backed by stable storage across upgrades, including stable lastCategoryId, and no default categories.",
+      "reason": "Diff shows an in-memory Map and a lastCategoryId var, and adds a migration module that only mentions lastCategoryId, but there is no evidence of stable storage for categories themselves or upgrade hooks (preupgrade/postupgrade) that persist/restore the Map and lastCategoryId.",
+      "evidence": [
+        "backend/main.mo",
+        "backend/migration.mo"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "requirement": "Implement getCategoryById(categoryId: Nat) : async ?Category and reorderCategories(newOrder: [(Nat, Nat)]) : async Bool with existence validation and all-or-nothing application.",
+      "reason": "createCategory/updateCategory/deleteCategory/getAllCategories are shown, but getCategoryById and reorderCategories are not present in the provided truncated backend diff snippet, so their implementation and required validation semantics are not evidenced.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "requirement": "deleteCategory(categoryId: Nat) must return false if the category does not exist (and true if it was removed).",
+      "reason": "The diff shows deleteCategory trapping with \"Category not found\" instead of returning false on missing categories.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "requirement": "getAllCategories must return categories sorted by order with deterministic/stable ordering for equal order values.",
+      "reason": "Sorting by order is shown, but no deterministic tie-breaker is evidenced for equal order values.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "requirement": "Frontend useQueries.ts must wire create/update/delete/reorder to backend methods (no placeholder behavior) with correct Nat/Int conversions, and ensure refetch/invalidations so changes persist and reflect after reload.",
+      "reason": "The diff clearly shows getAllCategories/getCategoryById/createCategory wiring and conversions, but the file is truncated before showing update/delete/reorder mutations, so full required coverage is not evidenced.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "requirement": "Remove any hardcoded category lists used for dropdowns and replace with getAllCategories()-fetched data via React Query, preserving existing behavior/layout.",
+      "reason": "New CategorySelect and useCategoryOptions are added, but there is no evidence in the diff summary of existing dropdowns being updated to use them (i.e., removal of hardcoded arrays in pages/forms is not shown).",
+      "evidence": [
+        "frontend/src/components/categories/CategorySelect.tsx",
+        "frontend/src/hooks/useCategoryOptions.ts"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Added a backend migration module (backend/migration.mo) and wired actor migration configuration.",
+      "reason": "The BuildRequest requires stable persistence but does not explicitly request adding a separate migration module/file; this is an extra implementation approach beyond the explicitly requested backend method changes and minimal frontend wiring.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "confidence": 0.66,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/categories/CategorySelect.tsx",
+    "frontend/src/hooks/useCategoryOptions.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/utils/categoryNumeric.ts",
+    "project_state.json"
+  ]
+}

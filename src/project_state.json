@@ -1,0 +1,436 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 13,
+  "summary": "Build \"Kelani Cosmetics\" React + TypeScript (Vite) admin panel with Internet Identity auth on /admin, admin role verification, and protected /admin/* navigation using TanStack Router v6, Zustand, and TanStack Query. Add shared error-prevention utilities: BigInt-safe JSON parse/stringify, a SafeSelect wrapper that forbids empty string values via sentinel values, numeric conversion/validation helpers, and a standardized API response handler that integrates BigInt parsing. Add a modern, accessible toast notification system (Zustand store + UI) for non-blocking user feedback and local error handling; preserve the :root CSS variables block in index.css unchanged.",
+  "architectural_notes": [
+    "Use TanStack Router v6 with /admin as the single entry point that conditionally renders Login, DashboardLayout (admin), or AccessDenied (non-admin) without changing URL.",
+    "Store auth state (principal, authenticated flag) and admin status in Zustand with persistence across refreshes; cache admin status for 30 days.",
+    "After Internet Identity login, immediately verify admin status via backend; show \"Verificando permisos...\" while checking; if verification fails, treat as non-admin by default.",
+    "All /admin/* nested routes must be protected by admin verification; non-admins must not see dashboard/header/sidebar or access any admin pages.",
+    "UI text for login/access denied is Spanish; AccessDenied includes principal display + copy-to-clipboard icon button with ARIA label \"Copiar ID al portapapeles\" and a \"Cerrar Sesión\" logout button.",
+    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css containing theme color variables; only append new CSS below it without changing names/values/structure.",
+    "Use parseJSONWithBigInt/stringifyWithBigInt (from BigIntSerializer) instead of JSON.parse/JSON.stringify in code paths that may include BigInt-like fields (e.g., dates/timestamps/ids).",
+    "Wrap select inputs with SafeSelect to ensure no SelectItem or state ever uses empty string values; use sentinel values (all/none/no-change) and convertSentinelToNull before API calls.",
+    "Implement a global toast notification system (Zustand store + ToastContainer UI) for non-blocking user feedback: top-right, stacked, hover-paused timers, manual dismiss, accessible ARIA + keyboard navigation; prefer local component error handling + console logging over error boundaries.",
+    "/admin/categories must be a real Categories management page inside DashboardLayout (route-based at /admin/categories) with: header H2 \"Categorías\" + right-aligned icon-only (plus) \"Agregar Categoría\" button; table columns ID/Nombre/Orden (up/down)/Acciones; search by category name or ID; add/edit single scrollable modal (Nombre required, Orden optional); delete confirmation; reorder via up/down + backend reorderCategories; Spanish UI + Spanish toasts for all operations; no mock/default categories; use shared utilities (BigInt JSON, SafeSelect sentinels, NumericConverter, ApiResponseHandler); preserve :root CSS variables block unchanged (append-only CSS)."
+  ],
+  "known_issues": [
+    "Categories frontend page currently does not persist create/update/delete/reorder operations to the backend (missing/incorrect backend CRUD + storage integration).",
+    "Category dropdowns currently use hardcoded category data instead of fetching from backend getAllCategories()."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-implement-tanstack-router-v6-route-structure-for-the-admin-section-with-the-following-routes-admin-admin-products-admin-on-sale-products-admin-categories-admin-store-details-admin-export-configure-nested-routing-so-the-admin-layout-can-render-an-outlet-for-subroutes",
+      "title": "Implement TanStack Router v6 route structure for the admin section with the following routes: `/admin`, `/admin/products`, `/admin/on-sale-products`, `/admin/categories`, `/admin/store-details`, `/admin/export`. Configure nested routing so the admin layout can render an `<Outlet />` for subroutes.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-global-zustand-store-to-manage-authentication-and-authorization-state-including-authenticated-principal-string-auth-status-admin-status-unknown-loading-admin-non-admin-admin-check-timestamp-and-derived-helpers-e-g-isauthenticated-isadmin-persist-required-auth-admin-state-across-refresh-using-localstorage-or-equivalent-client-persistence",
+      "title": "Create a global Zustand store to manage authentication and authorization state, including: authenticated principal (string), auth status, admin status (unknown/loading/admin/non-admin), admin check timestamp, and derived helpers (e.g., `isAuthenticated`, `isAdmin`). Persist required auth/admin state across refresh using localStorage (or equivalent client persistence).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-internet-identity-authentication-directly-into-the-admin-route-admin-must-conditionally-render-exactly-one-of-these-uis-based-on-state-1-unauthenticated-internet-identity-login-interface-2-authenticated-admin-admin-dashboard-layout-dashboard-home-content-3-authenticated-non-admin-access-denied-interface-do-not-create-a-separate-access-denied-route",
+      "title": "Integrate Internet Identity authentication directly into the `/admin` route. `/admin` must conditionally render exactly one of these UIs based on state: (1) unauthenticated: Internet Identity login interface; (2) authenticated + admin: admin dashboard layout + dashboard home content; (3) authenticated + non-admin: Access Denied interface. Do not create a separate access-denied route.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-post-login-admin-verification-flow-immediately-after-successful-internet-identity-authentication-call-a-backend-method-to-verify-whether-the-authenticated-principal-is-an-admin-while-verifying-show-a-loading-indicator-with-the-spanish-text-verificando-permisos-if-verification-fails-for-any-reason-default-to-non-admin-and-render-access-denied-at-admin",
+      "title": "Implement the post-login admin verification flow: immediately after successful Internet Identity authentication, call a backend method to verify whether the authenticated principal is an admin. While verifying, show a loading indicator with the Spanish text `\"Verificando permisos...\"`. If verification fails for any reason, default to non-admin and render Access Denied at `/admin`.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-protect-all-admin-routes-so-that-only-authenticated-admin-users-can-access-them-if-a-user-is-unauthenticated-or-authenticated-but-non-admin-prevent-access-to-admin-products-admin-on-sale-products-admin-categories-admin-store-details-and-admin-export-and-route-them-back-to-admin-where-the-correct-interface-is-shown-login-or-access-denied",
+      "title": "Protect all `/admin/*` routes so that only authenticated admin users can access them. If a user is unauthenticated or authenticated-but-non-admin, prevent access to `/admin/products`, `/admin/on-sale-products`, `/admin/categories`, `/admin/store-details`, and `/admin/export` and route them back to `/admin` where the correct interface is shown (login or access denied).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-the-access-denied-interface-shown-only-at-admin-for-authenticated-non-admin-users-with-a-clean-centered-layout-and-kelani-cosmetics-branding-use-the-specified-spanish-strings-heading-acceso-denegado-subheading-no-tienes-permisos-de-administrador-para-acceder-a-este-panel-label-tu-id-de-internet-identity-and-logout-button-text-cerrar-sesi-n-display-the-full-principal-in-a-monospace-box-with-an-icon-only-copy-to-clipboard-button-immediately-to-the-right-using-aria-label-copiar-id-al-portapapeles-do-not-render-any-sidebar-header-or-dashboard-content-in-this-view",
+      "title": "Build the Access Denied interface (shown only at `/admin` for authenticated non-admin users) with a clean centered layout and Kelani Cosmetics branding. Use the specified Spanish strings: heading `\"Acceso Denegado\"`, subheading `\"No tienes permisos de administrador para acceder a este panel.\"`, label `\"Tu ID de Internet Identity:\"`, and logout button text `\"Cerrar Sesión\"`. Display the full principal in a monospace box with an icon-only copy-to-clipboard button immediately to the right, using ARIA label `\"Copiar ID al portapapeles\"`. Do not render any sidebar, header, or dashboard content in this view.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-the-admin-only-dashboardlayout-for-admin-and-admin-routes-fixed-header-with-left-hamburger-icon-to-toggle-sidebar-centered-clickable-title-kelani-cosmetics-that-navigates-to-admin-and-a-right-aligned-icon-only-logout-button-create-a-collapsible-sidebar-that-is-open-by-default-on-desktop-and-closed-by-default-on-mobile-on-mobile-it-should-slide-in-as-an-overlay-full-screen-main-content-should-be-centered-with-a-max-width-of-1200px-and-render-nested-routes-via-outlet",
+      "title": "Build the admin-only DashboardLayout for `/admin` and `/admin/*` routes: fixed header with left hamburger icon to toggle sidebar, centered clickable title `\"Kelani Cosmetics\"` that navigates to `/admin`, and a right-aligned icon-only logout button. Create a collapsible sidebar that is open by default on desktop and closed by default on mobile; on mobile it should slide in as an overlay (full-screen). Main content should be centered with a max width of 1200px and render nested routes via `<Outlet />`.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-admin-dashboard-home-content-at-admin-admin-users-only-responsive-card-grid-showing-exactly-5-placeholder-cards-with-icons-labels-productos-productos-en-oferta-categor-as-datos-de-tienda-exportar-desktop-3-cards-per-row-mobile-1-per-row-arrange-so-the-first-row-is-productos-productos-en-oferta-categor-as-and-the-second-row-contains-datos-de-tienda-and-exportar-centered-with-appropriate-spacing-clicking-a-card-navigates-to-its-corresponding-route",
+      "title": "Implement the admin dashboard home content at `/admin` (admin users only): responsive card grid showing exactly 5 placeholder cards with icons + labels: `Productos`, `Productos en Oferta`, `Categorías`, `Datos de Tienda`, `Exportar`. Desktop: 3 cards per row; mobile: 1 per row. Arrange so the first row is Productos / Productos en Oferta / Categorías, and the second row contains Datos de Tienda and Exportar centered with appropriate spacing. Clicking a card navigates to its corresponding route.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-placeholder-pages-for-admin-products-admin-on-sale-products-admin-categories-admin-store-details-and-admin-export-that-render-within-the-admin-dashboard-layout-and-clearly-indicate-they-are-placeholders",
+      "title": "Create placeholder pages for `/admin/products`, `/admin/on-sale-products`, `/admin/categories`, `/admin/store-details`, and `/admin/export` that render within the admin dashboard layout and clearly indicate they are placeholders.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-use-tanstack-query-to-perform-the-admin-verification-call-and-integrate-its-lifecycle-with-zustand-state-e-g-trigger-verification-after-login-store-results-timestamp-and-avoid-unnecessary-calls-when-cached-within-30-days",
+      "title": "Use TanStack Query to perform the admin verification call and integrate its lifecycle with Zustand state (e.g., trigger verification after login, store results + timestamp, and avoid unnecessary calls when cached within 30 days).",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-coherent-distinctive-visual-theme-across-the-admin-login-access-denied-and-dashboard-ui-colors-typography-spacing-component-styling-suitable-for-a-cosmetics-brand-avoid-blue-and-purple-as-the-primary-palette",
+      "title": "Apply a coherent, distinctive visual theme across the admin login, access denied, and dashboard UI (colors, typography, spacing, component styling) suitable for a cosmetics brand. Avoid blue-and-purple as the primary palette.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-bigint-safe-json-utility-module-at-frontend-src-utils-bigintserializer-ts-that-provides-safebiginttostring-safestringtobigint-parsejsonwithbigint-stringifywithbigint-and-isvalidbigintstring-exactly-as-specified-and-ensure-the-implementation-is-safe-for-null-undefined-invalid-inputs-and-avoids-throwing-during-normal-use",
+      "title": "Create a BigInt-safe JSON utility module at `frontend/src/utils/BigIntSerializer.ts` that provides `safeBigIntToString`, `safeStringToBigInt`, `parseJSONWithBigInt`, `stringifyWithBigInt`, and `isValidBigIntString` exactly as specified, and ensure the implementation is safe for null/undefined/invalid inputs and avoids throwing during normal use.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-unit-tests-for-frontend-src-utils-bigintserializer-ts-covering-all-specified-edge-cases-and-validating-round-trip-behavior-stringify-parse",
+      "title": "Add unit tests for `frontend/src/utils/BigIntSerializer.ts` covering all specified edge cases and validating round-trip behavior (stringify → parse).",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-sentinel-safe-select-wrapper-component-at-frontend-src-components-safeselect-tsx-that-prevents-empty-string-select-values-by-enforcing-sentinel-values-and-provides-the-helper-functions-initializeselectstate-convertsentineltonull-and-issentinelvalue-as-specified",
+      "title": "Create a sentinel-safe Select wrapper component at `frontend/src/components/SafeSelect.tsx` that prevents empty-string Select values by enforcing sentinel values and provides the helper functions `initializeSelectState`, `convertSentinelToNull`, and `isSentinelValue` as specified.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-unit-tests-for-frontend-src-components-safeselect-tsx-and-its-helper-functions-to-verify-empty-string-prevention-sentinel-conversions-state-initialization-and-spanish-error-messaging",
+      "title": "Add unit tests for `frontend/src/components/SafeSelect.tsx` and its helper functions to verify empty-string prevention, sentinel conversions, state initialization, and Spanish error messaging.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-numeric-conversion-validation-utility-module-at-frontend-src-utils-numericconverter-ts-implementing-safeconverttonumber-validateivanumber-validateprofitmargin-convertstocktoboolean-and-formatpricefordisplay-exactly-as-specified-including-spanish-format-currency-output-and-spanish-console-warnings-for-invalid-conversions",
+      "title": "Create a numeric conversion/validation utility module at `frontend/src/utils/NumericConverter.ts` implementing `safeConvertToNumber`, `validateIvaNumber`, `validateProfitMargin`, `convertStockToBoolean`, and `formatPriceForDisplay` exactly as specified, including Spanish-format currency output and Spanish console warnings for invalid conversions.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-unit-tests-for-frontend-src-utils-numericconverter-ts-to-cover-string-to-number-conversions-iva-validation-profit-margin-validation-stock-to-boolean-conversion-and-spanish-format-price-formatting-consistency",
+      "title": "Add unit tests for `frontend/src/utils/NumericConverter.ts` to cover string-to-number conversions, IVA validation, profit margin validation, stock-to-boolean conversion, and Spanish-format price formatting consistency.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-an-api-response-handling-utility-module-at-frontend-src-utils-apiresponsehandler-ts-implementing-handleapiresponse-t-createapierror-and-shouldretryrequest-and-standardize-parsing-to-use-parsejsonwithbigint-from-bigintserializer-for-json-bodies",
+      "title": "Create an API response handling utility module at `frontend/src/utils/ApiResponseHandler.ts` implementing `handleApiResponse<T>`, `createApiError`, and `shouldRetryRequest`, and standardize parsing to use `parseJSONWithBigInt()` from `BigIntSerializer` for JSON bodies.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-unit-tests-for-frontend-src-utils-apiresponsehandler-ts-to-validate-bigint-aware-parsing-standardized-error-creation-and-retry-decision-behavior",
+      "title": "Add unit tests for `frontend/src/utils/ApiResponseHandler.ts` to validate BigInt-aware parsing, standardized error creation, and retry decision behavior.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-global-toast-notification-store-using-zustand-to-manage-toast-lifecycle-and-state-for-a-modern-non-blocking-toast-system",
+      "title": "Create a global toast notification store using Zustand to manage toast lifecycle and state for a modern, non-blocking toast system.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-modern-toast-viewport-container-and-toast-card-components-rendered-at-the-application-root-positioned-top-right-with-stacking-animations-hover-pause-and-manual-dismiss",
+      "title": "Implement a modern Toast viewport/container and Toast card components rendered at the application root, positioned top-right, with stacking, animations, hover-pause, and manual dismiss.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-toast-type-styling-for-success-error-warning-and-info-using-the-existing-theme-system-and-tailwind-with-clear-color-contrast-and-minimal-footprint",
+      "title": "Add toast type styling for success, error, warning, and info using the existing theme system and Tailwind, with clear color contrast and minimal footprint.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-local-error-handling-strategy-that-uses-toast-notifications-for-user-facing-feedback-and-console-logging-for-developer-debugging-without-introducing-react-error-boundaries",
+      "title": "Implement a local error handling strategy that uses toast notifications for user-facing feedback and console logging for developer debugging, without introducing React error boundaries.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-minimal-css-for-toast-animations-and-layout-without-modifying-the-existing-root-css-custom-properties-block-in-frontend-src-index-css-append-new-styles-only-below-the-existing-variables-block",
+      "title": "Add minimal CSS for toast animations and layout without modifying the existing :root CSS custom properties block in frontend/src/index.css; append new styles only below the existing variables block.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-admin-categories-placeholder-ui-with-a-fully-functional-categories-management-page-that-renders-inside-the-existing-admin-dashboardlayout-outlet-and-loads-when-navigating-via-the-dashboard-card-or-sidebar",
+      "title": "Replace the `/admin/categories` placeholder UI with a fully functional Categories management page that renders inside the existing admin DashboardLayout outlet and loads when navigating via the dashboard card or sidebar.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-categories-page-header-table-search-and-actions-exactly-as-specified-including-add-edit-modal-delete-confirmation-and-order-up-down-controls",
+      "title": "Implement the Categories page header, table, search, and actions exactly as specified, including add/edit modal, delete confirmation, and order up/down controls.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-add-edit-modal-is-vertically-scrollable-when-viewport-height-is-smaller-than-the-modal-content-without-breaking-the-dialog-layout",
+      "title": "Ensure the add/edit modal is vertically scrollable when viewport height is smaller than the modal content, without breaking the dialog layout.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-the-categories-ui-with-the-backend-using-tanstack-query-and-the-existing-actor-hook-and-show-toast-notifications-in-spanish-for-every-operation-load-create-update-delete-reorder-using-the-existing-toast-error-utilities",
+      "title": "Integrate the Categories UI with the backend using TanStack Query and the existing actor hook, and show toast notifications in Spanish for every operation (load/create/update/delete/reorder), using the existing toast/error utilities.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-use-the-shared-utilities-bigintserializer-numericconverter-safeselect-apiresponsehandler-and-the-existing-local-error-with-toast-strategy-where-applicable-in-the-categories-implementation-to-prevent-common-errors",
+      "title": "Use the shared utilities (BigIntSerializer, NumericConverter, SafeSelect, ApiResponseHandler, and the existing local error-with-toast strategy) where applicable in the Categories implementation to prevent common errors.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-categories-data-layer-frontend-src-hooks-usequeries-ts-to-call-the-new-backend-methods-without-placeholder-behavior-and-with-correct-type-conversions-for-internet-computer-candid-nat-int-values-e-g-converting-between-number-used-by-ui-code-and-bigint-int-representations-returned-accepted-by-the-actor-ensure-create-update-delete-reorder-operations-actually-persist-and-are-reflected-after-refetch",
+      "title": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-any-hardcoded-category-lists-used-for-category-dropdowns-in-the-frontend-and-replace-them-with-data-fetched-from-the-backend-getallcategories-api-via-the-existing-react-query-approach-while-preserving-existing-ui-behavior-and-layout",
+      "title": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Initialize React + TypeScript app with Vite for \"Kelani Cosmetics\"",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Set up TanStack Router v6 with /admin and nested /admin/* routes (products, on-sale-products, categories, store-details, export)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Integrate Internet Identity authentication directly into /admin with Spanish login UI, principal capture, persistence, and logout",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Implement admin verification flow: immediate post-login check via backend, loading spinner \"Verificando permisos...\", 30-day cache in Zustand, secure default to non-admin on failure",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Implement /admin conditional rendering: unauthenticated login, authenticated admin DashboardLayout, authenticated non-admin AccessDenied (no separate route)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Build AccessDenied UI (Spanish) at /admin for authenticated non-admins, showing principal ID with copy-to-clipboard icon button and logout; no nav/sidebar/header",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Build admin-only DashboardLayout with fixed header (hamburger + icon-only logout), collapsible sidebar, centered main content with Outlet",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Create /admin dashboard home card grid (5 placeholder cards) with responsive layout and navigation to admin subroutes",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Protect all /admin/* routes to require authenticated + verified admin; prevent any page access for non-admins",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Use TanStack Query for backend calls (e.g., admin verification) integrated with auth state in Zustand",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add a backend admin-verification API in the single Motoko actor that can be called by the frontend to determine whether the caller (or a provided principal) is an admin. Implement a simple allowlist-based admin model (hardcoded or configurable in canister state) sufficient for verifying admin access.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Add BigIntSerializer utility (safeBigIntToString, safeStringToBigInt, parseJSONWithBigInt, stringifyWithBigInt, isValidBigIntString) and use it instead of JSON.parse/stringify where BigInt may exist",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Create SafeSelect component + helpers (initializeSelectState, convertSentinelToNull, isSentinelValue) enforcing non-empty SelectItem values via sentinel system (all/none/no-change) with Spanish error messaging",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add NumericConverter utility (safeConvertToNumber, validateIvaNumber, validateProfitMargin, convertStockToBoolean, formatPriceForDisplay in Spanish € format) for consistent validation and API calls",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Add ApiResponseHandler utility (handleApiResponse using parseJSONWithBigInt, createApiError with Spanish messages, shouldRetryRequest) and standardize frontend API response format handling",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Add tests for new shared utilities/components: BigInt round-trip + edge cases, SafeSelect sentinel/empty-string prevention, NumericConverter validations/formatting, and ApiResponseHandler parsing/error behaviors",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Implement a modern toast notification system (Zustand toast store + top-right toast UI) with types (success/error/warning/info), auto-dismiss timers, stacking, hover-pause, manual close, responsive + accessible design, and minimal CSS animations; use for local error handling (no error boundaries).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Implement real /admin/categories management (replace placeholder): backend persistent CRUD + reorder APIs (create/update/delete/getAll/getById/reorder with timestamps), and frontend Categories page with table, search, add/edit scrollable modal, delete confirmation, order up/down, Spanish UI, toast notifications on all operations, and mandatory shared utilities usage (BigInt JSON, SafeSelect, NumericConverter, ApiResponseHandler). No mock/default categories.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Implement persistent Category storage and admin-protected CRUD/reorder API methods in the single Motoko actor (backend/main.mo) without creating any mock/default categories.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Preserve the existing frontend theme variables block in frontend/src/index.css exactly; if any new CSS is required for the categories page (e.g., modal scrolling tweaks), append styles only below the existing :root block without changing its names/values/structure.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Implement persistent Categories storage in the single Motoko actor (`backend/main.mo`) using (1) a Map keyed by `Nat` for in-memory operations and (2) stable storage so categories persist across canister upgrades, including a stable `lastCategoryId : Nat` counter.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Define a `Category` type in `backend/main.mo` that supports all required fields used by the Categories page: `categoryId : Nat`, `name : Text`, `order : Nat`, `createdDate : Int`, and `lastUpdatedDate : Int` (timestamps from the current canister time).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Add the required backend Categories methods to `backend/main.mo` exactly as specified: `createCategory(name: Text, order: Nat) : async Category`, `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`, `deleteCategory(categoryId: Nat) : async Bool`, `getAllCategories() : async [Category]`, `getCategoryById(categoryId: Nat) : async ?Category`, and `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`. Validate existence for update/delete/reorder targets. `getAllCategories` must return categories sorted by `order`.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Restrict Categories write operations in `backend/main.mo` to admin callers using the existing access control system already present in the canister (i.e., only admins can create, update, delete, or reorder categories). Read operations (`getAllCategories`, `getCategoryById`) must remain callable by authenticated users as needed for category dropdowns across the application.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Kelani Cosmetics",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

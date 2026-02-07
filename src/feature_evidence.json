@@ -1,0 +1,45 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-update-the-frontend-categories-data-layer-frontend-src-hooks-usequeries-ts-to-call-the-new-backend-methods-without-placeholder-behavior-and-with-correct-type-conversions-for-internet-computer-candid-nat-int-values-e-g-converting-between-number-used-by-ui-code-and-bigint-int-representations-returned-accepted-by-the-actor-ensure-create-update-delete-reorder-operations-actually-persist-and-are-reflected-after-refetch",
+      "featureTitle": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/utils/categoryNumeric.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-37"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-remove-any-hardcoded-category-lists-used-for-category-dropdowns-in-the-frontend-and-replace-them-with-data-fetched-from-the-backend-getallcategories-api-via-the-existing-react-query-approach-while-preserving-existing-ui-behavior-and-layout",
+      "featureTitle": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
+      "files": [
+        "frontend/src/components/categories/CategorySelect.tsx",
+        "frontend/src/hooks/useCategoryOptions.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-38"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

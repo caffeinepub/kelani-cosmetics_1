@@ -1,0 +1,56 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Wire Categories admin UI + dropdowns to persisted backend Categories APIs",
+  "requirements": [
+    {
+      "id": "REQ-37",
+      "summary": "Replace placeholder Categories React Query hooks with real backend actor calls and correct Nat/Int (bigint) conversions so CRUD + reorder persist and refetch correctly.",
+      "acceptanceCriteria": [
+        "Creating a category from the Categories page results in a persisted backend record that appears after page reload.",
+        "Updating a category from the Categories page persists changes and updates timestamps appropriately.",
+        "Deleting a category removes it from backend and it no longer appears after page reload.",
+        "Reordering categories calls `reorderCategories` and the order change is persisted after page reload.",
+        "The frontend no longer silently returns an empty array due to 'method not implemented' checks for categories APIs (errors should surface through the existing error handling/toast strategy)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update categories queries/mutations to call the typed backend actor methods (getAllCategories/getCategoryById/createCategory/updateCategory/deleteCategory/reorderCategories) without placeholder method-existence checks; implement UI<->Candid conversions (number <-> bigint) and normalize returned Category values for UI use; ensure successful mutations invalidate/refetch categories and errors surface via existing toast strategy. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/categoryNumeric.ts",
+          "operation": "create",
+          "description": "Add small shared helpers to safely convert between UI `number` and Candid `bigint` for Category fields (categoryId/order/createdDate/lastUpdatedDate), including guarding against unsafe integer ranges and providing consistent conversion used by hooks and dropdown mapping. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "summary": "Remove hardcoded category dropdown options and source dropdown data from backend `getAllCategories()` via React Query while preserving existing dropdown UX and error handling.",
+      "acceptanceCriteria": [
+        "No production UI code contains hardcoded category arrays intended to populate dropdowns; dropdown options come from `getAllCategories()` results.",
+        "If categories fail to load, the UI follows the existing local error handling strategy (toast + console logging) and does not break the layout.",
+        "Existing UI/UX of dropdowns is preserved aside from replacing hardcoded options with fetched options."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useCategoryOptions.ts",
+          "operation": "create",
+          "description": "Create a small hook that composes the existing React Query categories hook and maps results into stable dropdown options (value/label), handling loading/empty states without breaking layout and relying on existing toast + console error strategy. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/categories/CategorySelect.tsx",
+          "operation": "create",
+          "description": "Add a reusable CategorySelect wrapper that composes existing UI Select/SafeSelect components and uses `useCategoryOptions` so dropdowns can be wired to backend categories without hardcoded arrays (preserve existing layout/behavior). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/admin/CategoriesPage.tsx",
+          "operation": "modify",
+          "description": "Ensure any category dropdown-related UI within this page (if present now or added previously) uses fetched categories (via the new hook/component) and that failure-to-load does not break layout; keep the existing categories CRUD/reorder UI behavior unchanged aside from data sourcing. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}

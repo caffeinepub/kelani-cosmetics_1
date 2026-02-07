@@ -1,0 +1,156 @@
+{
+  "kind": "build_request",
+  "title": "Implement persistent backend categories CRUD + reorder and wire frontend to backend APIs",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-33",
+      "text": "Implement persistent Categories storage in the single Motoko actor (`backend/main.mo`) using (1) a Map keyed by `Nat` for in-memory operations and (2) stable storage so categories persist across canister upgrades, including a stable `lastCategoryId : Nat` counter.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Implement the complete backend functionality for categories management and integrate with categories frontend page correctly, to persist data accurately and allow all category page operations to be implemented in the backend.",
+          "// Persistent storage for categories\nvar categories : Map<Nat, Category>;\n\n// Last used categoryId counter\nvar lastCategoryId : Nat = 0;"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After deploying and creating categories, performing a canister upgrade preserves all previously created categories and the `lastCategoryId` counter value (i.e., new categories continue incrementing IDs).",
+        "Categories are stored in a `Map<Nat, Category>` during runtime and backed by stable state for upgrades.",
+        "No mock/default categories are added automatically."
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "text": "Define a `Category` type in `backend/main.mo` that supports all required fields used by the Categories page: `categoryId : Nat`, `name : Text`, `order : Nat`, `createdDate : Int`, and `lastUpdatedDate : Int` (timestamps from the current canister time).",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Sets `createdDate` and `lastUpdatedDate` to current timestamp",
+          "Preserves `createdDate` unchanged"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The canister Candid interface exposes a Category record with the fields required to support create/update/list/edit and timestamps.",
+        "`createdDate` is set once at creation and never modified by updates/reorders.",
+        "`lastUpdatedDate` is updated on any operation that changes a category (update and reorder; optionally also delete is not applicable)."
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "text": "Add the required backend Categories methods to `backend/main.mo` exactly as specified: `createCategory(name: Text, order: Nat) : async Category`, `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`, `deleteCategory(categoryId: Nat) : async Bool`, `getAllCategories() : async [Category]`, `getCategoryById(categoryId: Nat) : async ?Category`, and `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`. Validate existence for update/delete/reorder targets. `getAllCategories` must return categories sorted by `order`.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "A. `createCategory(name: Text, order: Nat) : async Category`",
+          "B. `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`",
+          "C. `deleteCategory(categoryId: Nat) : async Bool`",
+          "D. `getAllCategories() : async [Category]`",
+          "E. `getCategoryById(categoryId: Nat) : async ?Category`",
+          "F. `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`createCategory` increments `lastCategoryId`, assigns the new `categoryId`, sets both timestamps to 'now', stores in the categories map, and returns the full Category.",
+        "`updateCategory` traps or otherwise fails fast if the category does not exist; if it exists, it updates `name`, `order`, updates `lastUpdatedDate`, preserves `createdDate`, and returns the updated Category.",
+        "`deleteCategory` returns `false` if the category does not exist; otherwise removes it and returns `true`.",
+        "`getAllCategories` returns all categories sorted ascending by `order` (stable ordering for equal `order` values should be deterministic).",
+        "`getCategoryById` returns `null`/`?Category` appropriately without trapping for missing categories.",
+        "`reorderCategories` updates the `order` values for all provided `(categoryId, newOrder)` pairs in one call; it must validate all referenced categories exist and return `false` (or trap) if any are missing rather than partially applying changes."
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "text": "Restrict Categories write operations in `backend/main.mo` to admin callers using the existing access control system already present in the canister (i.e., only admins can create, update, delete, or reorder categories). Read operations (`getAllCategories`, `getCategoryById`) must remain callable by authenticated users as needed for category dropdowns across the application.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Only implement the missing backend methods as specified",
+          "Used for category dropdowns throughout the application"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Non-admin callers cannot successfully call `createCategory`, `updateCategory`, `deleteCategory`, or `reorderCategories` (the call traps or is rejected).",
+        "`getAllCategories` and `getCategoryById` are callable without requiring admin permissions so they can power dropdowns across the application.",
+        "Any trap/rejection messages introduced for authorization failures are in English."
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "text": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Categories page frontend works but doesn't save/update data in backend",
+          "Integrate with categories frontend page correctly"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Creating a category from the Categories page results in a persisted backend record that appears after page reload.",
+        "Updating a category from the Categories page persists changes and updates timestamps appropriately.",
+        "Deleting a category removes it from backend and it no longer appears after page reload.",
+        "Reordering categories calls `reorderCategories` and the order change is persisted after page reload.",
+        "The frontend no longer silently returns an empty array due to 'method not implemented' checks for categories APIs (errors should surface through the existing error handling/toast strategy)."
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "text": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Category dropdowns use hardcoded data instead of backend API",
+          "Only update category dropdowns to use backend API instead of hardcoded data"
+        ]
+      },
+      "acceptanceCriteria": [
+        "No production UI code contains hardcoded category arrays intended to populate dropdowns; dropdown options come from `getAllCategories()` results.",
+        "If categories fail to load, the UI follows the existing local error handling strategy (toast + console logging) and does not break the layout.",
+        "Existing UI/UX of dropdowns is preserved aside from replacing hardcoded options with fetched options."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
+    "Do not change anything unrelated to Categories backend methods and the minimal frontend wiring needed to use them.",
+    "Do not edit files under `frontend/src/components/ui` (compose them only).",
+    "Do not edit `frontend/src/hooks/useInternetIdentity.ts` / `.tsx`, `frontend/src/hooks/useActor.ts`, or `frontend/src/main.tsx` (immutable paths).",
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css` (append new styles only below it if absolutely necessary)."
+  ],
+  "nonGoals": [
+    "Implementing products management or wiring categories into product creation flows beyond replacing hardcoded dropdown data.",
+    "Changing the visual design of the Categories page UI, admin layout, or adding new admin routes.",
+    "Adding external databases or non-Motoko backend components."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

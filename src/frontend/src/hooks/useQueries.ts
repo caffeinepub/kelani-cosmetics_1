@@ -1,0 +1,221 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useActor } from './useActor';
+import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
+import type { Category as BackendCategory } from '../backend';
+import { numberToBigInt, bigIntToNumber, convertReorderArrayToBigInt } from '../utils/categoryNumeric';
+
+// UI Category type with number fields for easier manipulation
+export interface Category {
+  categoryId: number;
+  name: string;
+  order: number;
+  createdDate: number;
+  lastUpdatedDate: number;
+}
+
+/**
+ * Convert backend Category (with bigint fields) to UI Category (with number fields)
+ */
+function backendCategoryToUI(backendCat: BackendCategory): Category {
+  return {
+    categoryId: bigIntToNumber(backendCat.categoryId),
+    name: backendCat.name,
+    order: bigIntToNumber(backendCat.order),
+    createdDate: bigIntToNumber(backendCat.createdDate),
+    lastUpdatedDate: bigIntToNumber(backendCat.lastUpdatedDate),
+  };
+}
+
+// Query Keys
+const QUERY_KEYS = {
+  categories: ['categories'] as const,
+  category: (id: number) => ['category', id] as const,
+};
+
+// ============================================================================
+// CATEGORY QUERIES
+// ============================================================================
+
+/**
+ * Fetch all categories sorted by order
+ */
+export function useGetAllCategories() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Category[]>({
+    queryKey: QUERY_KEYS.categories,
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      
+      try {
+        const backendCategories = await actor.getAllCategories();
+        return backendCategories.map(backendCategoryToUI);
+      } catch (error) {
+        reportErrorWithToast(
+          error,
+          'Error al cargar las categorías',
+          { operation: 'getAllCategories' }
+        );
+        throw error;
+      }
+    },
+    enabled: !!actor && !actorFetching,
+    retry: 1,
+  });
+}
+
+/**
+ * Fetch single category by ID
+ */
+export function useGetCategoryById(categoryId: number | null) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Category | null>({
+    queryKey: QUERY_KEYS.category(categoryId ?? 0),
+    queryFn: async () => {
+      if (!actor || categoryId === null) return null;
+      
+      try {
+        const result = await actor.getCategoryById(numberToBigInt(categoryId));
+        return result ? backendCategoryToUI(result) : null;
+      } catch (error) {
+        reportErrorWithToast(
+          error,
+          'Error al cargar la categoría',
+          { operation: 'getCategoryById', additionalInfo: { categoryId } }
+        );
+        throw error;
+      }
+    },
+    enabled: !!actor && !actorFetching && categoryId !== null,
+    retry: 1,
+  });
+}
+
+// ============================================================================
+// CATEGORY MUTATIONS
+// ============================================================================
+
+/**
+ * Create new category
+ */
+export function useCreateCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ name, order }: { name: string; order: number }) => {
+      if (!actor) throw new Error('Actor not available');
+      
+      const backendCategory = await actor.createCategory(name, numberToBigInt(order));
+      return backendCategoryToUI(backendCategory);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+      reportSuccessWithToast('Categoría creada exitosamente');
+    },
+    onError: (error) => {
+      reportErrorWithToast(
+        error,
+        'Error al crear la categoría',
+        { operation: 'createCategory' }
+      );
+    },
+  });
+}
+
+/**
+ * Update existing category
+ */
+export function useUpdateCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      categoryId,
+      name,
+      order,
+    }: {
+      categoryId: number;
+      name: string;
+      order: number;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      
+      const backendCategory = await actor.updateCategory(
+        numberToBigInt(categoryId),
+        name,
+        numberToBigInt(order)
+      );
+      return backendCategoryToUI(backendCategory);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.category(variables.categoryId) });
+      reportSuccessWithToast('Categoría actualizada exitosamente');
+    },
+    onError: (error) => {
+      reportErrorWithToast(
+        error,
+        'Error al actualizar la categoría',
+        { operation: 'updateCategory' }
+      );
+    },
+  });
+}
+
+/**
+ * Delete category
+ */
+export function useDeleteCategory() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (categoryId: number) => {
+      if (!actor) throw new Error('Actor not available');
+      
+      return await actor.deleteCategory(numberToBigInt(categoryId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+      reportSuccessWithToast('Categoría eliminada exitosamente');
+    },
+    onError: (error) => {
+      reportErrorWithToast(
+        error,
+        'Error al eliminar la categoría',
+        { operation: 'deleteCategory' }
+      );
+    },
+  });
+}
+
+/**
+ * Reorder multiple categories
+ */
+export function useReorderCategories() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (newOrder: Array<[number, number]>) => {
+      if (!actor) throw new Error('Actor not available');
+      
+      const bigIntOrder = convertReorderArrayToBigInt(newOrder);
+      return await actor.reorderCategories(bigIntOrder);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+      reportSuccessWithToast('Orden actualizado exitosamente');
+    },
+    onError: (error) => {
+      reportErrorWithToast(
+        error,
+        'Error al reordenar las categorías',
+        { operation: 'reorderCategories' }
+      );
+    },
+  });
+}

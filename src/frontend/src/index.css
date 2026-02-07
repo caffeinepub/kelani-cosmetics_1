@@ -1,0 +1,225 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.75rem;
+        
+        /* Warm rose/gold cosmetics palette - Light mode */
+        --background: 0.99 0.005 30;
+        --foreground: 0.20 0.015 30;
+        
+        --card: 1 0 0;
+        --card-foreground: 0.20 0.015 30;
+        
+        --popover: 1 0 0;
+        --popover-foreground: 0.20 0.015 30;
+        
+        /* Rose gold primary */
+        --primary: 0.55 0.12 25;
+        --primary-foreground: 0.99 0.005 30;
+        
+        /* Soft peach secondary */
+        --secondary: 0.95 0.03 40;
+        --secondary-foreground: 0.30 0.02 30;
+        
+        /* Warm muted tones */
+        --muted: 0.96 0.01 35;
+        --muted-foreground: 0.50 0.02 30;
+        
+        /* Soft accent */
+        --accent: 0.94 0.04 35;
+        --accent-foreground: 0.30 0.02 30;
+        
+        /* Warm destructive */
+        --destructive: 0.55 0.20 15;
+        --destructive-foreground: 0.99 0.005 30;
+        
+        --border: 0.92 0.01 30;
+        --input: 0.92 0.01 30;
+        --ring: 0.55 0.12 25;
+        
+        --chart-1: 0.60 0.15 340;
+        --chart-2: 0.65 0.12 25;
+        --chart-3: 0.70 0.10 50;
+        --chart-4: 0.55 0.18 10;
+        --chart-5: 0.75 0.08 60;
+    }
+
+    .dark {
+        /* Dark mode with warm undertones */
+        --background: 0.15 0.015 30;
+        --foreground: 0.95 0.01 30;
+        
+        --card: 0.20 0.02 30;
+        --card-foreground: 0.95 0.01 30;
+        
+        --popover: 0.18 0.02 30;
+        --popover-foreground: 0.95 0.01 30;
+        
+        /* Brighter rose gold for dark mode */
+        --primary: 0.70 0.15 25;
+        --primary-foreground: 0.15 0.015 30;
+        
+        --secondary: 0.25 0.03 30;
+        --secondary-foreground: 0.95 0.01 30;
+        
+        --muted: 0.25 0.02 30;
+        --muted-foreground: 0.65 0.02 30;
+        
+        --accent: 0.30 0.04 30;
+        --accent-foreground: 0.95 0.01 30;
+        
+        --destructive: 0.60 0.22 15;
+        --destructive-foreground: 0.95 0.01 30;
+        
+        --border: 0.30 0.02 30;
+        --input: 0.30 0.02 30;
+        --ring: 0.70 0.15 25;
+        
+        --chart-1: 0.65 0.18 340;
+        --chart-2: 0.70 0.15 25;
+        --chart-3: 0.75 0.12 50;
+        --chart-4: 0.60 0.20 10;
+        --chart-5: 0.80 0.10 60;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+/* Toast Notification Styles */
+@layer components {
+    .toast-viewport {
+        @apply fixed top-4 right-4 z-[100] flex flex-col gap-2 w-full max-w-sm pointer-events-none;
+    }
+
+    @media (max-width: 640px) {
+        .toast-viewport {
+            @apply left-4 right-4 max-w-none;
+        }
+    }
+
+    .toast-card {
+        @apply bg-card text-card-foreground rounded-lg shadow-lg border pointer-events-auto;
+        @apply p-4 w-full;
+        animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-card.toast-exit {
+        animation: toast-slide-out 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Toast type variants with minimal accent styling */
+    .toast-success {
+        @apply border-l-4;
+        border-left-color: oklch(0.65 0.20 145);
+    }
+
+    .toast-success .toast-icon-wrapper {
+        color: oklch(0.65 0.20 145);
+    }
+
+    .toast-error {
+        @apply border-l-4;
+        border-left-color: oklch(0.55 0.22 15);
+    }
+
+    .toast-error .toast-icon-wrapper {
+        color: oklch(0.55 0.22 15);
+    }
+
+    .toast-warning {
+        @apply border-l-4;
+        border-left-color: oklch(0.70 0.18 75);
+    }
+
+    .toast-warning .toast-icon-wrapper {
+        color: oklch(0.70 0.18 75);
+    }
+
+    .toast-info {
+        @apply border-l-4;
+        border-left-color: oklch(0.60 0.18 240);
+    }
+
+    .toast-info .toast-icon-wrapper {
+        color: oklch(0.60 0.18 240);
+    }
+
+    .toast-title {
+        @apply text-foreground;
+    }
+
+    .toast-description {
+        @apply text-muted-foreground;
+    }
+
+    .toast-close-button {
+        @apply text-muted-foreground hover:text-foreground;
+        @apply focus:ring-ring;
+    }
+
+    /* Dark mode adjustments for better contrast */
+    .dark .toast-success {
+        border-left-color: oklch(0.70 0.20 145);
+    }
+
+    .dark .toast-success .toast-icon-wrapper {
+        color: oklch(0.70 0.20 145);
+    }
+
+    .dark .toast-error {
+        border-left-color: oklch(0.65 0.22 15);
+    }
+
+    .dark .toast-error .toast-icon-wrapper {
+        color: oklch(0.65 0.22 15);
+    }
+
+    .dark .toast-warning {
+        border-left-color: oklch(0.75 0.18 75);
+    }
+
+    .dark .toast-warning .toast-icon-wrapper {
+        color: oklch(0.75 0.18 75);
+    }
+
+    .dark .toast-info {
+        border-left-color: oklch(0.65 0.18 240);
+    }
+
+    .dark .toast-info .toast-icon-wrapper {
+        color: oklch(0.65 0.18 240);
+    }
+}
+
+/* Toast animations using transform and opacity */
+@keyframes toast-slide-in {
+    from {
+        transform: translateX(calc(100% + 1rem));
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toast-slide-out {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(calc(100% + 1rem));
+        opacity: 0;
+    }
+}
