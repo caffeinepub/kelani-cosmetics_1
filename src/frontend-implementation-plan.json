@@ -1,54 +1,132 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Wire Categories admin UI + dropdowns to persisted backend Categories APIs",
+  "title": "Admin /admin/store-details page for managing two stores with tabs, forms, live preview, and TanStack Query data layer",
   "requirements": [
     {
-      "id": "REQ-37",
-      "summary": "Replace placeholder Categories React Query hooks with real backend actor calls and correct Nat/Int (bigint) conversions so CRUD + reorder persist and refetch correctly.",
+      "id": "REQ-72",
+      "summary": "Replace the placeholder Store Details admin page with a two-tab UI for managing Store 1 and Store 2 inside the existing admin layout and protections.",
       "acceptanceCriteria": [
-        "Creating a category from the Categories page results in a persisted backend record that appears after page reload.",
-        "Updating a category from the Categories page persists changes and updates timestamps appropriately.",
-        "Deleting a category removes it from backend and it no longer appears after page reload.",
-        "Reordering categories calls `reorderCategories` and the order change is persisted after page reload.",
-        "The frontend no longer silently returns an empty array due to 'method not implemented' checks for categories APIs (errors should surface through the existing error handling/toast strategy)."
+        "Navigating to `/admin/store-details` renders the new management UI (not the placeholder).",
+        "The page shows two tabs labeled \"Tienda 1\" and \"Tienda 2\".",
+        "Switching tabs shows the correct store’s saved data and does not leak unsaved changes between stores.",
+        "The page remains protected by the existing admin route protections (non-admins cannot access it)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
           "operation": "modify",
-          "description": "Update categories queries/mutations to call the typed backend actor methods (getAllCategories/getCategoryById/createCategory/updateCategory/deleteCategory/reorderCategories) without placeholder method-existence checks; implement UI<->Candid conversions (number <-> bigint) and normalize returned Category values for UI use; ensure successful mutations invalidate/refetch categories and errors surface via existing toast strategy. Verify the component's usage instructions before implementing."
+          "description": "Replace the placeholder UI with a functional two-tab admin management page for exactly two stores (storeId 1 and 2), ensuring each tab maintains its own independent local form state and renders within the existing DashboardLayout outlet. Use the existing admin protections provided by the authorization system (Verify the component's usage instructions before implementing)."
         },
         {
-          "path": "frontend/src/utils/categoryNumeric.ts",
-          "operation": "create",
-          "description": "Add small shared helpers to safely convert between UI `number` and Candid `bigint` for Category fields (categoryId/order/createdDate/lastUpdatedDate), including guarding against unsafe integer ranges and providing consistent conversion used by hooks and dropdown mapping. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/router.tsx",
+          "operation": "modify",
+          "description": "Confirm `/admin/store-details` remains registered and navigable under the existing `/admin` guarded route, with StoreDetailsPage as the component, to prevent orphaning the new page."
         }
       ]
     },
     {
-      "id": "REQ-38",
-      "summary": "Remove hardcoded category dropdown options and source dropdown data from backend `getAllCategories()` via React Query while preserving existing dropdown UX and error handling.",
+      "id": "REQ-73",
+      "summary": "Implement the per-store Store Information form UI with Spanish labels, per-day store hours inputs, and client-side validation.",
       "acceptanceCriteria": [
-        "No production UI code contains hardcoded category arrays intended to populate dropdowns; dropdown options come from `getAllCategories()` results.",
-        "If categories fail to load, the UI follows the existing local error handling strategy (toast + console logging) and does not break the layout.",
-        "Existing UI/UX of dropdowns is preserved aside from replacing hardcoded options with fetched options."
+        "Each store tab contains a form with the fields: Nombre de la Tienda, Email de la Tienda, WhatsApp, Dirección (textarea), Descripción de la Tienda (textarea), Latitud, Longitud.",
+        "Latitude/Longitude inputs initialize to the specified defaults when the backend record has no values (fresh defaults) and are displayed as numeric values.",
+        "Store Hours section renders 7 separate inputs with Spanish labels: Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo.",
+        "Each store-hours input shows a placeholder demonstrating the requested format (e.g., \"9:30 am–10 pm\" and/or \"9:30 am–2 pm, 5–10 pm\").",
+        "The helper text is displayed exactly as provided for the store-hours section.",
+        "Client-side validation prevents saving when required fields are missing or invalid (email format invalid; WhatsApp fails basic phone-number validation; coordinates outside valid ranges)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useCategoryOptions.ts",
+          "path": "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
           "operation": "create",
-          "description": "Create a small hook that composes the existing React Query categories hook and maps results into stable dropdown options (value/label), handling loading/empty states without breaking layout and relying on existing toast + console error strategy. Verify the component's usage instructions before implementing."
+          "description": "Create a reusable per-store form component that renders all required fields with Spanish labels and a Store Hours section with 7 day inputs and the exact helper text. Compose existing UI primitives already used in the admin area (do not modify immutable ui component files)."
         },
         {
-          "path": "frontend/src/components/categories/CategorySelect.tsx",
+          "path": "frontend/src/utils/storeDetailsValidation.ts",
           "operation": "create",
-          "description": "Add a reusable CategorySelect wrapper that composes existing UI Select/SafeSelect components and uses `useCategoryOptions` so dropdowns can be wired to backend categories without hardcoded arrays (preserve existing layout/behavior). Verify the component's usage instructions before implementing."
+          "description": "Add validation helpers for Store Details: required-field checks, email format validation, basic WhatsApp/phone validation, and latitude/longitude range validation using safeConvertToNumber() prior to checking numeric ranges."
         },
         {
-          "path": "frontend/src/pages/admin/CategoriesPage.tsx",
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
           "operation": "modify",
-          "description": "Ensure any category dropdown-related UI within this page (if present now or added previously) uses fetched categories (via the new hook/component) and that failure-to-load does not break layout; keep the existing categories CRUD/reorder UI behavior unchanged aside from data sourcing. Verify the component's usage instructions before implementing."
+          "description": "Integrate StoreDetailsForm into each tab and enforce client-side validation prior to triggering any save action; ensure the UI uses independent state per store and does not share unsaved edits across tabs."
+        }
+      ]
+    },
+    {
+      "id": "REQ-74",
+      "summary": "Add a live preview panel per active store tab that updates immediately as the admin types, including formatted per-day store hours.",
+      "acceptanceCriteria": [
+        "A preview panel is visible for the currently selected store tab.",
+        "Edits to name/address/description/hours immediately reflect in the preview without requiring a save.",
+        "The preview shows store hours per day (Monday–Sunday) using the form’s current values."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
+          "operation": "create",
+          "description": "Create a preview component that renders the current in-progress form state (name/address/description/hours) for the active store and formats store hours per day for display in the preview."
+        },
+        {
+          "path": "frontend/src/utils/storeHoursFormat.ts",
+          "operation": "create",
+          "description": "Add shared formatting helpers to render store hours as a per-day list suitable for the live preview (no collapsing into a single combined string for storage; formatting is display-only)."
+        },
+        {
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Wire the StoreDetailsPreview into the page layout so it updates live from the active tab’s current form state without requiring backend reads or saves."
+        }
+      ]
+    },
+    {
+      "id": "REQ-75",
+      "summary": "Implement per-store save and restore controls with loading states, toast notifications, and correct original-state snapshot behavior.",
+      "acceptanceCriteria": [
+        "Clicking \"Guardar Cambios\" triggers a backend update for the active store only and shows a loading/disabled state while the request is pending.",
+        "On successful save, a success toast is shown and the 'original' values used by \"Restaurar Valores Originales\" update to the newly saved values.",
+        "On save failure, an error toast is shown and the form remains editable without overwriting the last-saved 'original' snapshot.",
+        "Clicking \"Restaurar Valores Originales\" reverts all form fields (including storeHours and coordinates) to the last successfully fetched/saved state for that store tab."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
+          "operation": "create",
+          "description": "Create an actions component providing \"Guardar Cambios\" (with disabled/loading UI) and \"Restaurar Valores Originales\" controls for the active store, emitting callbacks to the page for save/restore behavior while keeping the UI consistent with existing admin styling."
+        },
+        {
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Implement per-store 'original' snapshots (last successfully fetched/saved state) and restore logic; ensure snapshots update only after successful backend save; show success/error toasts via reportSuccessWithToast/reportErrorWithToast with Spanish user messages."
+        }
+      ]
+    },
+    {
+      "id": "REQ-76",
+      "summary": "Create a Store Details data layer using TanStack Query and the existing actor hook with correct BigInt conversions, shared utilities, and Spanish toast-based error strategy.",
+      "acceptanceCriteria": [
+        "Store Details queries/mutations are implemented via TanStack Query and the existing actor access pattern (no ad-hoc global state for server data).",
+        "Latitude/longitude values are converted using `safeConvertToNumber()` and validated for valid coordinate ranges before calling the update mutation.",
+        "The implementation does not introduce any direct `JSON.parse()` or `JSON.stringify()` calls in the Store Details feature code.",
+        "All user-facing error/success feedback for Store Details operations uses the existing toast utilities / `reportErrorWithToast` / `reportSuccessWithToast` with Spanish messages.",
+        "If any serialization is required (e.g., storing a lastUpdated snapshot in browser storage), it uses `stringifyWithBigInt()` and reads back with `parseJSONWithBigInt()` to avoid BigInt errors."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "operation": "create",
+          "description": "Add TanStack Query hooks for Store Details that call actor.getStoreDetails(BigInt(storeId)) and actor.updateStoreDetails(BigInt(storeId), details), with query keys scoped per storeId and error handling routed through reportErrorWithToast/reportSuccessWithToast using Spanish messages. Ensure BigInt/Nat conversions are handled explicitly and consistently."
+        },
+        {
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Use the new Store Details query/mutation hooks to fetch per-store data on tab selection, populate per-store form state, and save changes for the active store only; validate latitude/longitude using safeConvertToNumber() before invoking the mutation; do not introduce JSON.parse/JSON.stringify."
+        },
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Update the frontend backend interface typings for StoreDetails/storeHours to match the new per-day store hours structure and the StoreDetails fields required by the Store Details admin feature, keeping BigInt types where applicable so the TanStack Query layer can perform correct conversions."
         }
       ]
     }

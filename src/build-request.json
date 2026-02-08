@@ -1,143 +1,186 @@
 {
   "kind": "build_request",
-  "title": "Implement persistent backend categories CRUD + reorder and wire frontend to backend APIs",
+  "title": "Admin Store Details management page (two stores) with upgrade-safe backend persistence",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-33",
-      "text": "Implement persistent Categories storage in the single Motoko actor (`backend/main.mo`) using (1) a Map keyed by `Nat` for in-memory operations and (2) stable storage so categories persist across canister upgrades, including a stable `lastCategoryId : Nat` counter.",
+      "id": "REQ-69",
+      "text": "Implement upgrade-safe backend persistence for Store Details for exactly two stores (storeId 1 and 2) in the single Motoko actor, using a `Map<Nat, StoreDetails>` for in-memory access and stable storage so data survives canister upgrades. Each store’s data must be stored independently (no shared state), with store hours persisted per-day (not collapsed into a single string).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Implement the complete backend functionality for categories management and integrate with categories frontend page correctly, to persist data accurately and allow all category page operations to be implemented in the backend.",
-          "// Persistent storage for categories\nvar categories : Map<Nat, Category>;\n\n// Last used categoryId counter\nvar lastCategoryId : Nat = 0;"
+          "Create `/admin/store-details` page for managing information for two physical stores independently, with each store's details correctly persisted in the backend including per-day store hours.",
+          "Backend Persistent Storage: - `var storeDetails : Map<Nat, StoreDetails>;` - One entry per store (storeId 1 and 2) - Data must survive canister upgrades - Store 1 and Store 2 must never share state - each store stored independently - Store hours stored per day per store, not collapsed into single strings"
         ]
       },
       "acceptanceCriteria": [
-        "After deploying and creating categories, performing a canister upgrade preserves all previously created categories and the `lastCategoryId` counter value (i.e., new categories continue incrementing IDs).",
-        "Categories are stored in a `Map<Nat, Category>` during runtime and backed by stable state for upgrades.",
-        "No mock/default categories are added automatically."
+        "Backend defines Motoko types equivalent to the provided TypeScript `StoreHours` and `StoreDetails` (including `storeId`, `name`, `email`, `whatsapp`, `address`, `latitude`, `longitude`, `description`, `storeHours`, `lastUpdated`).",
+        "Backend maintains one stored record per `storeId` (Nat 1 and Nat 2), and reads/writes for store 1 never affect store 2.",
+        "Store hours are stored and returned as a per-day record/object (monday..sunday fields), not as a single combined string.",
+        "All StoreDetails fields are persisted and restored across canister upgrades (including description, coordinates, and each day in storeHours).",
+        "Implementation respects the single-actor architecture (all logic in `backend/main.mo`)."
       ]
     },
     {
-      "id": "REQ-34",
-      "text": "Define a `Category` type in `backend/main.mo` that supports all required fields used by the Categories page: `categoryId : Nat`, `name : Text`, `order : Nat`, `createdDate : Int`, and `lastUpdatedDate : Int` (timestamps from the current canister time).",
+      "id": "REQ-70",
+      "text": "Add backend defaults that are auto-created once per store (storeId 1 and 2) if missing, and then persisted. Defaults must match the user-provided values for store 1 and store 2 (including coordinates and per-day storeHours).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Sets `createdDate` and `lastUpdatedDate` to current timestamp",
-          "Preserves `createdDate` unchanged"
+          "Backend creates defaults once per store if they don't exist",
+          "Store 1 Defaults: ...",
+          "Store 2 Defaults: ..."
         ]
       },
       "acceptanceCriteria": [
-        "The canister Candid interface exposes a Category record with the fields required to support create/update/list/edit and timestamps.",
-        "`createdDate` is set once at creation and never modified by updates/reorders.",
-        "`lastUpdatedDate` is updated on any operation that changes a category (update and reorder; optionally also delete is not applicable)."
+        "Calling `getStoreDetails(1)` on a fresh deployment returns Store 1 default values and persists them so subsequent calls return the same data without reinitializing.",
+        "Calling `getStoreDetails(2)` on a fresh deployment returns Store 2 default values and persists them so subsequent calls return the same data without reinitializing.",
+        "Defaults are created only for the requested storeId (1 does not create 2, and 2 does not create 1).",
+        "The defaults include storeHours for every day (Monday through Sunday)."
       ]
     },
     {
-      "id": "REQ-35",
-      "text": "Add the required backend Categories methods to `backend/main.mo` exactly as specified: `createCategory(name: Text, order: Nat) : async Category`, `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`, `deleteCategory(categoryId: Nat) : async Bool`, `getAllCategories() : async [Category]`, `getCategoryById(categoryId: Nat) : async ?Category`, and `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`. Validate existence for update/delete/reorder targets. `getAllCategories` must return categories sorted by `order`.",
+      "id": "REQ-71",
+      "text": "Expose the required backend API methods for Store Details management: `getStoreDetails(storeId : Nat) : async StoreDetails` and `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()`. `updateStoreDetails` must update/persist all fields (no field dropping) and set `lastUpdated` to the current canister timestamp.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "A. `createCategory(name: Text, order: Nat) : async Category`",
-          "B. `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`",
-          "C. `deleteCategory(categoryId: Nat) : async Bool`",
-          "D. `getAllCategories() : async [Category]`",
-          "E. `getCategoryById(categoryId: Nat) : async ?Category`",
-          "F. `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`"
+          "Required Backend API Methods: - `getStoreDetails(storeId : Nat) : async StoreDetails` - Returns full store details for given storeId - `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()` - Updates all fields for store, sets lastUpdated timestamp",
+          "No field dropping during updates"
         ]
       },
       "acceptanceCriteria": [
-        "`createCategory` increments `lastCategoryId`, assigns the new `categoryId`, sets both timestamps to 'now', stores in the categories map, and returns the full Category.",
-        "`updateCategory` traps or otherwise fails fast if the category does not exist; if it exists, it updates `name`, `order`, updates `lastUpdatedDate`, preserves `createdDate`, and returns the updated Category.",
-        "`deleteCategory` returns `false` if the category does not exist; otherwise removes it and returns `true`.",
-        "`getAllCategories` returns all categories sorted ascending by `order` (stable ordering for equal `order` values should be deterministic).",
-        "`getCategoryById` returns `null`/`?Category` appropriately without trapping for missing categories.",
-        "`reorderCategories` updates the `order` values for all provided `(categoryId, newOrder)` pairs in one call; it must validate all referenced categories exist and return `false` (or trap) if any are missing rather than partially applying changes."
+        "`getStoreDetails(storeId)` returns the full StoreDetails record for that storeId including storeHours per day and lastUpdated.",
+        "`updateStoreDetails(storeId, details)` persists every field from `details` (name/email/whatsapp/address/description/latitude/longitude/storeHours), not only a subset.",
+        "`updateStoreDetails` overwrites the stored value for that storeId only, and does not mutate the other store’s record.",
+        "`lastUpdated` is set by the backend at save time (current canister time) regardless of the incoming `details.lastUpdated`.",
+        "API behavior is deterministic and traps with a clear error for invalid storeIds outside {1,2} (or otherwise rejects them consistently)."
       ]
     },
     {
-      "id": "REQ-36",
-      "text": "Restrict Categories write operations in `backend/main.mo` to admin callers using the existing access control system already present in the canister (i.e., only admins can create, update, delete, or reorder categories). Read operations (`getAllCategories`, `getCategoryById`) must remain callable by authenticated users as needed for category dropdowns across the application.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Only implement the missing backend methods as specified",
-          "Used for category dropdowns throughout the application"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Non-admin callers cannot successfully call `createCategory`, `updateCategory`, `deleteCategory`, or `reorderCategories` (the call traps or is rejected).",
-        "`getAllCategories` and `getCategoryById` are callable without requiring admin permissions so they can power dropdowns across the application.",
-        "Any trap/rejection messages introduced for authorization failures are in English."
-      ]
-    },
-    {
-      "id": "REQ-37",
-      "text": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
+      "id": "REQ-72",
+      "text": "Replace the existing placeholder `frontend/src/pages/admin/StoreDetailsPage.tsx` with a fully functional `/admin/store-details` admin page rendered inside the existing DashboardLayout outlet, using a two-tab interface for managing Store 1 and Store 2 independently (tabs labeled exactly: \"Tienda 1\" and \"Tienda 2\").",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Categories page frontend works but doesn't save/update data in backend",
-          "Integrate with categories frontend page correctly"
+          "Create `/admin/store-details` page...",
+          "Two-Store Tab Interface: - Tab 1: \"Tienda 1\" - Tab 2: \"Tienda 2\" - Each tab shows independent store information - Changes saved independently per store"
         ]
       },
       "acceptanceCriteria": [
-        "Creating a category from the Categories page results in a persisted backend record that appears after page reload.",
-        "Updating a category from the Categories page persists changes and updates timestamps appropriately.",
-        "Deleting a category removes it from backend and it no longer appears after page reload.",
-        "Reordering categories calls `reorderCategories` and the order change is persisted after page reload.",
-        "The frontend no longer silently returns an empty array due to 'method not implemented' checks for categories APIs (errors should surface through the existing error handling/toast strategy)."
+        "Navigating to `/admin/store-details` renders the new management UI (not the placeholder).",
+        "The page shows two tabs labeled \"Tienda 1\" and \"Tienda 2\".",
+        "Switching tabs shows the correct store’s saved data and does not leak unsaved changes between stores.",
+        "The page remains protected by the existing admin route protections (non-admins cannot access it)."
       ]
     },
     {
-      "id": "REQ-38",
-      "text": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
+      "id": "REQ-73",
+      "text": "Implement the Store Information form UI per store with required fields, Spanish labels, and validations: store name, email (email validation), WhatsApp (phone validation), address (textarea), description (textarea), latitude/longitude with defaults, and a Store Hours section with one input per day (Monday–Sunday) using Spanish day labels and the specified helper text and placeholders.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Category dropdowns use hardcoded data instead of backend API",
-          "Only update category dropdowns to use backend API instead of hardcoded data"
+          "Store Information Form (per store): ...",
+          "Store Hours Section (Per Day Inputs): ... Spanish day labels ... Helper text: \"Formato: 9:30 am–10 pm (horas continuas) o 9:30 am–2 pm, 5–10 pm (con pausa)\""
         ]
       },
       "acceptanceCriteria": [
-        "No production UI code contains hardcoded category arrays intended to populate dropdowns; dropdown options come from `getAllCategories()` results.",
-        "If categories fail to load, the UI follows the existing local error handling strategy (toast + console logging) and does not break the layout.",
-        "Existing UI/UX of dropdowns is preserved aside from replacing hardcoded options with fetched options."
+        "Each store tab contains a form with the fields: Nombre de la Tienda, Email de la Tienda, WhatsApp, Dirección (textarea), Descripción de la Tienda (textarea), Latitud, Longitud.",
+        "Latitude/Longitude inputs initialize to the specified defaults when the backend record has no values (fresh defaults) and are displayed as numeric values.",
+        "Store Hours section renders 7 separate inputs with Spanish labels: Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo.",
+        "Each store-hours input shows a placeholder demonstrating the requested format (e.g., \"9:30 am–10 pm\" and/or \"9:30 am–2 pm, 5–10 pm\").",
+        "The helper text is displayed exactly as provided for the store-hours section.",
+        "Client-side validation prevents saving when required fields are missing or invalid (email format invalid; WhatsApp fails basic phone-number validation; coordinates outside valid ranges)."
+      ]
+    },
+    {
+      "id": "REQ-74",
+      "text": "Add a live preview section on the Store Details page that updates in real time as the admin types, showing how the store’s information will appear on the public contact page: description rendering and formatted per-day store hours display.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Live Preview Section: - Shows how store information will appear on contact page - Displays store description as it will render - Shows formatted store hours - Updates in real-time as user types"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A preview panel is visible for the currently selected store tab.",
+        "Edits to name/address/description/hours immediately reflect in the preview without requiring a save.",
+        "The preview shows store hours per day (Monday–Sunday) using the form’s current values."
+      ]
+    },
+    {
+      "id": "REQ-75",
+      "text": "Implement save and restore controls per store: a \"Guardar Cambios\" button with loading state that persists to the backend, and a \"Restaurar Valores Originales\" action that reverts the form to the last successfully saved backend state. Show success/error toast notifications, and only update the locally cached 'saved/original' state after a successful backend save.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Save Controls (per store): - \"Guardar Cambios\" button with loading state - \"Restaurar Valores Originales\" to revert to last saved - Success/error toast notifications - Update local state only after successful backend save"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking \"Guardar Cambios\" triggers a backend update for the active store only and shows a loading/disabled state while the request is pending.",
+        "On successful save, a success toast is shown and the 'original' values used by \"Restaurar Valores Originales\" update to the newly saved values.",
+        "On save failure, an error toast is shown and the form remains editable without overwriting the last-saved 'original' snapshot.",
+        "Clicking \"Restaurar Valores Originales\" reverts all form fields (including storeHours and coordinates) to the last successfully fetched/saved state for that store tab."
+      ]
+    },
+    {
+      "id": "REQ-76",
+      "text": "Create a Store Details frontend data layer using TanStack Query and the existing actor hook to call `getStoreDetails(storeId)` and `updateStoreDetails(storeId, details)`, with correct BigInt/Nat conversions and mandatory shared-utility usage rules applied: do not use `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where serialization is needed; use `safeConvertToNumber()` before validating latitude/longitude; and use the existing toast-based local error strategy for Spanish user messages.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "MANDATORY UTILITIES USAGE: ... USE `parseJSONWithBigInt()` ... USE `stringifyWithBigInt()` ... NEVER use direct `JSON.parse()` or `JSON.stringify()` calls",
+          "USE `safeConvertToNumber()` before validating latitude/longitude coordinates",
+          "USE standardized ApiResponseHandler for all API calls to backend",
+          "USE consistent Spanish error messages for user display"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Store Details queries/mutations are implemented via TanStack Query and the existing actor access pattern (no ad-hoc global state for server data).",
+        "Latitude/longitude values are converted using `safeConvertToNumber()` and validated for valid coordinate ranges before calling the update mutation.",
+        "The implementation does not introduce any direct `JSON.parse()` or `JSON.stringify()` calls in the Store Details feature code.",
+        "All user-facing error/success feedback for Store Details operations uses the existing toast utilities / `reportErrorWithToast` / `reportSuccessWithToast` with Spanish messages.",
+        "If any serialization is required (e.g., storing a lastUpdated snapshot in browser storage), it uses `stringifyWithBigInt()` and reads back with `parseJSONWithBigInt()` to avoid BigInt errors."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
-    "Do not change anything unrelated to Categories backend methods and the minimal frontend wiring needed to use them.",
-    "Do not edit files under `frontend/src/components/ui` (compose them only).",
-    "Do not edit `frontend/src/hooks/useInternetIdentity.ts` / `.tsx`, `frontend/src/hooks/useActor.ts`, or `frontend/src/main.tsx` (immutable paths).",
-    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css` (append new styles only below it if absolutely necessary)."
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css` (preserve exact variable names, values, and structure). If additional CSS is needed, append it only below the existing block.",
+    "Respect the existing single-actor backend architecture: all Motoko logic must live in `backend/main.mo`.",
+    "Do not edit any frontend files under `frontend/src/components/ui` or other paths listed in `SYSTEM_CONTEXT.frontend.immutablePaths`; compose them instead.",
+    "The Store Details feature must manage exactly two stores (storeId 1 and 2) and persist them independently.",
+    "Store hours must be stored per day per store; do not collapse them into a single string field.",
+    "Backend updates must not drop fields: all StoreDetails fields must be persisted on every update."
   ],
   "nonGoals": [
-    "Implementing products management or wiring categories into product creation flows beyond replacing hardcoded dropdown data.",
-    "Changing the visual design of the Categories page UI, admin layout, or adding new admin routes.",
-    "Adding external databases or non-Motoko backend components."
+    "Building the public contact page UI that consumes StoreDetails (only the admin management UI and backend persistence/APIs are in scope).",
+    "Adding third-party maps/geolocation integrations (only storing latitude/longitude and validating ranges is in scope).",
+    "Changing admin authentication/authorization flows beyond using existing admin route protections."
   ],
   "imageRequirements": {
     "required": [],

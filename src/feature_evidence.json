@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-frontend-categories-data-layer-frontend-src-hooks-usequeries-ts-to-call-the-new-backend-methods-without-placeholder-behavior-and-with-correct-type-conversions-for-internet-computer-candid-nat-int-values-e-g-converting-between-number-used-by-ui-code-and-bigint-int-representations-returned-accepted-by-the-actor-ensure-create-update-delete-reorder-operations-actually-persist-and-are-reflected-after-refetch",
-      "featureTitle": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
+      "featureId": "feature-replace-the-existing-placeholder-frontend-src-pages-admin-storedetailspage-tsx-with-a-fully-functional-admin-store-details-admin-page-rendered-inside-the-existing-dashboardlayout-outlet-using-a-two-tab-interface-for-managing-store-1-and-store-2-independently-tabs-labeled-exactly-tienda-1-and-tienda-2",
+      "featureTitle": "Replace the existing placeholder `frontend/src/pages/admin/StoreDetailsPage.tsx` with a fully functional `/admin/store-details` admin page rendered inside the existing DashboardLayout outlet, using a two-tab interface for managing Store 1 and Store 2 independently (tabs labeled exactly: \"Tienda 1\" and \"Tienda 2\").",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/utils/categoryNumeric.ts"
+        "frontend/src/pages/admin/StoreDetailsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,16 +16,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-37"
+        "REQ-72"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-remove-any-hardcoded-category-lists-used-for-category-dropdowns-in-the-frontend-and-replace-them-with-data-fetched-from-the-backend-getallcategories-api-via-the-existing-react-query-approach-while-preserving-existing-ui-behavior-and-layout",
-      "featureTitle": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
+      "featureId": "feature-implement-the-store-information-form-ui-per-store-with-required-fields-spanish-labels-and-validations-store-name-email-email-validation-whatsapp-phone-validation-address-textarea-description-textarea-latitude-longitude-with-defaults-and-a-store-hours-section-with-one-input-per-day-monday-sunday-using-spanish-day-labels-and-the-specified-helper-text-and-placeholders",
+      "featureTitle": "Implement the Store Information form UI per store with required fields, Spanish labels, and validations: store name, email (email validation), WhatsApp (phone validation), address (textarea), description (textarea), latitude/longitude with defaults, and a Store Hours section with one input per day (Monday–Sunday) using Spanish day labels and the specified helper text and placeholders.",
       "files": [
-        "frontend/src/components/categories/CategorySelect.tsx",
-        "frontend/src/hooks/useCategoryOptions.ts"
+        "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx",
+        "frontend/src/utils/storeDetailsValidation.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -37,7 +37,68 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-38"
+        "REQ-73"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-live-preview-section-on-the-store-details-page-that-updates-in-real-time-as-the-admin-types-showing-how-the-store-s-information-will-appear-on-the-public-contact-page-description-rendering-and-formatted-per-day-store-hours-display",
+      "featureTitle": "Add a live preview section on the Store Details page that updates in real time as the admin types, showing how the store’s information will appear on the public contact page: description rendering and formatted per-day store hours display.",
+      "files": [
+        "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx",
+        "frontend/src/utils/storeHoursFormat.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-74"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-save-and-restore-controls-per-store-a-guardar-cambios-button-with-loading-state-that-persists-to-the-backend-and-a-restaurar-valores-originales-action-that-reverts-the-form-to-the-last-successfully-saved-backend-state-show-success-error-toast-notifications-and-only-update-the-locally-cached-saved-original-state-after-a-successful-backend-save",
+      "featureTitle": "Implement save and restore controls per store: a \"Guardar Cambios\" button with loading state that persists to the backend, and a \"Restaurar Valores Originales\" action that reverts the form to the last successfully saved backend state. Show success/error toast notifications, and only update the locally cached 'saved/original' state after a successful backend save.",
+      "files": [
+        "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-75"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-store-details-frontend-data-layer-using-tanstack-query-and-the-existing-actor-hook-to-call-getstoredetails-storeid-and-updatestoredetails-storeid-details-with-correct-bigint-nat-conversions-and-mandatory-shared-utility-usage-rules-applied-do-not-use-json-parse-json-stringify-use-bigintserializer-helpers-where-serialization-is-needed-use-safeconverttonumber-before-validating-latitude-longitude-and-use-the-existing-toast-based-local-error-strategy-for-spanish-user-messages",
+      "featureTitle": "Create a Store Details frontend data layer using TanStack Query and the existing actor hook to call `getStoreDetails(storeId)` and `updateStoreDetails(storeId, details)`, with correct BigInt/Nat conversions and mandatory shared-utility usage rules applied: do not use `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where serialization is needed; use `safeConvertToNumber()` before validating latitude/longitude; and use the existing toast-based local error strategy for Spanish user messages.",
+      "files": [
+        "frontend/src/hooks/useStoreDetailsQueries.ts",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-76"
       ],
       "confidence": "high"
     }

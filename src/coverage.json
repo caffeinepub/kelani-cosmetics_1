@@ -1,68 +1,104 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T23:41:17.466Z",
+  "generatedAt": "2026-02-08T01:07:11.545Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 2,
+    "total": 8,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-33",
-        "summary": "Implement persistent Categories storage in the single Motoko actor (`backend/main.mo`) using (1) a Map keyed by `Nat` for in-memory operations and (2) stable storage so categories persist across canister upgrades, including a stable `lastCategoryId : Nat` counter.",
+        "id": "REQ-69",
+        "summary": "Implement upgrade-safe backend persistence for Store Details for exactly two stores (storeId 1 and 2) in the single Motoko actor, using a `Map<Nat, StoreDetails>` for in-memory access and stable storage so data survives canister upgrades. Each store’s data must be stored independently (no shared state), with store hours persisted per-day (not collapsed into a single string).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-34",
-        "summary": "Define a `Category` type in `backend/main.mo` that supports all required fields used by the Categories page: `categoryId : Nat`, `name : Text`, `order : Nat`, `createdDate : Int`, and `lastUpdatedDate : Int` (timestamps from the current canister time).",
+        "id": "REQ-70",
+        "summary": "Add backend defaults that are auto-created once per store (storeId 1 and 2) if missing, and then persisted. Defaults must match the user-provided values for store 1 and store 2 (including coordinates and per-day storeHours).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-35",
-        "summary": "Add the required backend Categories methods to `backend/main.mo` exactly as specified: `createCategory(name: Text, order: Nat) : async Category`, `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`, `deleteCategory(categoryId: Nat) : async Bool`, `getAllCategories() : async [Category]`, `getCategoryById(categoryId: Nat) : async ?Category`, and `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`. Validate existence for update/delete/reorder targets. `getAllCategories` must return categories sorted by `order`.",
+        "id": "REQ-71",
+        "summary": "Expose the required backend API methods for Store Details management: `getStoreDetails(storeId : Nat) : async StoreDetails` and `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()`. `updateStoreDetails` must update/persist all fields (no field dropping) and set `lastUpdated` to the current canister timestamp.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-36",
-        "summary": "Restrict Categories write operations in `backend/main.mo` to admin callers using the existing access control system already present in the canister (i.e., only admins can create, update, delete, or reorder categories). Read operations (`getAllCategories`, `getCategoryById`) must remain callable by authenticated users as needed for category dropdowns across the application.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-37",
-        "summary": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
+        "id": "REQ-72",
+        "summary": "Replace the existing placeholder `frontend/src/pages/admin/StoreDetailsPage.tsx` with a fully functional `/admin/store-details` admin page rendered inside the existing DashboardLayout outlet, using a two-tab interface for managing Store 1 and Store 2 independently (tabs labeled exactly: \"Tienda 1\" and \"Tienda 2\").",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/utils/categoryNumeric.ts"
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/router.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/utils/categoryNumeric.ts"
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
         ]
       },
       {
-        "id": "REQ-38",
-        "summary": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
+        "id": "REQ-73",
+        "summary": "Implement the Store Information form UI per store with required fields, Spanish labels, and validations: store name, email (email validation), WhatsApp (phone validation), address (textarea), description (textarea), latitude/longitude with defaults, and a Store Hours section with one input per day (Monday–Sunday) using Spanish day labels and the specified helper text and placeholders.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useCategoryOptions.ts",
-          "frontend/src/components/categories/CategorySelect.tsx",
-          "frontend/src/pages/admin/CategoriesPage.tsx"
+          "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
+          "frontend/src/utils/storeDetailsValidation.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useCategoryOptions.ts",
-          "frontend/src/components/categories/CategorySelect.tsx"
+          "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
+          "frontend/src/utils/storeDetailsValidation.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-74",
+        "summary": "Add a live preview section on the Store Details page that updates in real time as the admin types, showing how the store’s information will appear on the public contact page: description rendering and formatted per-day store hours display.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
+          "frontend/src/utils/storeHoursFormat.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
+          "frontend/src/utils/storeHoursFormat.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-75",
+        "summary": "Implement save and restore controls per store: a \"Guardar Cambios\" button with loading state that persists to the backend, and a \"Restaurar Valores Originales\" action that reverts the form to the last successfully saved backend state. Show success/error toast notifications, and only update the locally cached 'saved/original' state after a successful backend save.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-76",
+        "summary": "Create a Store Details frontend data layer using TanStack Query and the existing actor hook to call `getStoreDetails(storeId)` and `updateStoreDetails(storeId, details)`, with correct BigInt/Nat conversions and mandatory shared-utility usage rules applied: do not use `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where serialization is needed; use `safeConvertToNumber()` before validating latitude/longitude; and use the existing toast-based local error strategy for Spanish user messages.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/backend.d.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/backend.d.ts"
         ]
       }
     ]
@@ -76,12 +112,15 @@
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/categories/CategorySelect.tsx",
+    "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
+    "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
+    "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useCategoryOptions.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/utils/categoryNumeric.ts",
+    "frontend/src/hooks/useStoreDetailsQueries.ts",
+    "frontend/src/pages/admin/StoreDetailsPage.tsx",
+    "frontend/src/utils/storeDetailsValidation.ts",
+    "frontend/src/utils/storeHoursFormat.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

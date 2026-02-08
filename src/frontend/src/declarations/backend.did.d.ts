@@ -17,6 +17,58 @@ export interface Category {
   'createdDate' : bigint,
   'lastUpdatedDate' : bigint,
 }
+export interface PaginatedResponse {
+  'totalCount' : bigint,
+  'items' : Array<Product>,
+}
+export interface Product {
+  'categoryId' : bigint,
+  'inStock' : boolean,
+  'name' : string,
+  'createdDate' : bigint,
+  'description' : [] | [string],
+  'isFeatured' : boolean,
+  'barcode' : string,
+  'lastUpdatedDate' : bigint,
+  'photo' : [] | [Uint8Array],
+  'price' : [] | [number],
+}
+export interface SaleItem {
+  'categoryId' : bigint,
+  'categoryName' : string,
+  'saleId' : bigint,
+  'endDate' : bigint,
+  'name' : string,
+  'createdDate' : bigint,
+  'description' : [] | [string],
+  'isActive' : boolean,
+  'barcode' : string,
+  'lastUpdatedDate' : bigint,
+  'salePrice' : number,
+  'price' : [] | [number],
+  'discountPercentage' : number,
+  'productBarcode' : string,
+  'startDate' : bigint,
+}
+export interface SaleItemArray {
+  'totalCount' : bigint,
+  'items' : Array<SaleItem>,
+}
+export interface StoreDetails {
+  'storeId' : bigint,
+  'instagram' : [] | [string],
+  'name' : string,
+  'lastUpdated' : bigint,
+  'createdDate' : bigint,
+  'storeHours' : Array<[string, string]>,
+  'isActive' : boolean,
+  'email' : string,
+  'website' : [] | [string],
+  'facebook' : [] | [string],
+  'address' : string,
+  'phone' : string,
+  'coordinates' : string,
+}
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -25,16 +77,65 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createCategory' : ActorMethod<[string, bigint], Category>,
+  'createProduct' : ActorMethod<
+    [
+      string,
+      string,
+      bigint,
+      [] | [string],
+      [] | [number],
+      boolean,
+      boolean,
+      [] | [Uint8Array],
+    ],
+    Product
+  >,
+  'createSaleItem' : ActorMethod<[string, number, bigint, bigint], SaleItem>,
   'deleteCategory' : ActorMethod<[bigint], boolean>,
+  'deleteProduct' : ActorMethod<[string, string], undefined>,
+  'deleteSaleItem' : ActorMethod<[bigint], boolean>,
+  'filterProductsForSales' : ActorMethod<[string], Array<Product>>,
+  'getActiveSales' : ActorMethod<[], Array<SaleItem>>,
   'getAllCategories' : ActorMethod<[], Array<Category>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCategoryById' : ActorMethod<[bigint], [] | [Category]>,
+  'getFeaturedProducts' : ActorMethod<[], Array<Product>>,
+  'getProduct' : ActorMethod<[string], Product>,
+  'getProductPhoto' : ActorMethod<[string], Uint8Array>,
+  'getProductsPage' : ActorMethod<
+    [string, [] | [bigint], bigint, bigint],
+    PaginatedResponse
+  >,
+  'getSaleItemsPage' : ActorMethod<
+    [string, bigint, bigint, boolean],
+    SaleItemArray
+  >,
+  'getStoreDetails' : ActorMethod<[bigint], StoreDetails>,
+  'getTotalProductCount' : ActorMethod<[], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'reorderCategories' : ActorMethod<[Array<[bigint, bigint]>], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'toggleProductInStock' : ActorMethod<[string], boolean>,
+  'toggleSaleItemActiveStatus' : ActorMethod<[bigint], boolean>,
   'updateCategory' : ActorMethod<[bigint, string, bigint], Category>,
+  'updateProduct' : ActorMethod<
+    [
+      string,
+      string,
+      bigint,
+      [] | [string],
+      [] | [number],
+      boolean,
+      boolean,
+      [] | [Uint8Array],
+    ],
+    Product
+  >,
+  'updateSaleItem' : ActorMethod<[bigint, number, bigint, bigint], SaleItem>,
+  'updateStoreDetails' : ActorMethod<[bigint, StoreDetails], undefined>,
+  'uploadProductPhoto' : ActorMethod<[string, Uint8Array], Product>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

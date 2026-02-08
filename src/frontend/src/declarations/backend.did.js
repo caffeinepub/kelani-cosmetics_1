@@ -20,17 +20,111 @@ export const Category = IDL.Record({
   'createdDate' : IDL.Int,
   'lastUpdatedDate' : IDL.Int,
 });
+export const Product = IDL.Record({
+  'categoryId' : IDL.Nat,
+  'inStock' : IDL.Bool,
+  'name' : IDL.Text,
+  'createdDate' : IDL.Int,
+  'description' : IDL.Opt(IDL.Text),
+  'isFeatured' : IDL.Bool,
+  'barcode' : IDL.Text,
+  'lastUpdatedDate' : IDL.Int,
+  'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  'price' : IDL.Opt(IDL.Float64),
+});
+export const SaleItem = IDL.Record({
+  'categoryId' : IDL.Nat,
+  'categoryName' : IDL.Text,
+  'saleId' : IDL.Nat,
+  'endDate' : IDL.Int,
+  'name' : IDL.Text,
+  'createdDate' : IDL.Int,
+  'description' : IDL.Opt(IDL.Text),
+  'isActive' : IDL.Bool,
+  'barcode' : IDL.Text,
+  'lastUpdatedDate' : IDL.Int,
+  'salePrice' : IDL.Float64,
+  'price' : IDL.Opt(IDL.Float64),
+  'discountPercentage' : IDL.Float64,
+  'productBarcode' : IDL.Text,
+  'startDate' : IDL.Int,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const PaginatedResponse = IDL.Record({
+  'totalCount' : IDL.Nat,
+  'items' : IDL.Vec(Product),
+});
+export const SaleItemArray = IDL.Record({
+  'totalCount' : IDL.Nat,
+  'items' : IDL.Vec(SaleItem),
+});
+export const StoreDetails = IDL.Record({
+  'storeId' : IDL.Nat,
+  'instagram' : IDL.Opt(IDL.Text),
+  'name' : IDL.Text,
+  'lastUpdated' : IDL.Int,
+  'createdDate' : IDL.Int,
+  'storeHours' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+  'isActive' : IDL.Bool,
+  'email' : IDL.Text,
+  'website' : IDL.Opt(IDL.Text),
+  'facebook' : IDL.Opt(IDL.Text),
+  'address' : IDL.Text,
+  'phone' : IDL.Text,
+  'coordinates' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createCategory' : IDL.Func([IDL.Text, IDL.Nat], [Category], []),
+  'createProduct' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Opt(IDL.Text),
+        IDL.Opt(IDL.Float64),
+        IDL.Bool,
+        IDL.Bool,
+        IDL.Opt(IDL.Vec(IDL.Nat8)),
+      ],
+      [Product],
+      [],
+    ),
+  'createSaleItem' : IDL.Func(
+      [IDL.Text, IDL.Float64, IDL.Int, IDL.Int],
+      [SaleItem],
+      [],
+    ),
   'deleteCategory' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'deleteProduct' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'deleteSaleItem' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'filterProductsForSales' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(Product)],
+      ['query'],
+    ),
+  'getActiveSales' : IDL.Func([], [IDL.Vec(SaleItem)], ['query']),
   'getAllCategories' : IDL.Func([], [IDL.Vec(Category)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCategoryById' : IDL.Func([IDL.Nat], [IDL.Opt(Category)], ['query']),
+  'getFeaturedProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
+  'getProduct' : IDL.Func([IDL.Text], [Product], ['query']),
+  'getProductPhoto' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Nat8)], ['query']),
+  'getProductsPage' : IDL.Func(
+      [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
+      [PaginatedResponse],
+      ['query'],
+    ),
+  'getSaleItemsPage' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
+      [SaleItemArray],
+      ['query'],
+    ),
+  'getStoreDetails' : IDL.Func([IDL.Nat], [StoreDetails], []),
+  'getTotalProductCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -43,7 +137,30 @@ export const idlService = IDL.Service({
       [],
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'toggleProductInStock' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'toggleSaleItemActiveStatus' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'updateCategory' : IDL.Func([IDL.Nat, IDL.Text, IDL.Nat], [Category], []),
+  'updateProduct' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Opt(IDL.Text),
+        IDL.Opt(IDL.Float64),
+        IDL.Bool,
+        IDL.Bool,
+        IDL.Opt(IDL.Vec(IDL.Nat8)),
+      ],
+      [Product],
+      [],
+    ),
+  'updateSaleItem' : IDL.Func(
+      [IDL.Nat, IDL.Float64, IDL.Int, IDL.Int],
+      [SaleItem],
+      [],
+    ),
+  'updateStoreDetails' : IDL.Func([IDL.Nat, StoreDetails], [], []),
+  'uploadProductPhoto' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [Product], []),
 });
 
 export const idlInitArgs = [];
@@ -61,17 +178,111 @@ export const idlFactory = ({ IDL }) => {
     'createdDate' : IDL.Int,
     'lastUpdatedDate' : IDL.Int,
   });
+  const Product = IDL.Record({
+    'categoryId' : IDL.Nat,
+    'inStock' : IDL.Bool,
+    'name' : IDL.Text,
+    'createdDate' : IDL.Int,
+    'description' : IDL.Opt(IDL.Text),
+    'isFeatured' : IDL.Bool,
+    'barcode' : IDL.Text,
+    'lastUpdatedDate' : IDL.Int,
+    'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'price' : IDL.Opt(IDL.Float64),
+  });
+  const SaleItem = IDL.Record({
+    'categoryId' : IDL.Nat,
+    'categoryName' : IDL.Text,
+    'saleId' : IDL.Nat,
+    'endDate' : IDL.Int,
+    'name' : IDL.Text,
+    'createdDate' : IDL.Int,
+    'description' : IDL.Opt(IDL.Text),
+    'isActive' : IDL.Bool,
+    'barcode' : IDL.Text,
+    'lastUpdatedDate' : IDL.Int,
+    'salePrice' : IDL.Float64,
+    'price' : IDL.Opt(IDL.Float64),
+    'discountPercentage' : IDL.Float64,
+    'productBarcode' : IDL.Text,
+    'startDate' : IDL.Int,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const PaginatedResponse = IDL.Record({
+    'totalCount' : IDL.Nat,
+    'items' : IDL.Vec(Product),
+  });
+  const SaleItemArray = IDL.Record({
+    'totalCount' : IDL.Nat,
+    'items' : IDL.Vec(SaleItem),
+  });
+  const StoreDetails = IDL.Record({
+    'storeId' : IDL.Nat,
+    'instagram' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+    'lastUpdated' : IDL.Int,
+    'createdDate' : IDL.Int,
+    'storeHours' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+    'isActive' : IDL.Bool,
+    'email' : IDL.Text,
+    'website' : IDL.Opt(IDL.Text),
+    'facebook' : IDL.Opt(IDL.Text),
+    'address' : IDL.Text,
+    'phone' : IDL.Text,
+    'coordinates' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createCategory' : IDL.Func([IDL.Text, IDL.Nat], [Category], []),
+    'createProduct' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Opt(IDL.Text),
+          IDL.Opt(IDL.Float64),
+          IDL.Bool,
+          IDL.Bool,
+          IDL.Opt(IDL.Vec(IDL.Nat8)),
+        ],
+        [Product],
+        [],
+      ),
+    'createSaleItem' : IDL.Func(
+        [IDL.Text, IDL.Float64, IDL.Int, IDL.Int],
+        [SaleItem],
+        [],
+      ),
     'deleteCategory' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'deleteProduct' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'deleteSaleItem' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'filterProductsForSales' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(Product)],
+        ['query'],
+      ),
+    'getActiveSales' : IDL.Func([], [IDL.Vec(SaleItem)], ['query']),
     'getAllCategories' : IDL.Func([], [IDL.Vec(Category)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCategoryById' : IDL.Func([IDL.Nat], [IDL.Opt(Category)], ['query']),
+    'getFeaturedProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
+    'getProduct' : IDL.Func([IDL.Text], [Product], ['query']),
+    'getProductPhoto' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Nat8)], ['query']),
+    'getProductsPage' : IDL.Func(
+        [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
+        [PaginatedResponse],
+        ['query'],
+      ),
+    'getSaleItemsPage' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
+        [SaleItemArray],
+        ['query'],
+      ),
+    'getStoreDetails' : IDL.Func([IDL.Nat], [StoreDetails], []),
+    'getTotalProductCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -84,7 +295,34 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'toggleProductInStock' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'toggleSaleItemActiveStatus' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'updateCategory' : IDL.Func([IDL.Nat, IDL.Text, IDL.Nat], [Category], []),
+    'updateProduct' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Opt(IDL.Text),
+          IDL.Opt(IDL.Float64),
+          IDL.Bool,
+          IDL.Bool,
+          IDL.Opt(IDL.Vec(IDL.Nat8)),
+        ],
+        [Product],
+        [],
+      ),
+    'updateSaleItem' : IDL.Func(
+        [IDL.Nat, IDL.Float64, IDL.Int, IDL.Int],
+        [SaleItem],
+        [],
+      ),
+    'updateStoreDetails' : IDL.Func([IDL.Nat, StoreDetails], [], []),
+    'uploadProductPhoto' : IDL.Func(
+        [IDL.Text, IDL.Vec(IDL.Nat8)],
+        [Product],
+        [],
+      ),
   });
 };
 
