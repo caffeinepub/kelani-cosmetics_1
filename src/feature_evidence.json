@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-public-header-so-that-the-contacto-navigation-link-is-hidden-on-mobile-screens-while-remaining-visible-on-desktop-and-ensure-the-contacto-link-remains-available-in-the-left-side-panel-navigation",
-      "featureTitle": "Update the public header so that the \"Contacto\" navigation link is hidden on mobile screens while remaining visible on desktop, and ensure the \"Contacto\" link remains available in the left side panel navigation.",
+      "featureId": "feature-adjust-the-home-page-hero-banner-background-position-only-on-desktop-768px-apply-background-position-y-170px-to-the-banner-background-image-container-while-preserving-the-current-banner-appearance-on-mobile-768px-use-tailwind-responsive-utilities-arbitrary-properties-if-possible",
+      "featureTitle": "Adjust the home page hero banner background position ONLY on desktop (>=768px): apply `background-position-y: -170px` to the banner background image container, while preserving the current banner appearance on mobile (<768px). Use Tailwind responsive utilities / arbitrary properties if possible.",
       "files": [
-        "frontend/src/components/public/PublicHeader.tsx"
+        "frontend/src/components/public/home/StoreBanner.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -16,16 +16,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-8"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-replace-the-current-intersectionobserver-based-automatic-infinite-scroll-on-the-home-page-categories-list-with-a-throttled-window-scroll-listener-that-triggers-loading-only-when-the-user-scrolls-within-500px-of-the-bottom-of-the-page",
-      "featureTitle": "Replace the current IntersectionObserver-based automatic infinite scroll on the home page categories list with a throttled window scroll listener that triggers loading only when the user scrolls within 500px of the bottom of the page.",
+      "featureId": "feature-expand-the-homepage-search-box-container-width-on-desktop-so-it-aligns-with-the-page-container-max-1200px-and-matches-the-width-edges-of-the-category-headers-and-product-grid-containers-below-preserve-current-search-box-width-behavior-on-mobile",
+      "featureTitle": "Expand the homepage search box container width on desktop so it aligns with the page container (max 1200px) and matches the width/edges of the category headers and product grid containers below. Preserve current search box width behavior on mobile.",
       "files": [
-        "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-        "frontend/src/utils/throttle.ts"
+        "frontend/src/components/public/home/search/SearchBar.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -36,15 +35,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-9"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-change-home-page-category-pagination-so-that-each-scroll-trigger-loads-and-appends-exactly-5-additional-categories-including-their-associated-products-per-existing-implementation-preserving-the-existing-ordering-by-the-category-order-field-and-never-replacing-resetting-categories-already-rendered",
-      "featureTitle": "Change home page category pagination so that each scroll trigger loads and appends exactly 5 additional categories (including their associated products per existing implementation), preserving the existing ordering by the category order field and never replacing/resetting categories already rendered.",
+      "featureId": "feature-update-the-mobile-category-header-layout-in-the-homepage-category-sections-a-move-the-product-count-to-appear-below-the-category-name-on-mobile-left-aligned-in-a-smaller-secondary-style-b-truncate-long-category-names-on-mobile-to-prevent-wrapping-use-an-ellipsis-target-20-25-characters-c-reduce-the-ver-todos-link-font-size-on-mobile-while-keeping-the-desktop-size-unchanged-use-tailwind-responsive-utilities-e-g-md-max-md-for-layout-and-typography-changes",
+      "featureTitle": "Update the mobile category header layout in the homepage category sections: (a) move the product count to appear below the category name on mobile, left-aligned, in a smaller secondary style; (b) truncate long category names on mobile to prevent wrapping (use an ellipsis, target ~20–25 characters); (c) reduce the \"Ver todos\" link font size on mobile while keeping the desktop size unchanged. Use Tailwind responsive utilities (e.g., `md:` / `max-md:`) for layout and typography changes.",
       "files": [
-        "frontend/src/components/public/home/HomepageCategoriesSection.tsx"
+        "frontend/src/components/public/home/CategorySection.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -55,46 +54,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-10"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-and-display-home-page-category-loading-states-beneath-the-last-loaded-category-show-a-centered-spinner-with-the-exact-spanish-text-cargando-m-s-categor-as-during-incremental-fetches-and-when-all-categories-are-loaded-replace-it-with-the-persistent-spanish-message-no-hay-m-s-categor-as-para-mostrar-until-the-user-leaves-the-page",
-      "featureTitle": "Implement and display home page category loading states beneath the last loaded category: show a centered spinner with the exact Spanish text \"Cargando más categorías...\" during incremental fetches, and when all categories are loaded replace it with the persistent Spanish message \"No hay más categorías para mostrar\" until the user leaves the page.",
-      "files": [
-        "frontend/src/components/public/home/HomepageCategoriesSection.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-11"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-reduce-the-home-page-banner-height-by-20-on-mobile-screens-only-keeping-the-desktop-banner-height-unchanged-using-responsive-css-media-queries-added-to-frontend-src-index-css-without-modifying-the-existing-root-css-variables-block",
-      "featureTitle": "Reduce the home page banner height by 20% on mobile screens only, keeping the desktop banner height unchanged, using responsive CSS media queries added to frontend/src/index.css without modifying the existing :root CSS variables block.",
-      "files": [
-        "frontend/src/components/public/home/StoreBanner.tsx",
-        "frontend/src/index.css"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-12"
+        "REQ-3"
       ],
       "confidence": "high"
     }

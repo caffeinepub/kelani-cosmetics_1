@@ -1,117 +1,69 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Mobile header adjustment, banner height tweak, and scroll-triggered homepage category loading",
+  "title": "Homepage responsive layout refinements (banner background position, search width alignment, mobile category header)",
   "requirements": [
     {
-      "id": "REQ-8",
-      "summary": "Hide the \"Contacto\" link in the mobile public header while keeping desktop header behavior and side panel navigation unchanged.",
+      "id": "REQ-1",
+      "summary": "Shift the home hero banner background image vertically on desktop only using Tailwind responsive/arbitrary utilities.",
       "acceptanceCriteria": [
-        "On mobile breakpoints, the header shows only the hamburger menu button and the logo/brand link (no \"Contacto\" link).",
-        "On desktop breakpoints, the header still shows the \"Contacto\" link as it does today.",
-        "The side panel navigation still includes the \"Contacto\" link and it continues to navigate to /contacto.",
-        "No other header navigation behavior is changed."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/public/PublicHeader.tsx",
-          "operation": "modify",
-          "description": "Make the \"Contacto\" header nav link responsive (hidden on mobile, visible on desktop) using existing breakpoint classes; ensure the mobile header visually remains hamburger + logo only while keeping the /contacto Link intact for desktop."
-        },
-        {
-          "path": "frontend/src/components/public/PublicSidePanel.tsx",
-          "operation": "modify",
-          "description": "Confirm the side panel continues to render the \"Contacto\" link pointing to /contacto and that no changes are introduced while adjusting the header behavior."
-        }
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "summary": "Replace IntersectionObserver infinite-scroll triggering on the homepage categories list with a throttled window scroll listener that loads when within 500px of the page bottom.",
-      "acceptanceCriteria": [
-        "Homepage category loading is not triggered by an IntersectionObserver sentinel (remove/disable sentinel-based triggering).",
-        "A scroll event listener is used, and it is throttled to avoid excessive calls during rapid scrolling.",
-        "Distance-to-bottom is computed dynamically from document height and current scroll position.",
-        "A load is triggered only when the user scrolls and the distance to bottom is <= 500px, and only when not already fetching and when more categories exist."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-          "operation": "modify",
-          "description": "Remove sentinel/intersection-observer based triggering and implement a throttled window scroll listener; compute dynamic distance-to-bottom and call loadMore only on scroll when <= 500px, hasMore is true, and not already fetching."
-        },
-        {
-          "path": "frontend/src/hooks/useIntersectionObserver.ts",
-          "operation": "modify",
-          "description": "Ensure the IntersectionObserver hook is no longer required by the homepage categories flow (keep the file if used elsewhere); if unused after changes, simplify exports or add a clear comment noting it is not used by the homepage infinite loading anymore."
-        },
-        {
-          "path": "frontend/src/utils/throttle.ts",
-          "operation": "create",
-          "description": "Add a small, reusable throttle utility for scroll handlers (time-based throttling) to avoid excessive calls during rapid scrolling."
-        }
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "summary": "Change homepage category pagination so each scroll trigger appends exactly 5 categories, preserves ordering, and avoids duplicates or resets.",
-      "acceptanceCriteria": [
-        "Initial home page render shows the first page of categories (as currently implemented), and subsequent loads append additional categories below the existing ones.",
-        "Each scroll-triggered load requests 5 categories per page (page size = 5 for incremental loads).",
-        "Loaded categories include their products exactly as returned today by the existing homepage categories query logic.",
-        "Category ordering remains consistent with the backend-provided ordering (by the existing order field).",
-        "The UI tracks total categories and correctly determines when all categories are loaded (hasMore becomes false at the right time).",
-        "No duplicate categories are appended when loading multiple pages."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-          "operation": "modify",
-          "description": "Set the homepage categories incremental page size to exactly 5 per scroll-triggered load (remove mobile-specific page size reduction for category pagination) while continuing to append newly fetched categories beneath existing ones."
-        },
-        {
-          "path": "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
-          "operation": "modify",
-          "description": "Ensure pagination/accumulation logic supports fixed page size = 5 for incremental loads, never resets already-rendered categories, preserves backend-provided ordering, correctly tracks totalCategories/hasMore, and prevents duplicates across pages."
-        }
-      ]
-    },
-    {
-      "id": "REQ-11",
-      "summary": "Show centered incremental loading and end-of-content states beneath the last category with exact Spanish strings.",
-      "acceptanceCriteria": [
-        "While additional categories are being fetched (incremental fetch), a spinner is shown centered below the last rendered category with the text \"Cargando más categorías...\".",
-        "When there are no more categories to load, the loading area shows only \"No hay más categorías para mostrar\" and the message remains visible without disappearing or reverting.",
-        "The loading/end-of-content UI is positioned below the last loaded category and centered horizontally.",
-        "All displayed strings for these states match the required Spanish text exactly."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-          "operation": "modify",
-          "description": "Render a dedicated bottom status area beneath the last category that (a) shows a centered spinner + exact text \"Cargando más categorías...\" during incremental fetches, and (b) replaces it with the persistent exact text \"No hay más categorías para mostrar\" when hasMore becomes false."
-        }
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "summary": "Reduce the home page banner height by 20% on mobile only via index.css media queries, keeping desktop unchanged and preserving the :root variables block.",
-      "acceptanceCriteria": [
-        "On mobile breakpoints, the banner height is reduced by 20% relative to its current mobile height (e.g., 400px becomes 320px).",
-        "On desktop breakpoints, the banner height remains unchanged compared to current behavior.",
-        "The banner’s text remains readable and remains properly positioned within the reduced banner height (no clipping/overlap).",
-        "Any new CSS required for the mobile-only height adjustment is appended below the existing :root theme variables block in frontend/src/index.css, and the :root block is left completely unchanged (same variable names, values, and structure)."
+        "On screens >= 768px, the banner background is shifted vertically by -170px (Y axis).",
+        "On screens < 768px, the banner background position matches the current production behavior (no Y shift applied).",
+        "Change is implemented via responsive Tailwind classes/arbitrary properties when feasible (no global breaking changes)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/public/home/StoreBanner.tsx",
           "operation": "modify",
-          "description": "Add a stable class name on the banner container (e.g., for targeting in CSS) and adjust Tailwind height usage so mobile height can be reduced via index.css while keeping the existing desktop height behavior unchanged."
-        },
+          "description": "Update the banner background image container classes to apply a desktop-only vertical background-position shift (md and up) using Tailwind responsive utilities/arbitrary property (e.g., md:[background-position-y:-170px]) while preserving the current mobile appearance."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Make the homepage search bar container match the full 1200px page container width on desktop while keeping the current mobile width behavior.",
+      "acceptanceCriteria": [
+        "On desktop (>=768px), the search bar spans the full available width of the 1200px page container (no narrower max-width constraint).",
+        "Left/right edges of the search bar align with the content edges used by the category sections/product grids below.",
+        "On mobile, the search bar retains its current width constraints and centering behavior."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/home/search/SearchBar.tsx",
+          "operation": "modify",
+          "description": "Adjust the SearchBar outer wrapper width constraints so it remains centered/narrower on mobile (current max-width behavior), but becomes full-width within the 1200px container on desktop (e.g., keep max-w-* for base and override with md:max-w-none / md:w-full)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Refine homepage category section headers for mobile: stack product count under the name, truncate long names, and reduce the 'Ver todos' link font size on mobile only.",
+      "acceptanceCriteria": [
+        "Mobile (<768px): category name renders on a single line (no wrapping) via truncation with ellipsis when needed (approx 20–25 chars).",
+        "Mobile (<768px): product count is displayed beneath the category name, left-aligned, and uses a smaller, muted/secondary style.",
+        "Mobile (<768px): the \"Ver todos\" link uses a smaller font size than desktop, remains clearly readable, and does not affect desktop sizing.",
+        "Desktop (>=768px): category name is not truncated; product count remains inline next to the category name as currently displayed; \"Ver todos\" link size remains unchanged from current desktop behavior."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/home/CategorySection.tsx",
+          "operation": "modify",
+          "description": "Update the category header markup/classes to use a mobile-first stacked layout (name on top, count below) with Tailwind responsive utilities (e.g., flex-col on mobile, md:flex-row/md:items-baseline on desktop). Add mobile-only truncation/ellipsis for the category name (e.g., max-md:truncate with a max-md:max-w-[~24ch]) to prevent wrapping, and reduce the 'Ver todos' link font size on mobile only (e.g., text-sm md:text-base) without changing desktop behavior."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Ensure the existing :root theme variables block in frontend/src/index.css remains untouched; only append any additional global CSS below it if needed.",
+      "acceptanceCriteria": [
+        "No edits are made inside the existing `:root { ... }` theme variables block in `frontend/src/index.css`.",
+        "Any new global CSS (if needed) is added after the variables block and does not rename/restructure existing theme variables."
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Append (below the existing :root block without modifying it) responsive CSS media queries that reduce the StoreBanner mobile height by 20% (e.g., 400px -> 320px) while leaving desktop height unchanged; ensure banner content remains readable (no clipping/overlap)."
+          "description": "Do not modify the existing `:root { ... }` variables block. If any global CSS additions are necessary for the layout changes, append them only after the variables block (and keep the block’s names/values/order/structure exactly as-is). If no new CSS is needed, limit this change to a non-functional comment placed after the variables block to document the constraint."
         }
       ]
     }

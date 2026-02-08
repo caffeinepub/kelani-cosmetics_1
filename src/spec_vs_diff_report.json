@@ -1,36 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T22:42:18.649Z",
-  "summary": "REQ-8 and the scroll-based throttled loader UI (REQ-9/REQ-11) appear implemented in the modified public header and homepage categories section. However, the mobile-only banner height reduction (REQ-12) is not evidenced in the provided index.css diff, and the category pagination/append semantics required by REQ-10 cannot be confirmed from the diff summary (hook logic not shown).",
+  "generatedAt": "2026-02-08T23:10:33.821Z",
+  "summary": "REQ-1 appears implemented via a desktop-only Tailwind arbitrary property on the banner background. REQ-2 appears addressed by removing the desktop max-width constraint on the SearchBar container (mobile still constrained). REQ-3 is partially implemented (stacking count on mobile, smaller styles, smaller mobile link font), but the diff does not show CSS-based no-wrap truncation with ellipsis to prevent wrapping on narrow screens. An unrequested change limits the number of products shown on mobile to 4.",
   "missing_requirements": [
     {
-      "id": "REQ-10",
-      "requirement": "Each scroll trigger loads and appends exactly 5 additional categories without replacing/resetting existing ones; preserve backend ordering; track total/hasMore correctly; avoid duplicates.",
-      "reason": "The component passes a pageSize of 5 into the hook, but the diff does not show the hook implementation or any explicit logic proving that each trigger appends exactly 5 additional categories, maintains ordering by the order field, prevents duplicates, and correctly computes hasMore/total.",
+      "id": "REQ-3",
+      "requirement": "On mobile (<768px), truncate long category names to a single line (no wrapping) with an ellipsis to prevent wrapping.",
+      "reason": "The diff truncates the string in JS (`substring(0, 22) + '...'`) but does not apply Tailwind/CSS no-wrap + ellipsis truncation utilities (e.g., `truncate` / `whitespace-nowrap` / `overflow-hidden`). Without those, the title can still wrap on narrow screens, violating the 'single line (no wrapping)' acceptance criterion.",
       "evidence": [
-        "frontend/src/components/public/home/HomepageCategoriesSection.tsx"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "requirement": "Reduce the home page banner height by 20% on mobile screens only via responsive CSS media queries appended below the existing :root block in frontend/src/index.css (do not modify the :root block); desktop banner unchanged.",
-      "reason": "The diff shows the :root block and other CSS, but does not show any appended media-query CSS that adjusts the .store-banner (or banner) height on mobile; StoreBanner was changed to use className=\"store-banner\" but no corresponding CSS change is evidenced.",
-      "evidence": [
-        "frontend/src/index.css",
-        "frontend/src/components/public/home/StoreBanner.tsx"
+        "frontend/src/components/public/home/CategorySection.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
+  "hallucinated_features": [
+    {
+      "description": "Limit products displayed on mobile to the first 4 items in each category section.",
+      "reason": "The BuildRequest does not ask to change how many products are shown per category on mobile; it only requests header layout/typography adjustments.",
+      "evidence": [
+        "frontend/src/components/public/home/CategorySection.tsx"
+      ]
+    }
+  ],
   "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/public/PublicHeader.tsx",
-    "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+    "frontend/src/components/public/home/CategorySection.tsx",
     "frontend/src/components/public/home/StoreBanner.tsx",
-    "frontend/src/index.css",
-    "frontend/src/utils/throttle.ts",
+    "frontend/src/components/public/home/search/SearchBar.tsx",
     "project_state.json"
   ]
 }

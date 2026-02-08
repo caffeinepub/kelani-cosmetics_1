@@ -28,20 +28,31 @@ const CategorySection = React.memo(function CategorySection({
     [openModal]
   );
 
+  // Truncate category name on mobile (approx 22 characters)
+  const truncateName = (name: string) => {
+    if (isMobile && name.length > 22) {
+      return name.substring(0, 22) + '...';
+    }
+    return name;
+  };
+
   return (
     <section className="space-y-4">
       {/* Category Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-2xl font-bold text-foreground">{category.categoryName}</h2>
-          <span className="text-sm text-muted-foreground">
+        {/* Mobile: Stack name and count vertically */}
+        <div className="flex flex-col md:flex-row md:items-baseline md:gap-3">
+          <h2 className="text-2xl font-bold text-foreground">
+            {truncateName(category.categoryName)}
+          </h2>
+          <span className="text-xs md:text-sm text-muted-foreground">
             {Number(category.totalProducts)} productos
           </span>
         </div>
         <Link
           to="/category/$id"
           params={{ id: String(category.categoryId) }}
-          className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors font-medium"
+          className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors font-medium text-sm md:text-base"
         >
           Ver todos
           <ArrowRight className="h-4 w-4" />

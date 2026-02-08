@@ -3,7 +3,7 @@ export default function StoreBanner() {
     <div className="store-banner relative w-full overflow-hidden">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center md:[background-position-y:-170px]"
         style={{ backgroundImage: 'url(https://i.imgur.com/8pXvn3I.png)' }}
       />
       

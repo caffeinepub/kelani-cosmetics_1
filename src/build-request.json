@@ -1,152 +1,93 @@
 {
   "kind": "build_request",
-  "title": "Home page mobile header, banner height, and scroll-triggered category loading",
+  "title": "Home page responsive layout refinements (banner position, search width, mobile category header)",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-8",
-      "text": "Update the public header so that the \"Contacto\" navigation link is hidden on mobile screens while remaining visible on desktop, and ensure the \"Contacto\" link remains available in the left side panel navigation.",
+      "id": "REQ-1",
+      "text": "Adjust the home page hero banner background position ONLY on desktop (>=768px): apply `background-position-y: -170px` to the banner background image container, while preserving the current banner appearance on mobile (<768px). Use Tailwind responsive utilities / arbitrary properties if possible.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Remove the \"Contacto\" link from the mobile header",
-          "Keep the \"Contacto\" link in the left side panel navigation where it currently exists",
-          "Mobile header should only show hamburger menu icon and logo",
-          "Desktop header behavior remains unchanged"
+          "Apply `background-position-y: -170px` to the home page banner image container\n- This adjustment should only apply to desktop screens (768px and wider)\n- Mobile screens should not receive this background position adjustment"
         ]
       },
       "acceptanceCriteria": [
-        "On mobile breakpoints, the header shows only the hamburger menu button and the logo/brand link (no \"Contacto\" link).",
-        "On desktop breakpoints, the header still shows the \"Contacto\" link as it does today.",
-        "The side panel navigation still includes the \"Contacto\" link and it continues to navigate to /contacto.",
-        "No other header navigation behavior is changed."
+        "On screens >= 768px, the banner background is shifted vertically by -170px (Y axis).",
+        "On screens < 768px, the banner background position matches the current production behavior (no Y shift applied).",
+        "Change is implemented via responsive Tailwind classes/arbitrary properties when feasible (no global breaking changes)."
       ]
     },
     {
-      "id": "REQ-9",
-      "text": "Replace the current IntersectionObserver-based automatic infinite scroll on the home page categories list with a throttled window scroll listener that triggers loading only when the user scrolls within 500px of the bottom of the page.",
+      "id": "REQ-2",
+      "text": "Expand the homepage search box container width on desktop so it aligns with the page container (max 1200px) and matches the width/edges of the category headers and product grid containers below. Preserve current search box width behavior on mobile.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Change from automatic infinite scroll to manual trigger loading",
-          "Implement scroll event listener with proper throttling for performance",
-          "Calculate distance to page bottom dynamically",
-          "Trigger loading when user scrolls within 500px of page bottom",
-          "Load only when user actively scrolls near bottom, not automatically"
+          "Expand search box width to match the full width of the page container (1200px maximum on desktop)\n- The search box should align with the categories section below it\n- On mobile, maintain current search box width behavior"
         ]
       },
       "acceptanceCriteria": [
-        "Homepage category loading is not triggered by an IntersectionObserver sentinel (remove/disable sentinel-based triggering).",
-        "A scroll event listener is used, and it is throttled to avoid excessive calls during rapid scrolling.",
-        "Distance-to-bottom is computed dynamically from document height and current scroll position.",
-        "A load is triggered only when the user scrolls and the distance to bottom is <= 500px, and only when not already fetching and when more categories exist."
+        "On desktop (>=768px), the search bar spans the full available width of the 1200px page container (no narrower max-width constraint).",
+        "Left/right edges of the search bar align with the content edges used by the category sections/product grids below.",
+        "On mobile, the search bar retains its current width constraints and centering behavior."
       ]
     },
     {
-      "id": "REQ-10",
-      "text": "Change home page category pagination so that each scroll trigger loads and appends exactly 5 additional categories (including their associated products per existing implementation), preserving the existing ordering by the category order field and never replacing/resetting categories already rendered.",
+      "id": "REQ-3",
+      "text": "Update the mobile category header layout in the homepage category sections: (a) move the product count to appear below the category name on mobile, left-aligned, in a smaller secondary style; (b) truncate long category names on mobile to prevent wrapping (use an ellipsis, target ~20–25 characters); (c) reduce the \"Ver todos\" link font size on mobile while keeping the desktop size unchanged. Use Tailwind responsive utilities (e.g., `md:` / `max-md:`) for layout and typography changes.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "When user scrolls near the bottom of the page (within 500px threshold), load and append 5 additional categories",
-          "Each loaded category should include its associated products as per current implementation",
-          "Newly loaded categories should appear below existing categories on the page",
-          "Append new categories to existing display without replacing or resetting",
-          "Maintain category ordering by existing order field",
-          "Track total number of categories to determine when all have been loaded"
+          "On mobile screens, move product count to appear below the category name\n- Format: Display as \"[number] productos\" in smaller font size than category name\n- Category Name Truncation: Truncate category names after appropriate character count (e.g., 20-25 characters) with ellipsis\n- Reduce font size of \"Ver todo\" link on mobile screens\n- Desktop: Maintain full category name display and current link size"
         ]
       },
       "acceptanceCriteria": [
-        "Initial home page render shows the first page of categories (as currently implemented), and subsequent loads append additional categories below the existing ones.",
-        "Each scroll-triggered load requests 5 categories per page (page size = 5 for incremental loads).",
-        "Loaded categories include their products exactly as returned today by the existing homepage categories query logic.",
-        "Category ordering remains consistent with the backend-provided ordering (by the existing order field).",
-        "The UI tracks total categories and correctly determines when all categories are loaded (hasMore becomes false at the right time).",
-        "No duplicate categories are appended when loading multiple pages."
+        "Mobile (<768px): category name renders on a single line (no wrapping) via truncation with ellipsis when needed (approx 20–25 chars).",
+        "Mobile (<768px): product count is displayed beneath the category name, left-aligned, and uses a smaller, muted/secondary style.",
+        "Mobile (<768px): the \"Ver todos\" link uses a smaller font size than desktop, remains clearly readable, and does not affect desktop sizing.",
+        "Desktop (>=768px): category name is not truncated; product count remains inline next to the category name as currently displayed; \"Ver todos\" link size remains unchanged from current desktop behavior."
       ]
     },
     {
-      "id": "REQ-11",
-      "text": "Implement and display home page category loading states beneath the last loaded category: show a centered spinner with the exact Spanish text \"Cargando más categorías...\" during incremental fetches, and when all categories are loaded replace it with the persistent Spanish message \"No hay más categorías para mostrar\" until the user leaves the page.",
+      "id": "REQ-4",
+      "text": "Preserve the existing `:root` CSS custom properties block in `frontend/src/index.css` exactly as-is (names, values, ordering, and structure). If any additional global CSS is required for these layout changes, append it only below the existing `:root` variables block without editing that block.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Show a loading spinner with Spanish text \"Cargando más categorías...\" while new categories are being fetched",
-          "When all categories have been loaded, display a Spanish message \"No hay más categorías para mostrar\" where the loading indicator would appear",
-          "Show loading indicator below the last loaded category, centered horizontally",
-          "The \"no more categories\" message should replace the loading indicator when all categories are loaded",
-          "The end message should remain visible until user leaves the page",
-          "Spanish interface throughout"
-        ]
-      },
-      "acceptanceCriteria": [
-        "While additional categories are being fetched (incremental fetch), a spinner is shown centered below the last rendered category with the text \"Cargando más categorías...\".",
-        "When there are no more categories to load, the loading area shows only \"No hay más categorías para mostrar\" and the message remains visible without disappearing or reverting.",
-        "The loading/end-of-content UI is positioned below the last loaded category and centered horizontally.",
-        "All displayed strings for these states match the required Spanish text exactly."
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "text": "Reduce the home page banner height by 20% on mobile screens only, keeping the desktop banner height unchanged, using responsive CSS media queries added to frontend/src/index.css without modifying the existing :root CSS variables block.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Reduce the home page banner height by 20% on mobile devices only",
-          "Desktop banner height remains unchanged",
-          "Use responsive CSS media queries to apply height reduction only on mobile screens",
-          "Banner content and layout should adjust proportionally to the reduced height",
           "Do not remove, modify, or overwrite the :root CSS custom properties block in index.css containing all theme color variables. Always preserve the exact variable names, values, and structure, appending new CSS styles only below this block without changes."
         ]
       },
       "acceptanceCriteria": [
-        "On mobile breakpoints, the banner height is reduced by 20% relative to its current mobile height (e.g., 400px becomes 320px).",
-        "On desktop breakpoints, the banner height remains unchanged compared to current behavior.",
-        "The banner’s text remains readable and remains properly positioned within the reduced banner height (no clipping/overlap).",
-        "Any new CSS required for the mobile-only height adjustment is appended below the existing :root theme variables block in frontend/src/index.css, and the :root block is left completely unchanged (same variable names, values, and structure)."
+        "No edits are made inside the existing `:root { ... }` theme variables block in `frontend/src/index.css`.",
+        "Any new global CSS (if needed) is added after the variables block and does not rename/restructure existing theme variables."
       ]
     }
   ],
   "constraints": [
-    "Do not remove, modify, or overwrite the existing :root CSS custom properties block in frontend/src/index.css; only append new CSS styles below it.",
-    "Do not change desktop header behavior; only remove the \"Contacto\" link from the mobile header view.",
-    "Do not remove the \"Contacto\" link from the public side panel navigation.",
-    "Do not change existing product rendering logic within each category section (including current mobile product limits).",
-    "Use the exact Spanish UI strings provided for loading/end-of-content states: \"Cargando más categorías...\" and \"No hay más categorías para mostrar\"."
+    "Frontend-only change; do not introduce backend changes for these UI layout adjustments.",
+    "Use Tailwind CSS responsive utilities for all adjustments if possible (e.g., `md:`/`lg:` for desktop-only, `max-md:`/`sm:` for mobile-only).",
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; only append new CSS below it if required."
   ],
   "nonGoals": [
-    "Do not introduce new routes or new navigation items beyond hiding the existing mobile header \"Contacto\" link.",
-    "Do not change backend canister methods or backend data models for this request.",
-    "Do not redesign the homepage layout beyond the specified banner height adjustment and scroll-loading behavior change.",
-    "Do not add third-party scrolling/infinite-scroll libraries."
+    "Do not change banner image URL, overlay gradient design, or hero text content beyond the specified background positioning behavior.",
+    "Do not change autocomplete/search logic, query behavior, or backend search APIs.",
+    "Do not redesign the homepage layout beyond the specified alignment, spacing, and responsive typography changes."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Refine the home page and navigation for better mobile UX: simplify the mobile header, adjust mobile banner height, and make category loading occur only when the user scrolls near the page bottom with clear loading/end states.
+**Goal:** Refine the homepage responsive layout so the hero banner background positioning, search width alignment, and mobile category headers match the intended desktop/mobile designs.
 
 **Planned changes:**
-- Update the public header so the “Contacto” link is hidden on mobile breakpoints (hamburger + logo only), while keeping desktop header behavior unchanged and retaining “Contacto” in the left side panel navigation linking to `/contacto`.
-- Replace the home page categories IntersectionObserver infinite-scroll trigger with a throttled window scroll listener that loads more only when the user scrolls within 500px of the bottom (and only when not already fetching and more categories exist).
-- Change incremental category pagination so each scroll trigger appends exactly 5 more categories (including associated products per current implementation), preserving category ordering and avoiding duplicates or resetting previously rendered categories.
-- Add a centered loading area beneath the last category: show a spinner with the exact text “Cargando más categorías...” during fetches, and when all categories are loaded show the persistent message “No hay más categorías para mostrar”.
-- Reduce the home page banner height by 20% on mobile only via media-query CSS appended to `frontend/src/index.css`, without modifying the existing `:root` CSS variables block.
+- Apply a desktop-only (>=768px) vertical background-position Y offset of `-170px` to the homepage hero banner background image container, keeping mobile behavior unchanged.
+- Expand the homepage search box container on desktop to match the page container width (max 1200px) and align its left/right edges with the categories and product grid sections below; preserve current mobile sizing/centering.
+- Adjust mobile (<768px) category section headers: move product count under the category name (left-aligned, smaller/secondary styling), truncate long category names to a single line with ellipsis, and reduce the “Ver todos” link font size on mobile only (desktop unchanged).
+- Preserve the existing `:root { ... }` CSS variables block in `frontend/src/index.css` exactly; append any new global CSS only below it if needed.
 
-**User-visible outcome:** On mobile, the header shows only the menu button and logo (with “Contacto” still available in the side panel), the home banner is shorter, and more categories load only as the user scrolls near the bottom—showing “Cargando más categorías...” while loading and “No hay más categorías para mostrar” when finished.
+**User-visible outcome:** On desktop, the banner background is shifted and the search bar aligns with the main content width; on mobile, category headers display more cleanly with truncated titles, a stacked product count, and a smaller “Ver todos” link—without changing existing mobile banner/search behavior.
