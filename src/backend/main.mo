@@ -4,12 +4,10 @@ import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
-import Nat "mo:core/Nat";
 import Array "mo:core/Array";
-import Iter "mo:core/Iter";
+import Nat "mo:core/Nat";
 import Text "mo:core/Text";
-import Int "mo:core/Int";
-import Bool "mo:core/Bool";
+import Float "mo:core/Float";
 import Migration "migration";
 
 (with migration = Migration.run)
@@ -17,21 +15,21 @@ actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  public type UserProfile = {
-    name : Text;
-  };
-
-  var userProfiles = Map.empty<Principal, UserProfile>();
-
   func checkAdmin(caller : Principal) {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
   };
 
+  public type UserProfile = {
+    name : Text;
+  };
+
+  let userProfiles = Map.empty<Principal, UserProfile>();
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
+      Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.get(caller);
   };
@@ -58,7 +56,7 @@ actor {
     lastUpdatedDate : Int;
   };
 
-  var categories = Map.empty<Nat, Category>();
+  let categories = Map.empty<Nat, Category>();
   var lastCategoryId : Nat = 0;
 
   func getCurrentTimestamp() : Int {
@@ -162,7 +160,7 @@ actor {
     lastUpdatedDate : Int;
   };
 
-  var products = Map.empty<Text, Product>();
+  let products = Map.empty<Text, Product>();
 
   public type PaginatedResponse = {
     items : [Product];
@@ -222,16 +220,6 @@ actor {
     search.chars().all(numericCheck);
   };
 
-  func safeSlice(array : [Product], start : Nat, end : Nat) : [Product] {
-    if (start >= array.size()) {
-      return [];
-    } else if (end > array.size()) {
-      array.sliceToArray(start, array.size());
-    } else {
-      array.sliceToArray(start, end);
-    };
-  };
-
   public query ({ caller }) func getProductsPage(search : Text, categoryId : ?Nat, page : Nat, pageSize : Nat) : async PaginatedResponse {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view products");
@@ -248,7 +236,16 @@ actor {
     };
   };
 
-  public shared ({ caller }) func createProduct(barcode : Text, name : Text, categoryId : Nat, description : ?Text, price : ?Float, inStock : Bool, isFeatured : Bool, photo : ?[Nat8]) : async Product {
+  public shared ({ caller }) func createProduct(
+    barcode : Text,
+    name : Text,
+    categoryId : Nat,
+    description : ?Text,
+    price : ?Float,
+    inStock : Bool,
+    isFeatured : Bool,
+    photo : ?[Nat8]
+  ) : async Product {
     checkAdmin(caller);
 
     switch (products.get(barcode)) {
@@ -273,7 +270,16 @@ actor {
     };
   };
 
-  public shared ({ caller }) func updateProduct(barcode : Text, name : Text, categoryId : Nat, description : ?Text, price : ?Float, inStock : Bool, isFeatured : Bool, photo : ?[Nat8]) : async Product {
+  public shared ({ caller }) func updateProduct(
+    barcode : Text,
+    name : Text,
+    categoryId : Nat,
+    description : ?Text,
+    price : ?Float,
+    inStock : Bool,
+    isFeatured : Bool,
+    photo : ?[Nat8]
+  ) : async Product {
     checkAdmin(caller);
 
     switch (products.get(barcode)) {
@@ -409,7 +415,7 @@ actor {
     lastUpdatedDate : Int;
   };
 
-  var saleItems = Map.empty<Nat, SaleItem>();
+  let saleItems = Map.empty<Nat, SaleItem>();
   var lastSaleId : Nat = 0;
 
   func calculateDiscountPercentage(originalPrice : Float, salePrice : Float) : Float {
@@ -517,6 +523,16 @@ actor {
     };
   };
 
+  func safeSlice(array : [Product], start : Nat, end : Nat) : [Product] {
+    if (start >= array.size()) {
+      return [];
+    } else if (end > array.size()) {
+      array.sliceToArray(start, array.size());
+    } else {
+      array.sliceToArray(start, end);
+    };
+  };
+
   public query ({ caller }) func getSaleItemsPage(search : Text, page : Nat, pageSize : Nat, includeInactive : Bool) : async SaleItemArray {
     checkAdmin(caller);
 
@@ -596,6 +612,7 @@ actor {
     name : Text;
     address : Text;
     phone : Text;
+    whatsapp : Text;
     email : Text;
     facebook : ?Text;
     instagram : ?Text;
@@ -607,13 +624,14 @@ actor {
     isActive : Bool;
   };
 
-  var storeDetails = Map.empty<Nat, StoreDetails>();
+  let storeDetails = Map.empty<Nat, StoreDetails>();
 
   let store1Default : StoreDetails = {
     storeId = 1;
     name = "Variety Discount Store";
     address = "1460 Merritt Blvd, Dundalk, MD 21222";
     phone = "(410) 288-6792";
+    whatsapp = "+34 600 111 111";
     email = "variety.discount.store@example.com";
     facebook = ?"/VarietyDiscountBaltimore";
     instagram = null;
@@ -637,6 +655,7 @@ actor {
     name = "Variety Discount Store II";
     address = "5850 Hollins Ferry Road, Baltimore, MD 21227";
     phone = "(443) 234-0005";
+    whatsapp = "+34 600 222 222";
     email = "variety.discount.store2@example.com";
     facebook = ?"/VarietyDiscountBaltimore";
     instagram = null;
@@ -659,7 +678,7 @@ actor {
   // Store Management API
   //------------------------------------
   public shared ({ caller }) func getStoreDetails(storeId : Nat) : async StoreDetails {
-    checkAdmin(caller); // Restrict to admin for now
+    checkAdmin(caller);
 
     switch (storeDetails.get(storeId)) {
       case (?details) { details };
@@ -673,8 +692,25 @@ actor {
     };
   };
 
+  public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized");
+    };
+
+    [
+      (1, switch (storeDetails.get(1)) {
+        case (?details) { details };
+        case (null) { store1Default };
+      }),
+      (2, switch (storeDetails.get(2)) {
+        case (?details) { details };
+        case (null) { store2Default };
+      }),
+    ];
+  };
+
   public shared ({ caller }) func updateStoreDetails(storeId : Nat, details : StoreDetails) : async () {
-    checkAdmin(caller); // Restrict to admin for now
+    checkAdmin(caller);
 
     if (storeId < 1 or storeId > 2) {
       Runtime.trap("Invalid storeId: Must be 1 or 2");
@@ -685,5 +721,505 @@ actor {
     };
 
     storeDetails.add(storeId, updatedDetails);
+  };
+
+  public type ExportProduct = {
+    barcode : Text;
+    name : Text;
+    categoryId : Nat;
+    description : ?Text;
+    price : ?Float;
+    inStock : Bool;
+    isFeatured : Bool;
+    createdDate : Int;
+    lastUpdatedDate : Int;
+  };
+
+  public type ExportPayload = {
+    categories : [Category];
+    products : [ExportProduct];
+    exportTimestamp : Int;
+    itemCounts : {
+      categories : Nat;
+      products : Nat;
+    };
+  };
+
+  public shared ({ caller }) func exportAllData() : async ExportPayload {
+    checkAdmin(caller);
+
+    let allCategories = categories.values().toArray();
+    let allExportProducts = products.values().toArray().map(
+      func(product) {
+        {
+          barcode = product.barcode;
+          name = product.name;
+          categoryId = product.categoryId;
+          description = product.description;
+          price = product.price;
+          inStock = product.inStock;
+          isFeatured = product.isFeatured;
+          createdDate = product.createdDate;
+          lastUpdatedDate = product.lastUpdatedDate;
+        };
+      }
+    );
+    {
+      categories = allCategories;
+      products = allExportProducts;
+      exportTimestamp = Time.now();
+      itemCounts = {
+        categories = allCategories.size();
+        products = allExportProducts.size();
+      };
+    };
+  };
+
+  //---------------------------------------------------
+  // New Types for Homepage Search with Sale Information
+  //---------------------------------------------------
+  public type HomepageSearchResult = {
+    barcode : Text;
+    name : Text;
+    categoryId : Nat;
+    categoryName : Text;
+    price : ?Float;
+    salePrice : ?Float;
+    salePercentage : ?Float;
+    saleIsActive : Bool;
+    productImageUrl : ?Text;
+  };
+
+  public type CategorizedProductData = {
+    categoryId : Nat;
+    categoryName : Text;
+    totalProducts : Nat;
+    products : [Product];
+  };
+
+  public type ProductWithSale = {
+    product : Product;
+    salePrice : ?Float;
+    discountPercentage : ?Float;
+    isOnSale : Bool;
+  };
+
+  public type CategorizedProductWithSale = {
+    categoryId : Nat;
+    categoryName : Text;
+    totalProducts : Nat;
+    products : [ProductWithSale];
+  };
+
+  public type HomepageCategoriesResult = {
+    categories : [CategorizedProductWithSale];
+    totalCategories : Nat;
+  };
+
+  //-----------------------------------------------------------------
+  // Smart Search Homepage Product Search with Autocomplete (Query)
+  // Requires guest-level authentication (includes anonymous principals)
+  //-----------------------------------------------------------------
+  public query ({ caller }) func searchHomepageProducts(searchQuery : Text) : async [HomepageSearchResult] {
+    // Guest-level access allowed (includes anonymous principals)
+    // No explicit check needed as per instructions: "Any user including guests: No check needed"
+
+    let trimmedQuery = searchQuery.trim(#char ' ');
+
+    if (trimmedQuery.size() == 0) {
+      return [];
+    };
+
+    let lowercaseQuery = trimmedQuery.toLower();
+    var results = Array.empty<HomepageSearchResult>();
+
+    let allProducts = products.values().toArray();
+
+    func addResultIfMatch(product : Product) : Bool {
+      if (results.size() >= 10) {
+        return false;
+      };
+
+      let nameMatch = product.name.toLower().contains(#text lowercaseQuery);
+      let barcodeMatch = product.barcode.toLower().contains(#text lowercaseQuery);
+      let descriptionMatch = switch (product.description) {
+        case (null) { false };
+        case (?desc) { desc.toLower().contains(#text lowercaseQuery) };
+      };
+
+      if (nameMatch or barcodeMatch or descriptionMatch) {
+        let categoryName = switch (categories.get(product.categoryId)) {
+          case (null) { "Uncategorized" };
+          case (?category) { category.name };
+        };
+
+        var salePrice : ?Float = null;
+        var salePercentage : ?Float = null;
+        var saleIsActive = false;
+
+        let currentTime = getCurrentTimestamp();
+        let allSales = saleItems.values().toArray();
+
+        for (sale in allSales.values()) {
+          if (
+            sale.productBarcode == product.barcode and
+            currentTime >= sale.startDate and
+            currentTime <= sale.endDate and
+            sale.isActive
+          ) {
+            salePrice := ?sale.salePrice;
+            salePercentage := ?sale.discountPercentage;
+            saleIsActive := true;
+          };
+        };
+
+        let result : HomepageSearchResult = {
+          barcode = product.barcode;
+          name = product.name;
+          categoryId = product.categoryId;
+          categoryName;
+          price = product.price;
+          salePrice;
+          salePercentage;
+          saleIsActive;
+          productImageUrl = ?("/product-images/" # product.barcode # ".jpg");
+        };
+
+        results := results.concat([result]);
+        true;
+      } else {
+        false;
+      };
+    };
+
+    if (isNumeric(trimmedQuery)) {
+      for (product in allProducts.values()) {
+        if (results.size() >= 10) {
+          return results;
+        };
+        if (product.barcode == trimmedQuery) {
+          ignore addResultIfMatch(product);
+          return results;
+        };
+      };
+      return results;
+    } else {
+      for (product in allProducts.values()) {
+        if (results.size() >= 10) {
+          return results;
+        };
+        ignore addResultIfMatch(product);
+      };
+      return results;
+    };
+
+    [];
+  };
+
+  public query ({ caller }) func getCategoryProductCounts() : async [(Nat, Nat)] {
+    // Guest-level access allowed (includes anonymous principals)
+    // No explicit check needed as per instructions: "Any user including guests: No check needed"
+
+    categories.toArray().map(
+      func((categoryId, _category)) {
+        let productCount = products.entries().filter(
+          func((_barcode, product)) {
+            product.categoryId == categoryId;
+          }
+        ).size();
+        (categoryId, productCount);
+      }
+    );
+  };
+
+  public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
+    // Guest-level access allowed (includes anonymous principals)
+    // No explicit check needed as per instructions: "Any user including guests: No check needed"
+
+    let sortedCategories = categories.values().toArray().sort(
+      func(a, b) {
+        Nat.compare(a.order, b.order);
+      }
+    );
+
+    let totalCategories = sortedCategories.size();
+    let start = page * pageSize;
+    let end = start + pageSize;
+
+    if (start >= totalCategories) {
+      return {
+        categories = [];
+        totalCategories;
+      };
+    };
+
+    let pagedCategories = if (end > totalCategories) {
+      sortedCategories.sliceToArray(start, totalCategories);
+    } else {
+      sortedCategories.sliceToArray(start, end);
+    };
+
+    let categorizedProducts = pagedCategories.map(
+      func(category) {
+        // Get the first 5 products for the category, ordering featured before non-featured
+        let allCategoryProducts = products.values().toArray().filter(
+          func(product) {
+            product.categoryId == category.categoryId;
+          }
+        );
+
+        let sortedProducts = allCategoryProducts.sort(
+          func(a, b) {
+            // Featured products first (isFeatured=true gets higher priority)
+            // Reverse comparison so true (1) comes before false (0)
+            Nat.compare(
+              if (b.isFeatured) { 1 } else { 0 },
+              if (a.isFeatured) { 1 } else { 0 },
+            );
+          }
+        );
+
+        let limitedProducts = if (sortedProducts.size() > 5) {
+          sortedProducts.sliceToArray(0, 5);
+        } else {
+          sortedProducts;
+        };
+
+        // Build ProductWithSale array
+        let productsWithSale = limitedProducts.map(
+          func(product) : ProductWithSale {
+            var salePrice : ?Float = null;
+            var discountPercentage : ?Float = null;
+            var isOnSale = false;
+
+            let currentTime = getCurrentTimestamp();
+            let allSales = saleItems.values().toArray();
+
+            for (sale in allSales.values()) {
+              if (
+                sale.productBarcode == product.barcode and
+                currentTime >= sale.startDate and
+                currentTime <= sale.endDate and
+                sale.isActive
+              ) {
+                salePrice := ?sale.salePrice;
+                discountPercentage := ?sale.discountPercentage;
+                isOnSale := true;
+              };
+            };
+
+            {
+              product;
+              salePrice;
+              discountPercentage;
+              isOnSale;
+            };
+          }
+        );
+
+        {
+          categoryId = category.categoryId;
+          categoryName = category.name;
+          totalProducts = allCategoryProducts.size();
+          products = productsWithSale;
+        };
+      }
+    );
+
+    {
+      categories = categorizedProducts;
+      totalCategories;
+    };
+  };
+
+  public type ImportData = {
+    categories : [Category];
+    products : [Product];
+  };
+
+  public type ImportResult = {
+    success : Bool;
+    importedCategoryCount : Nat;
+    importedProductCount : Nat;
+    errorMessages : [Text];
+  };
+
+  public type ImportValidationResult = {
+    isValid : Bool;
+    errorMessages : [Text];
+  };
+
+  public shared ({ caller }) func batchImportData(importData : ImportData) : async ImportResult {
+    checkAdmin(caller);
+
+    // Validate categories first
+    let validationResult = validateCategoryImport(importData.categories);
+
+    if (not validationResult.isValid) {
+      return {
+        success = false;
+        importedCategoryCount = 0;
+        importedProductCount = 0;
+        errorMessages = validationResult.errorMessages;
+      };
+    };
+
+    // Clone categories and update lastCategoryId
+    let clonedCategories = categories;
+
+    var newLastCategoryId = lastCategoryId;
+    for (category in importData.categories.values()) {
+      let isNewCategory = switch (clonedCategories.get(category.categoryId)) {
+        case (null) { true };
+        case (?existingCategory) {
+          existingCategory.name != category.name or existingCategory.order != category.order
+        };
+      };
+
+      if (category.categoryId > newLastCategoryId) {
+        newLastCategoryId := category.categoryId;
+      };
+
+      if (isNewCategory) {
+        clonedCategories.add(category.categoryId, category);
+      };
+    };
+
+    // Validate products
+    let productValidationResult = validateProductImport(importData.products, clonedCategories);
+
+    if (not productValidationResult.isValid) {
+      return {
+        success = false;
+        importedCategoryCount = 0;
+        importedProductCount = 0;
+        errorMessages = productValidationResult.errorMessages;
+      };
+    };
+
+    // Clone products
+    let clonedProducts = products;
+
+    for (product in importData.products.values()) {
+      let isNewProduct = switch (clonedProducts.get(product.barcode)) {
+        case (null) { true };
+        case (?existingProduct) {
+          switch (existingProduct.price, product.price) {
+            // Both prices non-null
+            case (?existingPrice, ?newPrice) {
+              if (existingProduct.barcode != product.barcode or existingProduct.name != product.name or existingProduct.categoryId != product.categoryId or existingProduct.isFeatured != product.isFeatured or existingProduct.description != product.description or existingProduct.inStock != product.inStock or (existingPrice - newPrice) > 1e-6) {
+                true;
+              } else {
+                false;
+              };
+            };
+            // Only one price is null, always update
+            case (null, ?_) { true };
+            case (?_, null) { true };
+            // Both nulls, check other fields
+            case (null, null) { true };
+          };
+        };
+      };
+
+      if (isNewProduct) {
+        clonedProducts.add(product.barcode, product);
+      };
+    };
+
+    // Update actor state with validated/merged data
+    let importedCategoryCount = importData.categories.size();
+    let importedProductCount = importData.products.size();
+
+    categories.clear();
+    for ((k, v) in clonedCategories.entries()) { categories.add(k, v) };
+    lastCategoryId := newLastCategoryId;
+
+    products.clear();
+    for ((k, v) in clonedProducts.entries()) { products.add(k, v) };
+
+    {
+      success = true;
+      importedCategoryCount;
+      importedProductCount;
+      errorMessages = [];
+    };
+  };
+
+  func validateCategoryImport(categoriesToImport : [Category]) : ImportValidationResult {
+    let existingIds = categories.toArray().map(func((id, _)) { id });
+    var errors = Array.empty<Text>();
+
+    func checkCategory(category : Category) {
+      if (existingIds.any(func(id) { id == category.categoryId })) {
+        errors := errors.concat(["Duplicate category ID found: " # category.categoryId.toText()]);
+      };
+    };
+
+    categoriesToImport.forEach(func(category) { checkCategory(category) });
+
+    let categoryIds = categoriesToImport.map(func(category) { category.categoryId });
+    var sortedCategoryIds = Array.tabulate(natCategoryIdsSize(categoryIds), func(i) { categoryIds[i] });
+    sortedCategoryIds := sortedCategoryIds.sort();
+
+    if (sortedCategoryIds.size() > 0) {
+      var previousId = sortedCategoryIds[0];
+      var duplicateMessages = Array.empty<Text>();
+
+      var index = 1;
+      while (index < sortedCategoryIds.size()) {
+        switch (Nat.compare(sortedCategoryIds[index], previousId)) {
+          case (#equal) {
+            duplicateMessages := duplicateMessages.concat(["Duplicate category ID: " # sortedCategoryIds[index].toText()]);
+          };
+          case (_) {};
+        };
+        previousId := sortedCategoryIds[index];
+        index += 1;
+      };
+
+      errors := errors.concat(duplicateMessages);
+    };
+
+    if (errors.size() > 0) {
+      return {
+        isValid = false;
+        errorMessages = errors;
+      };
+    };
+
+    {
+      isValid = true;
+      errorMessages = [];
+    };
+  };
+
+  func natCategoryIdsSize(array : [Nat]) : Nat {
+    array.size();
+  };
+
+  func validateProductImport(productsToImport : [Product], clonedCategories : Map.Map<Nat, Category>) : ImportValidationResult {
+    let categoryIds = clonedCategories.keys().toArray();
+    var errors = Array.empty<Text>();
+
+    func checkProduct(product : Product) {
+      if (not categoryIds.any(func(id) { id == product.categoryId })) {
+        errors := errors.concat(["Invalid category reference in product (Barcode: " # product.barcode # ") -> " # product.categoryId.toText()]);
+      };
+    };
+
+    productsToImport.forEach(func(product) { checkProduct(product) });
+
+    if (errors.size() > 0) {
+      return {
+        isValid = false;
+        errorMessages = errors;
+      };
+    };
+
+    {
+      isValid = true;
+      errorMessages = [];
+    };
   };
 };

@@ -5,6 +5,7 @@ import {
   FolderTree,
   Store,
   Download,
+  Upload,
 } from 'lucide-react';
 
 export default function DashboardHomePage() {
@@ -33,6 +34,11 @@ export default function DashboardHomePage() {
       title: 'Exportar',
       icon: Download,
       path: '/admin/export',
+    },
+    {
+      title: 'Importar',
+      icon: Upload,
+      path: '/admin/import',
     },
   ];
 

@@ -10,12 +10,60 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface CategorizedProductWithSale {
+  'categoryId' : bigint,
+  'totalProducts' : bigint,
+  'categoryName' : string,
+  'products' : Array<ProductWithSale>,
+}
 export interface Category {
   'categoryId' : bigint,
   'order' : bigint,
   'name' : string,
   'createdDate' : bigint,
   'lastUpdatedDate' : bigint,
+}
+export interface ExportPayload {
+  'categories' : Array<Category>,
+  'itemCounts' : { 'categories' : bigint, 'products' : bigint },
+  'products' : Array<ExportProduct>,
+  'exportTimestamp' : bigint,
+}
+export interface ExportProduct {
+  'categoryId' : bigint,
+  'inStock' : boolean,
+  'name' : string,
+  'createdDate' : bigint,
+  'description' : [] | [string],
+  'isFeatured' : boolean,
+  'barcode' : string,
+  'lastUpdatedDate' : bigint,
+  'price' : [] | [number],
+}
+export interface HomepageCategoriesResult {
+  'categories' : Array<CategorizedProductWithSale>,
+  'totalCategories' : bigint,
+}
+export interface HomepageSearchResult {
+  'categoryId' : bigint,
+  'productImageUrl' : [] | [string],
+  'categoryName' : string,
+  'name' : string,
+  'salePercentage' : [] | [number],
+  'barcode' : string,
+  'salePrice' : [] | [number],
+  'price' : [] | [number],
+  'saleIsActive' : boolean,
+}
+export interface ImportData {
+  'categories' : Array<Category>,
+  'products' : Array<Product>,
+}
+export interface ImportResult {
+  'importedCategoryCount' : bigint,
+  'importedProductCount' : bigint,
+  'errorMessages' : Array<string>,
+  'success' : boolean,
 }
 export interface PaginatedResponse {
   'totalCount' : bigint,
@@ -32,6 +80,12 @@ export interface Product {
   'lastUpdatedDate' : bigint,
   'photo' : [] | [Uint8Array],
   'price' : [] | [number],
+}
+export interface ProductWithSale {
+  'isOnSale' : boolean,
+  'salePrice' : [] | [number],
+  'discountPercentage' : [] | [number],
+  'product' : Product,
 }
 export interface SaleItem {
   'categoryId' : bigint,
@@ -60,6 +114,7 @@ export interface StoreDetails {
   'name' : string,
   'lastUpdated' : bigint,
   'createdDate' : bigint,
+  'whatsapp' : string,
   'storeHours' : Array<[string, string]>,
   'isActive' : boolean,
   'email' : string,
@@ -76,6 +131,7 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'batchImportData' : ActorMethod<[ImportData], ImportResult>,
   'createCategory' : ActorMethod<[string, bigint], Category>,
   'createProduct' : ActorMethod<
     [
@@ -94,13 +150,20 @@ export interface _SERVICE {
   'deleteCategory' : ActorMethod<[bigint], boolean>,
   'deleteProduct' : ActorMethod<[string, string], undefined>,
   'deleteSaleItem' : ActorMethod<[bigint], boolean>,
+  'exportAllData' : ActorMethod<[], ExportPayload>,
   'filterProductsForSales' : ActorMethod<[string], Array<Product>>,
   'getActiveSales' : ActorMethod<[], Array<SaleItem>>,
   'getAllCategories' : ActorMethod<[], Array<Category>>,
+  'getBothStoreDetails' : ActorMethod<[], Array<[bigint, StoreDetails]>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCategoryById' : ActorMethod<[bigint], [] | [Category]>,
+  'getCategoryProductCounts' : ActorMethod<[], Array<[bigint, bigint]>>,
   'getFeaturedProducts' : ActorMethod<[], Array<Product>>,
+  'getHomepageCategories' : ActorMethod<
+    [bigint, bigint],
+    HomepageCategoriesResult
+  >,
   'getProduct' : ActorMethod<[string], Product>,
   'getProductPhoto' : ActorMethod<[string], Uint8Array>,
   'getProductsPage' : ActorMethod<
@@ -117,6 +180,7 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'reorderCategories' : ActorMethod<[Array<[bigint, bigint]>], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'searchHomepageProducts' : ActorMethod<[string], Array<HomepageSearchResult>>,
   'toggleProductInStock' : ActorMethod<[string], boolean>,
   'toggleSaleItemActiveStatus' : ActorMethod<[bigint], boolean>,
   'updateCategory' : ActorMethod<[bigint, string, bigint], Category>,

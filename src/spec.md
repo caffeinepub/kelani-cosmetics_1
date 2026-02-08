@@ -1,16 +1,19 @@
 # Specification
 
 ## Summary
-**Goal:** Add an admin Store Details management page for exactly two physical stores (storeId 1 and 2) with upgrade-safe backend persistence, per-day store hours, and independent save/restore workflows per store.
+**Goal:** Add an admin-only Import page to upload an exported JSON file and import categories and products in a single, atomic backend batch request.
 
 **Planned changes:**
-- Implement Motoko StoreDetails persistence in the single backend actor using an in-memory `Map<Nat, StoreDetails>` backed by stable storage so records survive canister upgrades, with independent records for storeId 1 and 2 and per-day store hours (Mon–Sun fields).
-- Add one-time auto-created backend default StoreDetails for storeId 1 and storeId 2 (created only when that specific storeId is requested and missing), persisted after creation.
-- Expose backend APIs `getStoreDetails(storeId : Nat) : async StoreDetails` and `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()`, ensuring all fields are persisted and `lastUpdated` is set by the backend at save time; reject invalid storeIds outside {1,2}.
-- Replace the placeholder admin page with a functional `/admin/store-details` page inside the existing DashboardLayout, using two tabs labeled exactly “Tienda 1” and “Tienda 2”, keeping state isolated per store.
-- Build a per-store Spanish-labeled form with validations for name, email, WhatsApp, address, description, latitude/longitude, and a Store Hours section with 7 per-day inputs (Spanish day labels), required helper text, and placeholders.
-- Add a live preview panel per active tab that updates as the admin types, including description rendering and formatted per-day store hours display.
-- Implement per-store “Guardar Cambios” (loading/disabled while saving) and “Restaurar Valores Originales” controls, with Spanish success/error toast notifications and restore-to-last-successful-backend-state behavior.
-- Create a Store Details frontend data layer using TanStack Query + existing actor hook, with correct Nat/BigInt handling and mandated utilities (no direct `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where needed; use `safeConvertToNumber()` before coordinate validation; use existing toast-based error strategy).
+- Create a new admin-protected route `/admin/import` that accepts previously exported JSON files matching the `ImportData` structure.
+- Add navigation to `/admin/import` from the admin sidebar and admin dashboard, positioned after Export, with correct active-route styling.
+- Build the Import page UI: JSON-only drag-and-drop/click upload, Import Information (filename/counts/date/validity), cancel/clear behavior (including aborting an in-flight request), progress states, and Spanish validation/error messages.
+- Implement client flow to read the file, parse via `parseJSONWithBigInt()`, validate/convert numeric fields, and automatically start the import call (no manual submit button).
+- Use shared API utilities and standardized `ApiResponseHandler` patterns; show Spanish success toast and errors; keep UI responsive for large files.
+- Show Import Results (imported/updated counts + error count), provide links to `/admin/categories` and `/admin/products`, and allow resetting the interface.
+- Add backend actor method `batchImportData(importData: ImportData): async ImportResult` to upsert categories first, then products, in a single request.
+- Enforce atomic/transactional semantics: on any validation/consistency failure, persist nothing and return structured errors.
+- Update backend `lastCategoryId` after category import to avoid future ID conflicts (without decreasing it).
+- Import products by matching on `barcode` (update if exists, create if not) and preserve existing product photo when the incoming photo field is empty/missing on update.
+- Validate category-product references during import and reject/abort atomically if any product references an invalid categoryId.
 
-**User-visible outcome:** Admin users can visit `/admin/store-details`, switch between “Tienda 1” and “Tienda 2”, edit each store’s details and per-day hours with live preview, save changes independently with feedback, and restore the last saved values; data persists across canister upgrades.
+**User-visible outcome:** Admins can navigate to `/admin/import`, drop/select an exported JSON file, see validation info, and have categories/products imported automatically in one atomic operation, with Spanish status messages, a success toast, and a results summary plus links to manage categories/products.

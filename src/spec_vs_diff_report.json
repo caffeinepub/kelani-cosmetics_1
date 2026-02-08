@@ -1,90 +1,107 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T01:07:11.539Z",
-  "summary": "Diff adds a new Store Details admin UI (form/actions/preview) and a React Query data hook, plus a Motoko migration module and changes to backend/main.mo. However, the backend StoreDetails model and persistence approach shown do not match the requested per-day storeHours shape and required fields, defaults for exactly storeId 1/2 are not evidenced, and the frontend data layer violates the no-JSON.parse/stringify rule and mismaps required fields (whatsapp/description).",
+  "generatedAt": "2026-02-08T15:09:51.226Z",
+  "summary": "Diff adds an admin Import page route and navigation entries, plus frontend import hook/validation utilities. However, several key requirements (especially backend batch import/atomic behavior and parts of the import UI/flow) are not verifiable from the provided truncated diff, and a migration module was added without an explicit requirement.",
   "missing_requirements": [
     {
-      "id": "REQ-69",
-      "requirement": "Upgrade-safe backend persistence for Store Details for exactly two stores (storeId 1 and 2) using Map<Nat, StoreDetails> with stable storage, per-day storeHours object (monday..sunday), and Motoko types equivalent to TS (storeId, name, email, whatsapp, address, latitude, longitude, description, storeHours, lastUpdated).",
-      "reason": "The only explicit backend StoreDetails type shown (in backend/migration.mo) does not match the required shape: it uses `phone` instead of `whatsapp`, `coordinates : Text` instead of separate latitude/longitude fields, `storeHours : [(Text, Text)]` (tuple array) instead of a per-day record/object, and includes extra fields not requested. The backend/main.mo diff portion shown does not evidence the required stable storage + in-memory Map for store details or the correct types in main.mo.",
+      "id": "REQ-3",
+      "requirement": "Import page must provide drag-and-drop + click-to-select area accepting only .json, show valid/invalid indicator and compatibility message, and include a cancel/clear button that aborts an in-progress import request.",
+      "reason": "ImportPage.tsx is truncated before the UI implementation for dropzone accept/reject behavior, validation indicators/messages, and cancel behavior during the actual backend request can be confirmed. While an AbortController/resetState exists, it is not evident that it cancels an in-flight actor call or that drop rejection/accept attributes and Spanish errors are wired.",
+      "evidence": [
+        "frontend/src/pages/admin/ImportPage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Client-side flow must read file with FileReader, parse using parseJSONWithBigInt(), validate structure/types with numeric conversion, and auto-trigger backend import (no extra click) with coarse progress states.",
+      "reason": "Parsing with parseJSONWithBigInt() and auto-start intent are shown, but the diff shows using file.text() rather than FileReader, and the code section that prepares validated/converted ImportData and triggers the backend call is truncated.",
+      "evidence": [
+        "frontend/src/pages/admin/ImportPage.tsx (truncated)",
+        "frontend/src/utils/importValidation.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Use standardized ApiResponseHandler patterns for backend import request, show Spanish errors, and show a Spanish success toast summarizing imported/updated counts.",
+      "reason": "useAdminImport uses createApiError and imports ApiResponseHandler utilities, but the standardized handler usage and success toast summarizing imported/updated counts are not confirmed in the truncated ImportPage implementation. Also, the returned result shape in useAdminImport does not show 'updated' counts.",
+      "evidence": [
+        "frontend/src/hooks/useAdminImport.ts",
+        "frontend/src/pages/admin/ImportPage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "After import completion, show Import Results section with imported/updated counts for categories/products and error count, plus links to /admin/categories and /admin/products and a reset action.",
+      "reason": "ImportPage.tsx is truncated before any completed/results UI can be verified (counts display, error count, action links, reset/clear results).",
+      "evidence": [
+        "frontend/src/pages/admin/ImportPage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "Backend must expose batchImportData(importData: ImportData): async ImportResult handling full import in a single call and returning counts and errors.",
+      "reason": "Frontend calls actor.batchImportData, but the backend/main.mo diff is truncated and does not show the batchImportData method definition or ImportResult shape.",
+      "evidence": [
+        "frontend/src/hooks/useAdminImport.ts",
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "batchImportData must be atomic/transactional: any failure causes rollback/no partial persistence and returns structured errors.",
+      "reason": "No evidence in the truncated backend diff that the import applies changes atomically or performs rollback on failure.",
+      "evidence": [
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "requirement": "After importing categories, lastCategoryId must be updated to at least (max imported categoryId + 1) without decreasing.",
+      "reason": "A migration module contains logic to recompute lastCategoryId from existing categories, but there is no visible evidence that batchImportData updates lastCategoryId based on imported IDs at import time.",
       "evidence": [
         "backend/migration.mo",
         "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-70",
-      "requirement": "Backend defaults auto-created once per store (storeId 1 and 2) if missing, persisted, created only for requested storeId, including storeHours for every day.",
-      "reason": "No default values for storeId 1/2 are shown anywhere in the diff summary. The migration initializes `storeDetails` to an empty map, but does not define per-store defaults or lazy creation behavior.",
+      "id": "REQ-10",
+      "requirement": "Product import must upsert by barcode; preserve existing photo when imported product photo is missing/empty on update.",
+      "reason": "No evidence in the truncated backend diff that products are matched by barcode, upserted, or that photo preservation logic exists.",
       "evidence": [
-        "backend/migration.mo",
         "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-71",
-      "requirement": "Expose backend API methods `getStoreDetails(storeId : Nat) : async StoreDetails` and `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()`, updating all fields and setting lastUpdated to current canister time, rejecting invalid storeIds outside {1,2}.",
-      "reason": "The backend/main.mo excerpt shown contains no Store Details API methods; only category/profile-related methods are visible in the truncation. The migration file contains no public canister methods either (only `run`).",
+      "id": "REQ-11",
+      "requirement": "Import must reject/abort if any product references invalid categoryId after category upsert, and do so atomically.",
+      "reason": "No evidence in the truncated backend diff of category reference validation and atomic abort behavior.",
       "evidence": [
-        "backend/main.mo (truncated)",
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "id": "REQ-73",
-      "requirement": "Store Information form with required fields and validations including WhatsApp (not phone), latitude/longitude fields, Store Hours helper text displayed exactly as provided, and placeholders demonstrating the requested hour formats.",
-      "reason": "The form field shown is labeled WhatsApp but is wired to `phone` (`id=\"phone\"`, `value={formData.phone}`, `onChange('phone', ...)`) rather than a `whatsapp` field. The StoreHours helper text and required exact helper copy are not evidenced in the truncated form. Placeholders for each day are also not evidenced in the truncated portion.",
-      "evidence": [
-        "frontend/src/components/admin/store-details/StoreDetailsForm.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-76",
-      "requirement": "Frontend Store Details data layer must not use JSON.parse/JSON.stringify; must use BigIntSerializer helpers when serialization is needed; must use safeConvertToNumber() before validating coords; use toast utilities for Spanish messages.",
-      "reason": "The Store Details query hook explicitly uses `JSON.parse` and `JSON.stringify` for coordinates, violating the requirement. While safeConvertToNumber is used in validation flow (page + validation util), the no-JSON requirement is not met.",
-      "evidence": [
-        "frontend/src/hooks/useStoreDetailsQueries.ts"
+        "backend/main.mo (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Introduced a separate Motoko module `backend/migration.mo` containing logic/types, despite the constraint that all Motoko logic must live in `backend/main.mo`.",
-      "reason": "BuildRequest constraint requires single-actor backend architecture with all Motoko logic in backend/main.mo; diff adds backend/migration.mo with types and a `run` function.",
+      "description": "Added backend stable-state migration module (migration.mo) and wired actor to run migration.",
+      "reason": "BuildRequest allows adding migration.mo only if strictly necessary, but it did not explicitly request a migration. The diff introduces backend/migration.mo and modifies backend/main.mo to include it regardless of demonstrated necessity in the diff summary.",
       "evidence": [
         "backend/migration.mo",
-        "backend/main.mo (imports Migration and uses `(with migration = Migration.run)`)"
-      ]
-    },
-    {
-      "description": "Frontend data layer parses/serializes coordinates via JSON.parse/JSON.stringify.",
-      "reason": "BuildRequest explicitly forbids JSON.parse/JSON.stringify usage in Store Details feature code; diff adds them.",
-      "evidence": [
-        "frontend/src/hooks/useStoreDetailsQueries.ts"
-      ]
-    },
-    {
-      "description": "Backend/Frontend StoreDetails model deviates from requested fields by using `phone` and reusing `website` for description, plus storing coordinates as a JSON string field `coordinates`.",
-      "reason": "BuildRequest requires `whatsapp`, `description`, and separate numeric `latitude`/`longitude` persisted end-to-end with no field dropping; diff maps description into `website` and uses a JSON string `coordinates` field.",
-      "evidence": [
-        "backend/migration.mo",
-        "frontend/src/hooks/useStoreDetailsQueries.ts"
+        "backend/main.mo (truncated)"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
-    "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
-    "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
-    "frontend/src/hooks/useStoreDetailsQueries.ts",
-    "frontend/src/pages/admin/StoreDetailsPage.tsx",
-    "frontend/src/utils/storeDetailsValidation.ts",
-    "frontend/src/utils/storeHoursFormat.ts",
+    "frontend/src/components/admin/AdminSidebar.tsx",
+    "frontend/src/hooks/useAdminImport.ts",
+    "frontend/src/pages/admin/DashboardHomePage.tsx",
+    "frontend/src/pages/admin/ImportPage.tsx",
+    "frontend/src/router.tsx",
+    "frontend/src/utils/importValidation.ts",
     "project_state.json"
   ]
 }

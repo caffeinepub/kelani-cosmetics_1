@@ -6,6 +6,7 @@ import {
   FolderTree,
   Store,
   Download,
+  Upload,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,11 @@ const navItems = [
     title: 'Exportar',
     icon: Download,
     path: '/admin/export',
+  },
+  {
+    title: 'Importar',
+    icon: Upload,
+    path: '/admin/import',
   },
 ];
 

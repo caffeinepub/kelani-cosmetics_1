@@ -19,6 +19,7 @@ export interface StoreDetails {
   name: string;
   email: string;
   phone: string;
+  whatsapp: string;
   address: string;
   description: string;
   latitude: number;
@@ -83,6 +84,7 @@ function backendStoreDetailsToUI(backend: BackendStoreDetails): StoreDetails {
     name: backend.name,
     email: backend.email,
     phone: backend.phone,
+    whatsapp: backend.whatsapp,
     address: backend.address,
     description,
     latitude,
@@ -118,20 +120,21 @@ function uiStoreDetailsToBackend(ui: StoreDetails): BackendStoreDetails {
     name: ui.name,
     email: ui.email,
     phone: ui.phone,
+    whatsapp: ui.whatsapp,
     address: ui.address,
     facebook: undefined,
     instagram: undefined,
-    website: ui.description, // Store description in website field
+    website: ui.description,
     coordinates,
     storeHours: storeHoursArray,
-    createdDate: BigInt(Date.now() * 1000000), // Will be overwritten by backend
+    createdDate: BigInt(Date.now()) * BigInt(1000000),
     lastUpdated: ui.lastUpdated,
     isActive: true,
   };
 }
 
 /**
- * Fetch store details for a specific store
+ * Hook to fetch store details by storeId
  */
 export function useGetStoreDetails(storeId: number) {
   const { actor, isFetching: actorFetching } = useActor();
@@ -140,47 +143,57 @@ export function useGetStoreDetails(storeId: number) {
     queryKey: QUERY_KEYS.storeDetails(storeId),
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-
+      
       try {
-        const backendDetails = await actor.getStoreDetails(BigInt(storeId));
-        return backendStoreDetailsToUI(backendDetails);
+        const backendData = await actor.getStoreDetails(BigInt(storeId));
+        return backendStoreDetailsToUI(backendData);
       } catch (error) {
-        reportErrorWithToast(
-          error,
-          'Error al cargar los datos de la tienda',
-          { operation: 'getStoreDetails', additionalInfo: { storeId } }
-        );
+        console.error(`Error fetching store ${storeId} details:`, error);
         throw error;
       }
     },
     enabled: !!actor && !actorFetching,
-    retry: 1,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 }
 
 /**
- * Update store details
+ * Hook to update store details
  */
 export function useUpdateStoreDetails() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (details: StoreDetails) => {
+  return useMutation<StoreDetails, Error, StoreDetails>({
+    mutationFn: async (storeDetails: StoreDetails) => {
       if (!actor) throw new Error('Actor not available');
 
-      const backendDetails = uiStoreDetailsToBackend(details);
-      await actor.updateStoreDetails(BigInt(details.storeId), backendDetails);
-      return details;
+      try {
+        const backendData = uiStoreDetailsToBackend(storeDetails);
+        await actor.updateStoreDetails(backendData.storeId, backendData);
+        
+        // Return the updated data
+        return storeDetails;
+      } catch (error) {
+        console.error('Error updating store details:', error);
+        throw error;
+      }
     },
-    onSuccess: (details) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storeDetails(details.storeId) });
-      reportSuccessWithToast('Cambios guardados exitosamente');
+    onSuccess: (data) => {
+      // Invalidate and refetch the specific store details
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.storeDetails(data.storeId),
+      });
+      
+      reportSuccessWithToast(
+        `Datos de Tienda ${data.storeId} guardados correctamente`
+      );
     },
     onError: (error) => {
       reportErrorWithToast(
         error,
-        'Error al guardar los cambios',
+        'Error al guardar los datos de la tienda',
         { operation: 'updateStoreDetails' }
       );
     },

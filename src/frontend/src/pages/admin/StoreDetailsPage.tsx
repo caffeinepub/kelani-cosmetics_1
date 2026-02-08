@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Store } from 'lucide-react';
+import { Store, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import StoreDetailsForm from '../../components/admin/store-details/StoreDetailsForm';
 import StoreDetailsPreview from '../../components/admin/store-details/StoreDetailsPreview';
 import StoreDetailsActions from '../../components/admin/store-details/StoreDetailsActions';
@@ -10,6 +11,7 @@ import type { StoreDetails } from '../../hooks/useStoreDetailsQueries';
 import { validateStoreDetails } from '../../utils/storeDetailsValidation';
 import { safeConvertToNumber } from '../../utils/NumericConverter';
 import { reportErrorWithToast } from '../../utils/reportErrorWithToast';
+import { stringifyWithBigInt } from '../../utils/BigIntSerializer';
 
 export default function StoreDetailsPage() {
   const [activeTab, setActiveTab] = useState<'1' | '2'>('1');
@@ -20,27 +22,48 @@ export default function StoreDetailsPage() {
   const [errors1, setErrors1] = useState<Record<string, string>>({});
   const [errors2, setErrors2] = useState<Record<string, string>>({});
 
-  // Fetch store details
-  const { data: store1Data, isLoading: isLoading1, isFetched: isFetched1 } = useGetStoreDetails(1);
-  const { data: store2Data, isLoading: isLoading2, isFetched: isFetched2 } = useGetStoreDetails(2);
+  // Fetch store details with individual queries
+  const store1Query = useGetStoreDetails(1);
+  const store2Query = useGetStoreDetails(2);
 
   // Update mutation
   const updateMutation = useUpdateStoreDetails();
 
-  // Initialize form data when store data is loaded
+  // Show error toasts for fetch failures
   useEffect(() => {
-    if (store1Data && !formData1) {
-      setFormData1(store1Data);
-      setOriginalData1(store1Data);
+    if (store1Query.isError && store1Query.error) {
+      reportErrorWithToast(
+        store1Query.error,
+        'Error al cargar los datos de Tienda 1',
+        { operation: 'fetchStore1', component: 'StoreDetailsPage' }
+      );
     }
-  }, [store1Data, formData1]);
+  }, [store1Query.isError, store1Query.error]);
 
   useEffect(() => {
-    if (store2Data && !formData2) {
-      setFormData2(store2Data);
-      setOriginalData2(store2Data);
+    if (store2Query.isError && store2Query.error) {
+      reportErrorWithToast(
+        store2Query.error,
+        'Error al cargar los datos de Tienda 2',
+        { operation: 'fetchStore2', component: 'StoreDetailsPage' }
+      );
     }
-  }, [store2Data, formData2]);
+  }, [store2Query.isError, store2Query.error]);
+
+  // Initialize form data when store data is loaded
+  useEffect(() => {
+    if (store1Query.data && !formData1) {
+      setFormData1(store1Query.data);
+      setOriginalData1(store1Query.data);
+    }
+  }, [store1Query.data, formData1]);
+
+  useEffect(() => {
+    if (store2Query.data && !formData2) {
+      setFormData2(store2Query.data);
+      setOriginalData2(store2Query.data);
+    }
+  }, [store2Query.data, formData2]);
 
   // Update original data after successful save
   useEffect(() => {
@@ -77,57 +100,80 @@ export default function StoreDetailsPage() {
     const formData = storeId === 1 ? formData1 : formData2;
     const setErrors = storeId === 1 ? setErrors1 : setErrors2;
 
-    if (!formData) return;
-
-    // Convert coordinates to numbers
-    const latitude = safeConvertToNumber(formData.latitude);
-    const longitude = safeConvertToNumber(formData.longitude);
-
-    if (latitude === null || longitude === null) {
+    if (!formData) {
       reportErrorWithToast(
-        new Error('Invalid coordinates'),
-        'Las coordenadas deben ser números válidos'
+        new Error('No form data'),
+        'No hay datos para guardar',
+        { operation: 'save', component: 'StoreDetailsPage' }
       );
       return;
     }
 
-    // Prepare data for validation
-    const dataToValidate = {
-      ...formData,
-      latitude,
-      longitude,
-    };
+    try {
+      // Convert coordinates to numbers
+      const latitude = safeConvertToNumber(formData.latitude);
+      const longitude = safeConvertToNumber(formData.longitude);
 
-    // Validate
-    const validation = validateStoreDetails(dataToValidate);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
+      if (latitude === null || longitude === null) {
+        reportErrorWithToast(
+          new Error('Invalid coordinates'),
+          'Las coordenadas deben ser números válidos'
+        );
+        return;
+      }
+
+      // Prepare data for validation
+      const dataToValidate = {
+        ...formData,
+        latitude,
+        longitude,
+      };
+
+      // Validate
+      const validation = validateStoreDetails(dataToValidate);
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        reportErrorWithToast(
+          new Error('Validation failed'),
+          'Por favor, corrija los errores en el formulario'
+        );
+        return;
+      }
+
+      // Clear errors
+      setErrors({});
+
+      // Save with error handling
+      await updateMutation.mutateAsync({
+        ...formData,
+        latitude,
+        longitude,
+      });
+    } catch (error) {
       reportErrorWithToast(
-        new Error('Validation failed'),
-        'Por favor, corrija los errores en el formulario'
+        error,
+        'Error al guardar los datos de la tienda',
+        { operation: 'save', component: 'StoreDetailsPage', additionalInfo: { storeId } }
       );
-      return;
     }
-
-    // Clear errors
-    setErrors({});
-
-    // Save
-    await updateMutation.mutateAsync({
-      ...formData,
-      latitude,
-      longitude,
-    });
   };
 
   const handleRestore = (storeId: 1 | 2) => {
-    const originalData = storeId === 1 ? originalData1 : originalData2;
-    const setFormData = storeId === 1 ? setFormData1 : setFormData2;
-    const setErrors = storeId === 1 ? setErrors1 : setErrors2;
+    try {
+      const originalData = storeId === 1 ? originalData1 : originalData2;
+      const setFormData = storeId === 1 ? setFormData1 : setFormData2;
+      const setErrors = storeId === 1 ? setErrors1 : setErrors2;
 
-    if (originalData) {
-      setFormData({ ...originalData });
-      setErrors({});
+      if (originalData) {
+        setFormData({ ...originalData });
+        setErrors({});
+      }
+    } catch (error) {
+      reportErrorWithToast(
+        error,
+        'Error al restaurar los datos originales',
+        { operation: 'restore', component: 'StoreDetailsPage', additionalInfo: { storeId } }
+      );
     }
   };
 
@@ -137,10 +183,131 @@ export default function StoreDetailsPage() {
 
     if (!formData || !originalData) return false;
 
-    return JSON.stringify(formData) !== JSON.stringify(originalData);
+    try {
+      // Use BigInt-safe serialization for comparison
+      return stringifyWithBigInt(formData) !== stringifyWithBigInt(originalData);
+    } catch (error) {
+      // If serialization fails, report error and treat as no changes to prevent crashes
+      reportErrorWithToast(
+        error,
+        'Error al comparar cambios en el formulario',
+        { operation: 'hasChanges', component: 'StoreDetailsPage', additionalInfo: { storeId } }
+      );
+      return false;
+    }
   };
 
-  const isLoading = isLoading1 || isLoading2;
+  const handleRetry = (storeId: 1 | 2) => {
+    if (storeId === 1) {
+      store1Query.refetch();
+    } else {
+      store2Query.refetch();
+    }
+  };
+
+  // Render store placeholder with retry
+  const renderStorePlaceholder = (storeId: 1 | 2, storeName: string) => {
+    const query = storeId === 1 ? store1Query : store2Query;
+    const isLoading = query.isLoading;
+    const isError = query.isError;
+
+    if (isLoading) {
+      return (
+        <div className="rounded-lg border border-border bg-card p-12 text-center">
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-lg text-muted-foreground">Cargando datos de {storeName}...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (isError) {
+      return (
+        <div className="rounded-lg border border-destructive/50 bg-card p-12 text-center">
+          <div className="space-y-4">
+            <p className="text-lg text-destructive">
+              No se pudieron cargar los datos de {storeName}
+            </p>
+            <Button
+              onClick={() => handleRetry(storeId)}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Reintentar
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // Render store content
+  const renderStoreContent = (storeId: 1 | 2) => {
+    const formData = storeId === 1 ? formData1 : formData2;
+    const errors = storeId === 1 ? errors1 : errors2;
+    const query = storeId === 1 ? store1Query : store2Query;
+
+    // Show placeholder if loading or error
+    if (query.isLoading || query.isError) {
+      return renderStorePlaceholder(storeId, `Tienda ${storeId}`);
+    }
+
+    // Show placeholder if no data
+    if (!formData) {
+      return (
+        <div className="rounded-lg border border-border bg-card p-12 text-center">
+          <p className="text-lg text-muted-foreground">
+            No hay datos disponibles para Tienda {storeId}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Form */}
+          <div className="rounded-lg border border-border bg-card">
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="p-6">
+                <StoreDetailsForm
+                  formData={formData}
+                  onChange={(field, value) => handleFieldChange(storeId, field, value)}
+                  errors={errors}
+                />
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Preview */}
+          <div className="rounded-lg border border-border bg-card">
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="p-6">
+                <StoreDetailsPreview formData={formData} />
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <StoreDetailsActions
+            onSave={() => handleSave(storeId)}
+            onRestore={() => handleRestore(storeId)}
+            isSaving={updateMutation.isPending}
+            hasChanges={hasChanges(storeId)}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const anyLoading = store1Query.isLoading || store2Query.isLoading;
+  const bothFailed = store1Query.isError && store2Query.isError;
 
   return (
     <div className="space-y-6">
@@ -159,8 +326,8 @@ export default function StoreDetailsPage() {
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
+      {/* Show loading state only if both are loading initially */}
+      {anyLoading && !formData1 && !formData2 && (
         <div className="rounded-lg border border-border bg-card p-12 text-center">
           <div className="flex items-center justify-center gap-3">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -169,86 +336,49 @@ export default function StoreDetailsPage() {
         </div>
       )}
 
+      {/* Show error state if both failed and no data */}
+      {bothFailed && !formData1 && !formData2 && (
+        <div className="rounded-lg border border-destructive/50 bg-card p-12 text-center">
+          <div className="space-y-4">
+            <p className="text-lg text-destructive">
+              No se pudieron cargar los datos de las tiendas
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                onClick={() => handleRetry(1)}
+                variant="outline"
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reintentar Tienda 1
+              </Button>
+              <Button
+                onClick={() => handleRetry(2)}
+                variant="outline"
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reintentar Tienda 2
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
-      {!isLoading && formData1 && formData2 && (
+      {(formData1 || formData2) && (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as '1' | '2')}>
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="1">Tienda 1</TabsTrigger>
             <TabsTrigger value="2">Tienda 2</TabsTrigger>
           </TabsList>
 
-          {/* Store 1 Tab */}
-          <TabsContent value="1" className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Form */}
-              <div className="rounded-lg border border-border bg-card">
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div className="p-6">
-                    <StoreDetailsForm
-                      formData={formData1}
-                      onChange={(field, value) => handleFieldChange(1, field, value)}
-                      errors={errors1}
-                    />
-                  </div>
-                </ScrollArea>
-              </div>
-
-              {/* Preview */}
-              <div className="rounded-lg border border-border bg-card">
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div className="p-6">
-                    <StoreDetailsPreview formData={formData1} />
-                  </div>
-                </ScrollArea>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <StoreDetailsActions
-                onSave={() => handleSave(1)}
-                onRestore={() => handleRestore(1)}
-                isSaving={updateMutation.isPending}
-                hasChanges={hasChanges(1)}
-              />
-            </div>
+          <TabsContent value="1" className="mt-6">
+            {renderStoreContent(1)}
           </TabsContent>
 
-          {/* Store 2 Tab */}
-          <TabsContent value="2" className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Form */}
-              <div className="rounded-lg border border-border bg-card">
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div className="p-6">
-                    <StoreDetailsForm
-                      formData={formData2}
-                      onChange={(field, value) => handleFieldChange(2, field, value)}
-                      errors={errors2}
-                    />
-                  </div>
-                </ScrollArea>
-              </div>
-
-              {/* Preview */}
-              <div className="rounded-lg border border-border bg-card">
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div className="p-6">
-                    <StoreDetailsPreview formData={formData2} />
-                  </div>
-                </ScrollArea>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <StoreDetailsActions
-                onSave={() => handleSave(2)}
-                onRestore={() => handleRestore(2)}
-                isSaving={updateMutation.isPending}
-                hasChanges={hasChanges(2)}
-              />
-            </div>
+          <TabsContent value="2" className="mt-6">
+            {renderStoreContent(2)}
           </TabsContent>
         </Tabs>
       )}

@@ -1,478 +1,60 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 19,
-  "summary": "Build \"Kelani Cosmetics\" React + TypeScript (Vite) admin panel with Internet Identity auth on /admin, admin role verification, and protected /admin/* navigation using TanStack Router v6, Zustand, and TanStack Query. Add shared error-prevention utilities: BigInt-safe JSON parse/stringify, a SafeSelect wrapper that forbids empty string values via sentinel values, numeric conversion/validation helpers, and a standardized API response handler that integrates BigInt parsing. Add a modern, accessible toast notification system (Zustand store + UI) for non-blocking user feedback and local error handling; preserve the :root CSS variables block in index.css unchanged. Extend admin functionality by replacing placeholders with real management pages: Products (server-side pagination/search/filters, inline toggles, add/edit modal with photo upload + WebP compression, password-protected deletion), Categories (CRUD + reorder), On-Sale Products (server-side pagination, Google-style product search dropdown, sale price/date validation, active/upcoming/expired status, activation toggles, responsive table/card layout), and Store Details (two-store tabbed management UI with per-day hours, live preview, Spanish validation/toasts, backend persistence with defaults and stable upgrade-safe storage).",
+  "projectStateVersion": 3,
+  "summary": "Admin dashboard feature: add an /admin/import page to restore categories and products from exported JSON via a single atomic batch import API, with Spanish UI and BigInt-safe JSON handling.",
   "architectural_notes": [
-    "Use TanStack Router v6 with /admin as the single entry point that conditionally renders Login, DashboardLayout (admin), or AccessDenied (non-admin) without changing URL.",
-    "Store auth state (principal, authenticated flag) and admin status in Zustand with persistence across refreshes; cache admin status for 30 days.",
-    "After Internet Identity login, immediately verify admin status via backend; show \"Verificando permisos...\" while checking; if verification fails, treat as non-admin by default.",
-    "All /admin/* nested routes must be protected by admin verification; non-admins must not see dashboard/header/sidebar or access any admin pages.",
-    "UI text for login/access denied is Spanish; AccessDenied includes principal display + copy-to-clipboard icon button with ARIA label \"Copiar ID al portapapeles\" and a \"Cerrar Sesión\" logout button.",
-    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css containing theme color variables; only append new CSS below it without changing names/values/structure.",
-    "Use parseJSONWithBigInt/stringifyWithBigInt (from BigIntSerializer) instead of JSON.parse/JSON.stringify in code paths that may include BigInt-like fields (e.g., dates/timestamps/ids).",
-    "Wrap select inputs with SafeSelect to ensure no SelectItem or state ever uses empty string values; use sentinel values (all/none/no-change) and convertSentinelToNull before API calls.",
-    "Implement a global toast notification system (Zustand store + ToastContainer UI) for non-blocking user feedback: top-right, stacked, hover-paused timers, manual dismiss, accessible ARIA + keyboard navigation; prefer local component error handling + console logging over error boundaries.",
-    "/admin/categories must be a real Categories management page inside DashboardLayout (route-based at /admin/categories) with: header H2 \"Categorías\" + right-aligned icon-only (plus) \"Agregar Categoría\" button; table columns ID/Nombre/Orden (up/down)/Acciones; search by category name or ID; add/edit single scrollable modal (Nombre required, Orden optional); delete confirmation; reorder via up/down + backend reorderCategories; Spanish UI + Spanish toasts for all operations; no mock/default categories; use shared utilities (BigInt JSON, SafeSelect sentinels, NumericConverter, ApiResponseHandler); preserve :root CSS variables block unchanged (append-only CSS)."
+    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css (theme color variables); only append new styles below it.",
+    "Import JSON must be parsed with BigInt support (parseJSONWithBigInt) to handle exportTimestamp and preserve format compatibility with the Export page.",
+    "Import must be executed as a single HTTP request and transactional/atomic (all-or-nothing rollback) while importing categories first then products."
   ],
-  "known_issues": [
-    "Categories frontend page currently does not persist create/update/delete/reorder operations to the backend (missing/incorrect backend CRUD + storage integration).",
-    "Category dropdowns currently use hardcoded category data instead of fetching from backend getAllCategories()."
-  ],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-implement-tanstack-router-v6-route-structure-for-the-admin-section-with-the-following-routes-admin-admin-products-admin-on-sale-products-admin-categories-admin-store-details-admin-export-configure-nested-routing-so-the-admin-layout-can-render-an-outlet-for-subroutes",
-      "title": "Implement TanStack Router v6 route structure for the admin section with the following routes: `/admin`, `/admin/products`, `/admin/on-sale-products`, `/admin/categories`, `/admin/store-details`, `/admin/export`. Configure nested routing so the admin layout can render an `<Outlet />` for subroutes.",
+      "id": "feature-create-a-new-admin-only-page-at-route-admin-import-for-importing-categories-and-products-from-a-json-file-previously-exported-by-the-existing-export-page-using-the-exact-importdata-structure-categories-products-exporttimestamp-itemcounts",
+      "title": "Create a new admin-only page at route `/admin/import` for importing categories and products from a JSON file previously exported by the existing Export page, using the exact ImportData structure (categories, products, exportTimestamp, itemCounts).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-create-a-global-zustand-store-to-manage-authentication-and-authorization-state-including-authenticated-principal-string-auth-status-admin-status-unknown-loading-admin-non-admin-admin-check-timestamp-and-derived-helpers-e-g-isauthenticated-isadmin-persist-required-auth-admin-state-across-refresh-using-localstorage-or-equivalent-client-persistence",
-      "title": "Create a global Zustand store to manage authentication and authorization state, including: authenticated principal (string), auth status, admin status (unknown/loading/admin/non-admin), admin check timestamp, and derived helpers (e.g., `isAuthenticated`, `isAdmin`). Persist required auth/admin state across refresh using localStorage (or equivalent client persistence).",
+      "id": "feature-add-navigation-entries-to-reach-admin-import-from-a-the-admin-sidebar-left-panel-and-b-the-admin-dashboard-cards-place-the-import-link-card-after-export",
+      "title": "Add navigation entries to reach `/admin/import` from (a) the admin sidebar left panel and (b) the admin dashboard cards; place the Import link/card after Export.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-integrate-internet-identity-authentication-directly-into-the-admin-route-admin-must-conditionally-render-exactly-one-of-these-uis-based-on-state-1-unauthenticated-internet-identity-login-interface-2-authenticated-admin-admin-dashboard-layout-dashboard-home-content-3-authenticated-non-admin-access-denied-interface-do-not-create-a-separate-access-denied-route",
-      "title": "Integrate Internet Identity authentication directly into the `/admin` route. `/admin` must conditionally render exactly one of these UIs based on state: (1) unauthenticated: Internet Identity login interface; (2) authenticated + admin: admin dashboard layout + dashboard home content; (3) authenticated + non-admin: Access Denied interface. Do not create a separate access-denied route.",
+      "id": "feature-implement-the-import-page-ui-sections-1-import-information-section-showing-filename-counts-export-date-and-validation-status-after-file-selection-2-drag-and-drop-click-to-select-upload-area-that-only-accepts-json-files-3-clear-cancel-button-to-remove-the-selected-file-and-to-stop-an-in-progress-import-request",
+      "title": "Implement the Import page UI sections: (1) Import Information section showing filename, counts, export date, and validation status after file selection; (2) Drag-and-drop + click-to-select upload area that only accepts `.json` files; (3) Clear/cancel button to remove the selected file and to stop an in-progress import request.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-the-post-login-admin-verification-flow-immediately-after-successful-internet-identity-authentication-call-a-backend-method-to-verify-whether-the-authenticated-principal-is-an-admin-while-verifying-show-a-loading-indicator-with-the-spanish-text-verificando-permisos-if-verification-fails-for-any-reason-default-to-non-admin-and-render-access-denied-at-admin",
-      "title": "Implement the post-login admin verification flow: immediately after successful Internet Identity authentication, call a backend method to verify whether the authenticated principal is an admin. While verifying, show a loading indicator with the Spanish text `\"Verificando permisos...\"`. If verification fails for any reason, default to non-admin and render Access Denied at `/admin`.",
+      "id": "feature-implement-the-required-client-side-flow-file-selection-read-with-filereader-parse-using-parsejsonwithbigint-validate-structure-and-field-types-including-numeric-validation-conversion-if-valid-automatically-trigger-the-backend-import-call-without-an-extra-button-click-display-simple-progress-states-no-real-time-per-item-progress",
+      "title": "Implement the required client-side flow: file selection → read with FileReader → parse using `parseJSONWithBigInt()` → validate structure and field types (including numeric validation/conversion) → if valid, automatically trigger the backend import call without an extra button click → display simple progress states (no real-time per-item progress).",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-protect-all-admin-routes-so-that-only-authenticated-admin-users-can-access-them-if-a-user-is-unauthenticated-or-authenticated-but-non-admin-prevent-access-to-admin-products-admin-on-sale-products-admin-categories-admin-store-details-and-admin-export-and-route-them-back-to-admin-where-the-correct-interface-is-shown-login-or-access-denied",
-      "title": "Protect all `/admin/*` routes so that only authenticated admin users can access them. If a user is unauthenticated or authenticated-but-non-admin, prevent access to `/admin/products`, `/admin/on-sale-products`, `/admin/categories`, `/admin/store-details`, and `/admin/export` and route them back to `/admin` where the correct interface is shown (login or access denied).",
+      "id": "feature-use-the-shared-api-utilities-for-the-import-request-call-the-backend-batch-import-method-via-the-actor-and-handle-errors-using-the-standardized-apiresponsehandler-patterns-display-spanish-error-messages-and-a-spanish-success-toast-summarizing-imported-updated-counts",
+      "title": "Use the shared API utilities for the import request: call the backend batch import method via the actor and handle errors using the standardized `ApiResponseHandler` patterns; display Spanish error messages and a Spanish success toast summarizing imported/updated counts.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-after-import-completion-display-an-import-results-section-with-counts-for-categories-imported-updated-products-imported-updated-and-error-count-if-any-include-post-import-action-links-to-the-categories-and-products-admin-pages-include-a-button-to-clear-reset-the-import-interface-for-the-next-file",
+      "title": "After import completion, display an Import Results section with: counts for categories imported/updated, products imported/updated, and error count (if any); include post-import action links to the Categories and Products admin pages; include a button to clear/reset the import interface for the next file.",
       "reqIds": [
         "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-build-the-access-denied-interface-shown-only-at-admin-for-authenticated-non-admin-users-with-a-clean-centered-layout-and-kelani-cosmetics-branding-use-the-specified-spanish-strings-heading-acceso-denegado-subheading-no-tienes-permisos-de-administrador-para-acceder-a-este-panel-label-tu-id-de-internet-identity-and-logout-button-text-cerrar-sesi-n-display-the-full-principal-in-a-monospace-box-with-an-icon-only-copy-to-clipboard-button-immediately-to-the-right-using-aria-label-copiar-id-al-portapapeles-do-not-render-any-sidebar-header-or-dashboard-content-in-this-view",
-      "title": "Build the Access Denied interface (shown only at `/admin` for authenticated non-admin users) with a clean centered layout and Kelani Cosmetics branding. Use the specified Spanish strings: heading `\"Acceso Denegado\"`, subheading `\"No tienes permisos de administrador para acceder a este panel.\"`, label `\"Tu ID de Internet Identity:\"`, and logout button text `\"Cerrar Sesión\"`. Display the full principal in a monospace box with an icon-only copy-to-clipboard button immediately to the right, using ARIA label `\"Copiar ID al portapapeles\"`. Do not render any sidebar, header, or dashboard content in this view.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-build-the-admin-only-dashboardlayout-for-admin-and-admin-routes-fixed-header-with-left-hamburger-icon-to-toggle-sidebar-centered-clickable-title-kelani-cosmetics-that-navigates-to-admin-and-a-right-aligned-icon-only-logout-button-create-a-collapsible-sidebar-that-is-open-by-default-on-desktop-and-closed-by-default-on-mobile-on-mobile-it-should-slide-in-as-an-overlay-full-screen-main-content-should-be-centered-with-a-max-width-of-1200px-and-render-nested-routes-via-outlet",
-      "title": "Build the admin-only DashboardLayout for `/admin` and `/admin/*` routes: fixed header with left hamburger icon to toggle sidebar, centered clickable title `\"Kelani Cosmetics\"` that navigates to `/admin`, and a right-aligned icon-only logout button. Create a collapsible sidebar that is open by default on desktop and closed by default on mobile; on mobile it should slide in as an overlay (full-screen). Main content should be centered with a max width of 1200px and render nested routes via `<Outlet />`.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-admin-dashboard-home-content-at-admin-admin-users-only-responsive-card-grid-showing-exactly-5-placeholder-cards-with-icons-labels-productos-productos-en-oferta-categor-as-datos-de-tienda-exportar-desktop-3-cards-per-row-mobile-1-per-row-arrange-so-the-first-row-is-productos-productos-en-oferta-categor-as-and-the-second-row-contains-datos-de-tienda-and-exportar-centered-with-appropriate-spacing-clicking-a-card-navigates-to-its-corresponding-route",
-      "title": "Implement the admin dashboard home content at `/admin` (admin users only): responsive card grid showing exactly 5 placeholder cards with icons + labels: `Productos`, `Productos en Oferta`, `Categorías`, `Datos de Tienda`, `Exportar`. Desktop: 3 cards per row; mobile: 1 per row. Arrange so the first row is Productos / Productos en Oferta / Categorías, and the second row contains Datos de Tienda and Exportar centered with appropriate spacing. Clicking a card navigates to its corresponding route.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-placeholder-pages-for-admin-products-admin-on-sale-products-admin-categories-admin-store-details-and-admin-export-that-render-within-the-admin-dashboard-layout-and-clearly-indicate-they-are-placeholders",
-      "title": "Create placeholder pages for `/admin/products`, `/admin/on-sale-products`, `/admin/categories`, `/admin/store-details`, and `/admin/export` that render within the admin dashboard layout and clearly indicate they are placeholders.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-use-tanstack-query-to-perform-the-admin-verification-call-and-integrate-its-lifecycle-with-zustand-state-e-g-trigger-verification-after-login-store-results-timestamp-and-avoid-unnecessary-calls-when-cached-within-30-days",
-      "title": "Use TanStack Query to perform the admin verification call and integrate its lifecycle with Zustand state (e.g., trigger verification after login, store results + timestamp, and avoid unnecessary calls when cached within 30 days).",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-a-coherent-distinctive-visual-theme-across-the-admin-login-access-denied-and-dashboard-ui-colors-typography-spacing-component-styling-suitable-for-a-cosmetics-brand-avoid-blue-and-purple-as-the-primary-palette",
-      "title": "Apply a coherent, distinctive visual theme across the admin login, access denied, and dashboard UI (colors, typography, spacing, component styling) suitable for a cosmetics brand. Avoid blue-and-purple as the primary palette.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-bigint-safe-json-utility-module-at-frontend-src-utils-bigintserializer-ts-that-provides-safebiginttostring-safestringtobigint-parsejsonwithbigint-stringifywithbigint-and-isvalidbigintstring-exactly-as-specified-and-ensure-the-implementation-is-safe-for-null-undefined-invalid-inputs-and-avoids-throwing-during-normal-use",
-      "title": "Create a BigInt-safe JSON utility module at `frontend/src/utils/BigIntSerializer.ts` that provides `safeBigIntToString`, `safeStringToBigInt`, `parseJSONWithBigInt`, `stringifyWithBigInt`, and `isValidBigIntString` exactly as specified, and ensure the implementation is safe for null/undefined/invalid inputs and avoids throwing during normal use.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-unit-tests-for-frontend-src-utils-bigintserializer-ts-covering-all-specified-edge-cases-and-validating-round-trip-behavior-stringify-parse",
-      "title": "Add unit tests for `frontend/src/utils/BigIntSerializer.ts` covering all specified edge cases and validating round-trip behavior (stringify → parse).",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-sentinel-safe-select-wrapper-component-at-frontend-src-components-safeselect-tsx-that-prevents-empty-string-select-values-by-enforcing-sentinel-values-and-provides-the-helper-functions-initializeselectstate-convertsentineltonull-and-issentinelvalue-as-specified",
-      "title": "Create a sentinel-safe Select wrapper component at `frontend/src/components/SafeSelect.tsx` that prevents empty-string Select values by enforcing sentinel values and provides the helper functions `initializeSelectState`, `convertSentinelToNull`, and `isSentinelValue` as specified.",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-unit-tests-for-frontend-src-components-safeselect-tsx-and-its-helper-functions-to-verify-empty-string-prevention-sentinel-conversions-state-initialization-and-spanish-error-messaging",
-      "title": "Add unit tests for `frontend/src/components/SafeSelect.tsx` and its helper functions to verify empty-string prevention, sentinel conversions, state initialization, and Spanish error messaging.",
-      "reqIds": [
-        "REQ-16"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-numeric-conversion-validation-utility-module-at-frontend-src-utils-numericconverter-ts-implementing-safeconverttonumber-validateivanumber-validateprofitmargin-convertstocktoboolean-and-formatpricefordisplay-exactly-as-specified-including-spanish-format-currency-output-and-spanish-console-warnings-for-invalid-conversions",
-      "title": "Create a numeric conversion/validation utility module at `frontend/src/utils/NumericConverter.ts` implementing `safeConvertToNumber`, `validateIvaNumber`, `validateProfitMargin`, `convertStockToBoolean`, and `formatPriceForDisplay` exactly as specified, including Spanish-format currency output and Spanish console warnings for invalid conversions.",
-      "reqIds": [
-        "REQ-17"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-unit-tests-for-frontend-src-utils-numericconverter-ts-to-cover-string-to-number-conversions-iva-validation-profit-margin-validation-stock-to-boolean-conversion-and-spanish-format-price-formatting-consistency",
-      "title": "Add unit tests for `frontend/src/utils/NumericConverter.ts` to cover string-to-number conversions, IVA validation, profit margin validation, stock-to-boolean conversion, and Spanish-format price formatting consistency.",
-      "reqIds": [
-        "REQ-18"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-an-api-response-handling-utility-module-at-frontend-src-utils-apiresponsehandler-ts-implementing-handleapiresponse-t-createapierror-and-shouldretryrequest-and-standardize-parsing-to-use-parsejsonwithbigint-from-bigintserializer-for-json-bodies",
-      "title": "Create an API response handling utility module at `frontend/src/utils/ApiResponseHandler.ts` implementing `handleApiResponse<T>`, `createApiError`, and `shouldRetryRequest`, and standardize parsing to use `parseJSONWithBigInt()` from `BigIntSerializer` for JSON bodies.",
-      "reqIds": [
-        "REQ-19"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-unit-tests-for-frontend-src-utils-apiresponsehandler-ts-to-validate-bigint-aware-parsing-standardized-error-creation-and-retry-decision-behavior",
-      "title": "Add unit tests for `frontend/src/utils/ApiResponseHandler.ts` to validate BigInt-aware parsing, standardized error creation, and retry decision behavior.",
-      "reqIds": [
-        "REQ-20"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-global-toast-notification-store-using-zustand-to-manage-toast-lifecycle-and-state-for-a-modern-non-blocking-toast-system",
-      "title": "Create a global toast notification store using Zustand to manage toast lifecycle and state for a modern, non-blocking toast system.",
-      "reqIds": [
-        "REQ-21"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-a-modern-toast-viewport-container-and-toast-card-components-rendered-at-the-application-root-positioned-top-right-with-stacking-animations-hover-pause-and-manual-dismiss",
-      "title": "Implement a modern Toast viewport/container and Toast card components rendered at the application root, positioned top-right, with stacking, animations, hover-pause, and manual dismiss.",
-      "reqIds": [
-        "REQ-22"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-toast-type-styling-for-success-error-warning-and-info-using-the-existing-theme-system-and-tailwind-with-clear-color-contrast-and-minimal-footprint",
-      "title": "Add toast type styling for success, error, warning, and info using the existing theme system and Tailwind, with clear color contrast and minimal footprint.",
-      "reqIds": [
-        "REQ-23"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-a-local-error-handling-strategy-that-uses-toast-notifications-for-user-facing-feedback-and-console-logging-for-developer-debugging-without-introducing-react-error-boundaries",
-      "title": "Implement a local error handling strategy that uses toast notifications for user-facing feedback and console logging for developer debugging, without introducing React error boundaries.",
-      "reqIds": [
-        "REQ-24"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-minimal-css-for-toast-animations-and-layout-without-modifying-the-existing-root-css-custom-properties-block-in-frontend-src-index-css-append-new-styles-only-below-the-existing-variables-block",
-      "title": "Add minimal CSS for toast animations and layout without modifying the existing :root CSS custom properties block in frontend/src/index.css; append new styles only below the existing variables block.",
-      "reqIds": [
-        "REQ-25"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-admin-categories-placeholder-ui-with-a-fully-functional-categories-management-page-that-renders-inside-the-existing-admin-dashboardlayout-outlet-and-loads-when-navigating-via-the-dashboard-card-or-sidebar",
-      "title": "Replace the `/admin/categories` placeholder UI with a fully functional Categories management page that renders inside the existing admin DashboardLayout outlet and loads when navigating via the dashboard card or sidebar.",
-      "reqIds": [
-        "REQ-27"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-categories-page-header-table-search-and-actions-exactly-as-specified-including-add-edit-modal-delete-confirmation-and-order-up-down-controls",
-      "title": "Implement the Categories page header, table, search, and actions exactly as specified, including add/edit modal, delete confirmation, and order up/down controls.",
-      "reqIds": [
-        "REQ-28"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-add-edit-modal-is-vertically-scrollable-when-viewport-height-is-smaller-than-the-modal-content-without-breaking-the-dialog-layout",
-      "title": "Ensure the add/edit modal is vertically scrollable when viewport height is smaller than the modal content, without breaking the dialog layout.",
-      "reqIds": [
-        "REQ-29"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-integrate-the-categories-ui-with-the-backend-using-tanstack-query-and-the-existing-actor-hook-and-show-toast-notifications-in-spanish-for-every-operation-load-create-update-delete-reorder-using-the-existing-toast-error-utilities",
-      "title": "Integrate the Categories UI with the backend using TanStack Query and the existing actor hook, and show toast notifications in Spanish for every operation (load/create/update/delete/reorder), using the existing toast/error utilities.",
-      "reqIds": [
-        "REQ-30"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-use-the-shared-utilities-bigintserializer-numericconverter-safeselect-apiresponsehandler-and-the-existing-local-error-with-toast-strategy-where-applicable-in-the-categories-implementation-to-prevent-common-errors",
-      "title": "Use the shared utilities (BigIntSerializer, NumericConverter, SafeSelect, ApiResponseHandler, and the existing local error-with-toast strategy) where applicable in the Categories implementation to prevent common errors.",
-      "reqIds": [
-        "REQ-31"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-frontend-categories-data-layer-frontend-src-hooks-usequeries-ts-to-call-the-new-backend-methods-without-placeholder-behavior-and-with-correct-type-conversions-for-internet-computer-candid-nat-int-values-e-g-converting-between-number-used-by-ui-code-and-bigint-int-representations-returned-accepted-by-the-actor-ensure-create-update-delete-reorder-operations-actually-persist-and-are-reflected-after-refetch",
-      "title": "Update the frontend categories data layer (`frontend/src/hooks/useQueries.ts`) to call the new backend methods without placeholder behavior and with correct type conversions for Internet Computer Candid Nat/Int values (e.g., converting between `number` used by UI code and `bigint`/`Int` representations returned/accepted by the actor). Ensure create/update/delete/reorder operations actually persist and are reflected after refetch.",
-      "reqIds": [
-        "REQ-37"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-any-hardcoded-category-lists-used-for-category-dropdowns-in-the-frontend-and-replace-them-with-data-fetched-from-the-backend-getallcategories-api-via-the-existing-react-query-approach-while-preserving-existing-ui-behavior-and-layout",
-      "title": "Remove any hardcoded category lists used for category dropdowns in the frontend and replace them with data fetched from the backend `getAllCategories()` API (via the existing React Query approach), while preserving existing UI behavior and layout.",
-      "reqIds": [
-        "REQ-38"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-admin-products-placeholder-page-frontend-src-pages-admin-productspage-tsx-with-a-fully-functional-products-management-page-that-renders-inside-the-existing-admin-dashboardlayout-outlet-and-loads-when-navigating-via-the-dashboard-card-or-the-admin-sidebar",
-      "title": "Replace the `/admin/products` placeholder page (`frontend/src/pages/admin/ProductsPage.tsx`) with a fully functional Products management page that renders inside the existing admin `DashboardLayout` outlet and loads when navigating via the dashboard card or the admin sidebar.",
-      "reqIds": [
-        "REQ-39"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-build-the-products-page-ui-with-1-header-h2-products-left-aligned-and-an-icon-only-add-product-button-right-aligned-2-a-table-with-row-hover-highlighting-copy-to-clipboard-icons-for-barcode-and-name-inline-toggles-for-stock-featured-and-edit-delete-actions-and-3-true-server-side-pagination-controls-including-page-size-selector-10-50-100-default-10-and-page-number-navigation",
-      "title": "Build the Products page UI with: (1) header H2 \"Products\" left-aligned and an icon-only \"Add Product\" button right-aligned, (2) a table with row hover highlighting, copy-to-clipboard icons for barcode and name, inline toggles for stock/featured, and edit/delete actions, and (3) true server-side pagination controls including page size selector (10/50/100; default 10) and page number navigation.",
-      "reqIds": [
-        "REQ-44"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-products-page-search-and-filtering-ui-an-english-search-input-with-placeholder-search-by-barcode-name-description-minimum-2-characters-300ms-debounce-abortcontroller-cancellation-clear-x-icon-plus-a-scrollable-height-category-filter-dropdown-search-and-filter-must-integrate-with-server-side-pagination",
-      "title": "Implement Products page search and filtering UI: an English search input with placeholder \"Search by barcode, name, description\", minimum 2 characters, 300ms debounce, AbortController cancellation, clear (X) icon, plus a scrollable-height category filter dropdown. Search and filter must integrate with server-side pagination.",
-      "reqIds": [
-        "REQ-45"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-inline-in-stock-and-featured-toggles-in-the-products-table-with-instant-backend-mutation-per-row-loading-disabled-state-during-the-mutation-and-clear-english-labels-for-the-two-states",
-      "title": "Implement inline In-stock and Featured toggles in the products table with instant backend mutation, per-row loading/disabled state during the mutation, and clear English labels for the two states.",
-      "reqIds": [
-        "REQ-46"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-add-edit-product-modal-with-a-vertically-scrollable-dialog-body-when-content-exceeds-viewport-height-including-all-requested-fields-copy-to-clipboard-icons-barcode-name-description-and-edit-mode-behavior-that-uses-the-already-loaded-current-page-data-no-extra-product-by-barcode-fetch",
-      "title": "Implement Add/Edit Product modal with a vertically scrollable dialog body when content exceeds viewport height, including all requested fields, copy-to-clipboard icons (barcode/name/description), and edit-mode behavior that uses the already-loaded current page data (no extra product-by-barcode fetch).",
-      "reqIds": [
-        "REQ-47"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-client-side-photo-upload-ux-in-the-add-edit-product-modal-accept-jpg-png-webp-up-to-10mb-compress-convert-to-webp-client-side-before-upload-show-a-preview-thumbnail-and-support-remove-replace-persist-the-compressed-webp-to-the-backend-and-show-the-saved-photo-in-the-table-thumbnail-when-present",
-      "title": "Implement client-side photo upload UX in the Add/Edit Product modal: accept JPG/PNG/WebP up to 10MB, compress/convert to WebP client-side before upload, show a preview thumbnail, and support remove/replace. Persist the compressed WebP to the backend and show the saved photo in the table (thumbnail) when present.",
-      "reqIds": [
-        "REQ-48"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-delete-action-ux-with-password-validation-prompt-and-wire-it-to-the-backend-deletion-method-that-enforces-the-case-sensitive-password-deleteisunsafe",
-      "title": "Implement Delete action UX with password validation prompt and wire it to the backend deletion method that enforces the case-sensitive password `DeleteIsUnsafe`.",
-      "reqIds": [
-        "REQ-49"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-products-data-layer-using-tanstack-query-extend-frontend-src-hooks-usequeries-ts-or-create-a-new-products-query-hook-module-to-call-the-new-backend-product-apis-with-correct-internet-computer-type-conversions-nat-int-number-bigint-where-needed-ensure-operations-persist-and-are-reflected-after-refetch",
-      "title": "Add a Products data layer using TanStack Query (extend `frontend/src/hooks/useQueries.ts` or create a new products query hook module) to call the new backend product APIs with correct Internet Computer type conversions (Nat/Int <-> number/bigint where needed). Ensure operations persist and are reflected after refetch.",
-      "reqIds": [
-        "REQ-50"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-mandatory-shared-utility-usage-implement-products-page-and-hooks-using-the-existing-shared-utilities-where-applicable-bigint-safe-json-handling-frontend-src-utils-bigintserializer-ts-sentinel-safe-select-frontend-src-components-safeselect-tsx-numeric-conversion-validation-frontend-src-utils-numericconverter-ts-standardized-response-error-handling-frontend-src-utils-apiresponsehandler-ts-and-the-existing-local-error-strategy-with-toast-console-logging-frontend-src-utils-reporterrorwithtoast-ts",
-      "title": "Mandatory shared-utility usage: implement Products page and hooks using the existing shared utilities where applicable: BigInt-safe JSON handling (`frontend/src/utils/BigIntSerializer.ts`), sentinel-safe select (`frontend/src/components/SafeSelect.tsx`), numeric conversion/validation (`frontend/src/utils/NumericConverter.ts`), standardized response/error handling (`frontend/src/utils/ApiResponseHandler.ts`), and the existing local error strategy with toast + console logging (`frontend/src/utils/reportErrorWithToast.ts`).",
-      "reqIds": [
-        "REQ-51"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-admin-on-sale-products-placeholder-page-frontend-src-pages-admin-onsaleproductspage-tsx-with-a-fully-functional-on-sale-products-management-page-that-renders-inside-the-existing-admin-dashboardlayout-outlet-and-is-accessible-from-the-admin-sidebar-and-dashboard-navigation",
-      "title": "Replace the `/admin/on-sale-products` placeholder page (`frontend/src/pages/admin/OnSaleProductsPage.tsx`) with a fully functional On-Sale Products management page that renders inside the existing admin `DashboardLayout` outlet and is accessible from the admin sidebar and dashboard navigation.",
-      "reqIds": [
-        "REQ-53"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-on-sale-products-page-header-and-primary-action-a-left-aligned-h2-and-a-right-aligned-action-button-with-a-plus-icon-that-opens-the-add-sale-item-modal",
-      "title": "Implement the On-Sale Products page header and primary action: a left-aligned H2 and a right-aligned action button with a plus icon that opens the Add Sale Item modal.",
-      "reqIds": [
-        "REQ-54"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-frontend-data-layer-react-query-hooks-for-sale-items-that-calls-the-new-backend-sale-item-apis-via-the-existing-actor-hook-uses-bigint-safe-conversions-between-motoko-int-nat-and-ui-number-where-appropriate-and-provides-query-keys-mutations-for-list-page-paginated-create-update-delete-and-toggle-active",
-      "title": "Create a frontend data layer (React Query hooks) for Sale Items that calls the new backend Sale Item APIs via the existing actor hook, uses BigInt-safe conversions between Motoko Int/Nat and UI `number` where appropriate, and provides query keys/mutations for: list page (paginated), create, update, delete, and toggle active.",
-      "reqIds": [
-        "REQ-57"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-build-the-on-sale-products-list-ui-with-true-server-side-pagination-and-lazy-loading-desktop-table-with-the-specified-columns-product-with-image-thumbnail-original-price-sale-price-discount-start-date-end-date-active-toggle-actions-reuse-the-existing-pagination-patterns-from-frontend-src-components-admin-products-productspagination-tsx-page-numbers-previous-next-page-size-selector-10-50-100-default-10-adapted-for-sale-items",
-      "title": "Build the On-Sale Products list UI with true server-side pagination and lazy loading: desktop table with the specified columns (Product with image thumbnail, Original Price, Sale Price, Discount %, Start Date, End Date, Active toggle, Actions). Reuse the existing pagination patterns from `frontend/src/components/admin/products/ProductsPagination.tsx` (page numbers, previous/next, page size selector 10/50/100 default 10), adapted for Sale Items.",
-      "reqIds": [
-        "REQ-58"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-page-level-search-and-filters-for-the-on-sale-products-list-that-integrate-with-server-side-pagination-a-search-input-and-filters-for-status-active-upcoming-expired-all-plus-a-sale-period-date-range-filter-ensure-filter-changes-reset-to-page-0-and-refetch-from-the-backend",
-      "title": "Implement page-level search and filters for the On-Sale Products list that integrate with server-side pagination: a search input and filters for status (Active/Upcoming/Expired/All) plus a sale period date range filter. Ensure filter changes reset to page 0 and refetch from the backend.",
-      "reqIds": [
-        "REQ-59"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-add-edit-sale-item-modal-with-a-google-style-product-search-dropdown-as-the-user-types-minimum-2-characters-query-the-backend-for-product-matches-by-barcode-name-description-show-a-dropdown-result-list-name-barcode-current-price-and-allow-selecting-a-product-to-populate-the-form-s-read-only-fields",
-      "title": "Implement the Add/Edit Sale Item modal with a Google-style product search dropdown: as the user types (minimum 2 characters), query the backend for product matches by barcode/name/description, show a dropdown result list (name, barcode, current price), and allow selecting a product to populate the form’s read-only fields.",
-      "reqIds": [
-        "REQ-60"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-sale-item-form-fields-and-validations-in-the-add-edit-modal-required-sale-price-required-start-end-dates-end-must-be-after-start-active-checkbox-default-checked-and-an-auto-calculated-read-only-discount-percentage-derived-from-original-price-and-sale-price-block-submission-until-validations-pass",
-      "title": "Implement Sale Item form fields and validations in the Add/Edit modal: required sale price, required start/end dates (end must be after start), active checkbox default checked, and an auto-calculated read-only discount percentage derived from original price and sale price. Block submission until validations pass.",
-      "reqIds": [
-        "REQ-61"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-activation-deactivation-controls-provide-an-active-toggle-in-the-list-that-triggers-an-immediate-backend-mutation-with-per-row-loading-disabled-state-when-deactivating-show-a-confirmation-step-before-executing-the-mutation",
-      "title": "Add activation/deactivation controls: provide an Active toggle in the list that triggers an immediate backend mutation with per-row loading/disabled state; when deactivating, show a confirmation step before executing the mutation.",
-      "reqIds": [
-        "REQ-62"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-display-a-clear-visual-status-indicator-for-each-sale-item-active-upcoming-expired-based-on-current-date-vs-start-end-dates-and-ensure-the-indicator-stays-consistent-with-backend-computed-status-management",
-      "title": "Display a clear visual status indicator for each Sale Item (Active/Upcoming/Expired) based on current date vs start/end dates, and ensure the indicator stays consistent with backend-computed status management.",
-      "reqIds": [
-        "REQ-63"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-mobile-768px-card-layout-for-on-sale-products-that-displays-product-image-name-original-price-sale-price-discount-start-end-dates-active-toggle-and-edit-delete-actions-while-preserving-full-functionality-pagination-filters-toggles-modals",
-      "title": "Implement mobile (<768px) card layout for On-Sale Products that displays: product image, name, original price, sale price, discount %, start/end dates, active toggle, and edit/delete actions, while preserving full functionality (pagination, filters, toggles, modals).",
-      "reqIds": [
-        "REQ-64"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-mandatory-shared-utility-usage-in-the-on-sale-products-implementation-use-frontend-src-utils-bigintserializer-ts-bigint-aware-parsing-where-json-parsing-is-needed-frontend-src-components-safeselect-tsx-for-select-dropdown-state-that-must-avoid-empty-string-values-frontend-src-utils-numericconverter-ts-for-numeric-conversion-validation-formatting-and-frontend-src-utils-apiresponsehandler-ts-patterns-where-applicable-use-the-existing-toast-local-error-strategy-frontend-src-utils-reporterrorwithtoast-ts-for-user-feedback-and-developer-logging",
-      "title": "Ensure mandatory shared-utility usage in the On-Sale Products implementation: use `frontend/src/utils/BigIntSerializer.ts` / BigInt-aware parsing where JSON parsing is needed, `frontend/src/components/SafeSelect.tsx` for select/dropdown state that must avoid empty-string values, `frontend/src/utils/NumericConverter.ts` for numeric conversion/validation/formatting, and `frontend/src/utils/ApiResponseHandler.ts` patterns where applicable. Use the existing toast/local error strategy (`frontend/src/utils/reportErrorWithToast.ts`) for user feedback and developer logging.",
-      "reqIds": [
-        "REQ-65"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-small-shared-frontend-date-handling-utility-module-for-admin-forms-to-convert-between-html-date-inputs-and-backend-bigint-timestamps-e-g-milliseconds-in-a-safe-timezone-consistent-way-and-use-it-for-sale-item-start-end-date-fields-and-filters",
-      "title": "Add a small, shared frontend date handling utility module for admin forms to convert between HTML date inputs and backend BigInt timestamps (e.g., milliseconds) in a safe, timezone-consistent way, and use it for Sale Item start/end date fields and filters.",
-      "reqIds": [
-        "REQ-66"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-existing-placeholder-frontend-src-pages-admin-storedetailspage-tsx-with-a-fully-functional-admin-store-details-admin-page-rendered-inside-the-existing-dashboardlayout-outlet-using-a-two-tab-interface-for-managing-store-1-and-store-2-independently-tabs-labeled-exactly-tienda-1-and-tienda-2",
-      "title": "Replace the existing placeholder `frontend/src/pages/admin/StoreDetailsPage.tsx` with a fully functional `/admin/store-details` admin page rendered inside the existing DashboardLayout outlet, using a two-tab interface for managing Store 1 and Store 2 independently (tabs labeled exactly: \"Tienda 1\" and \"Tienda 2\").",
-      "reqIds": [
-        "REQ-72"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-store-information-form-ui-per-store-with-required-fields-spanish-labels-and-validations-store-name-email-email-validation-whatsapp-phone-validation-address-textarea-description-textarea-latitude-longitude-with-defaults-and-a-store-hours-section-with-one-input-per-day-monday-sunday-using-spanish-day-labels-and-the-specified-helper-text-and-placeholders",
-      "title": "Implement the Store Information form UI per store with required fields, Spanish labels, and validations: store name, email (email validation), WhatsApp (phone validation), address (textarea), description (textarea), latitude/longitude with defaults, and a Store Hours section with one input per day (Monday–Sunday) using Spanish day labels and the specified helper text and placeholders.",
-      "reqIds": [
-        "REQ-73"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-live-preview-section-on-the-store-details-page-that-updates-in-real-time-as-the-admin-types-showing-how-the-store-s-information-will-appear-on-the-public-contact-page-description-rendering-and-formatted-per-day-store-hours-display",
-      "title": "Add a live preview section on the Store Details page that updates in real time as the admin types, showing how the store’s information will appear on the public contact page: description rendering and formatted per-day store hours display.",
-      "reqIds": [
-        "REQ-74"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-save-and-restore-controls-per-store-a-guardar-cambios-button-with-loading-state-that-persists-to-the-backend-and-a-restaurar-valores-originales-action-that-reverts-the-form-to-the-last-successfully-saved-backend-state-show-success-error-toast-notifications-and-only-update-the-locally-cached-saved-original-state-after-a-successful-backend-save",
-      "title": "Implement save and restore controls per store: a \"Guardar Cambios\" button with loading state that persists to the backend, and a \"Restaurar Valores Originales\" action that reverts the form to the last successfully saved backend state. Show success/error toast notifications, and only update the locally cached 'saved/original' state after a successful backend save.",
-      "reqIds": [
-        "REQ-75"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-store-details-frontend-data-layer-using-tanstack-query-and-the-existing-actor-hook-to-call-getstoredetails-storeid-and-updatestoredetails-storeid-details-with-correct-bigint-nat-conversions-and-mandatory-shared-utility-usage-rules-applied-do-not-use-json-parse-json-stringify-use-bigintserializer-helpers-where-serialization-is-needed-use-safeconverttonumber-before-validating-latitude-longitude-and-use-the-existing-toast-based-local-error-strategy-for-spanish-user-messages",
-      "title": "Create a Store Details frontend data layer using TanStack Query and the existing actor hook to call `getStoreDetails(storeId)` and `updateStoreDetails(storeId, details)`, with correct BigInt/Nat conversions and mandatory shared-utility usage rules applied: do not use `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where serialization is needed; use `safeConvertToNumber()` before validating latitude/longitude; and use the existing toast-based local error strategy for Spanish user messages.",
-      "reqIds": [
-        "REQ-76"
       ],
       "version": 1
     }
@@ -480,279 +62,64 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Initialize React + TypeScript app with Vite for \"Kelani Cosmetics\"",
+      "summary": "Implement /admin/import page (admin-only) to import categories/products from exported JSON with client-side validation and auto-start import flow; show Spanish UI, progress states, results, and post-import links.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Set up TanStack Router v6 with /admin and nested /admin/* routes (products, on-sale-products, categories, store-details, export)",
+      "summary": "Add backend batchImportData(importData) endpoint to process a single-request atomic batch import: upsert categories then products (match by barcode), preserve existing photoUrl when imported photoUrl is empty, ensure category-product consistency, and update lastCategoryId = maxImportedCategoryId + 1.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Integrate Internet Identity authentication directly into /admin with Spanish login UI, principal capture, persistence, and logout",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Implement admin verification flow: immediate post-login check via backend, loading spinner \"Verificando permisos...\", 30-day cache in Zustand, secure default to non-admin on failure",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Implement /admin conditional rendering: unauthenticated login, authenticated admin DashboardLayout, authenticated non-admin AccessDenied (no separate route)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Build AccessDenied UI (Spanish) at /admin for authenticated non-admins, showing principal ID with copy-to-clipboard icon button and logout; no nav/sidebar/header",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Build admin-only DashboardLayout with fixed header (hamburger + icon-only logout), collapsible sidebar, centered main content with Outlet",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Create /admin dashboard home card grid (5 placeholder cards) with responsive layout and navigation to admin subroutes",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-9",
-      "summary": "Protect all /admin/* routes to require authenticated + verified admin; prevent any page access for non-admins",
+      "summary": "Use shared utilities for import: parseJSONWithBigInt/stringifyWithBigInt for BigInt timestamps, numeric validation/conversion, standardized ApiResponseHandler, Spanish error messaging, and graceful handling of large JSON files.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-10",
-      "summary": "Use TanStack Query for backend calls (e.g., admin verification) integrated with auth state in Zustand",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-15",
-      "summary": "Add a backend admin-verification API in the single Motoko actor that can be called by the frontend to determine whether the caller (or a provided principal) is an admin. Implement a simple allowlist-based admin model (hardcoded or configurable in canister state) sufficient for verifying admin access.",
+      "summary": "Add a new backend actor method `batchImportData(importData: ImportData) : async ImportResult` that processes the full import in a single request, upserting categories first and then products, and returns counts plus any errors.",
       "reqIds": [
-        "REQ-5"
+        "REQ-7"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-16",
-      "summary": "Add BigIntSerializer utility (safeBigIntToString, safeStringToBigInt, parseJSONWithBigInt, stringifyWithBigInt, isValidBigIntString) and use it instead of JSON.parse/stringify where BigInt may exist",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-17",
-      "summary": "Create SafeSelect component + helpers (initializeSelectState, convertSentinelToNull, isSentinelValue) enforcing non-empty SelectItem values via sentinel system (all/none/no-change) with Spanish error messaging",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "Add NumericConverter utility (safeConvertToNumber, validateIvaNumber, validateProfitMargin, convertStockToBoolean, formatPriceForDisplay in Spanish € format) for consistent validation and API calls",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-19",
-      "summary": "Add ApiResponseHandler utility (handleApiResponse using parseJSONWithBigInt, createApiError with Spanish messages, shouldRetryRequest) and standardize frontend API response format handling",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-20",
-      "summary": "Add tests for new shared utilities/components: BigInt round-trip + edge cases, SafeSelect sentinel/empty-string prevention, NumericConverter validations/formatting, and ApiResponseHandler parsing/error behaviors",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-21",
-      "summary": "Implement a modern toast notification system (Zustand toast store + top-right toast UI) with types (success/error/warning/info), auto-dismiss timers, stacking, hover-pause, manual close, responsive + accessible design, and minimal CSS animations; use for local error handling (no error boundaries).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-22",
-      "summary": "Implement real /admin/categories management (replace placeholder): backend persistent CRUD + reorder APIs (create/update/delete/getAll/getById/reorder with timestamps), and frontend Categories page with table, search, add/edit scrollable modal, delete confirmation, order up/down, Spanish UI, toast notifications on all operations, and mandatory shared utilities usage (BigInt JSON, SafeSelect, NumericConverter, ApiResponseHandler). No mock/default categories.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-23",
-      "summary": "Implement persistent Category storage and admin-protected CRUD/reorder API methods in the single Motoko actor (backend/main.mo) without creating any mock/default categories.",
+      "id": "AR-11",
+      "summary": "Implement transactional/atomic import semantics in `batchImportData`: if any validation or consistency check fails, do not persist partial changes (rollback behavior) and return an ImportResult indicating failure/errors.",
       "reqIds": [
-        "REQ-26"
+        "REQ-8"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-29",
-      "summary": "Preserve the existing frontend theme variables block in frontend/src/index.css exactly; if any new CSS is required for the categories page (e.g., modal scrolling tweaks), append styles only below the existing :root block without changing its names/values/structure.",
+      "id": "AR-12",
+      "summary": "Implement category ID counter management in the backend: after importing categories, ensure `lastCategoryId` is updated so that future category creation cannot conflict with imported IDs; set it to at least (max imported categoryId + 1) without decreasing it if it is already higher.",
       "reqIds": [
-        "REQ-32"
+        "REQ-9"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-30",
-      "summary": "Implement persistent Categories storage in the single Motoko actor (`backend/main.mo`) using (1) a Map keyed by `Nat` for in-memory operations and (2) stable storage so categories persist across canister upgrades, including a stable `lastCategoryId : Nat` counter.",
+      "id": "AR-13",
+      "summary": "Implement product import behavior in the backend: match products by `barcode`; if a product exists, update its fields; if not, create it. Preserve existing product photo/image data when the imported product has an empty/missing photo field during an update.",
       "reqIds": [
-        "REQ-33"
+        "REQ-10"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-31",
-      "summary": "Define a `Category` type in `backend/main.mo` that supports all required fields used by the Categories page: `categoryId : Nat`, `name : Text`, `order : Nat`, `createdDate : Int`, and `lastUpdatedDate : Int` (timestamps from the current canister time).",
+      "id": "AR-14",
+      "summary": "Ensure backend data consistency for category-product references during import: products must only reference valid category IDs after the categories upsert step; reject/abort the import if references are invalid.",
       "reqIds": [
-        "REQ-34"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-32",
-      "summary": "Add the required backend Categories methods to `backend/main.mo` exactly as specified: `createCategory(name: Text, order: Nat) : async Category`, `updateCategory(categoryId: Nat, name: Text, order: Nat) : async Category`, `deleteCategory(categoryId: Nat) : async Bool`, `getAllCategories() : async [Category]`, `getCategoryById(categoryId: Nat) : async ?Category`, and `reorderCategories(newOrder: [(Nat, Nat)]) : async Bool`. Validate existence for update/delete/reorder targets. `getAllCategories` must return categories sorted by `order`.",
-      "reqIds": [
-        "REQ-35"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-33",
-      "summary": "Restrict Categories write operations in `backend/main.mo` to admin callers using the existing access control system already present in the canister (i.e., only admins can create, update, delete, or reorder categories). Read operations (`getAllCategories`, `getCategoryById`) must remain callable by authenticated users as needed for category dropdowns across the application.",
-      "reqIds": [
-        "REQ-36"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-34",
-      "summary": "Implement real /admin/products management (replace placeholder): Products page inside DashboardLayout with header H2 \"Productos\" + icon-only plus \"Agregar Producto\"; TRUE server-side pagination (page size 10/50/100 default 10) with total row count from API; columns for barcode/name (copy icons), category, optional price, in-stock toggle, featured toggle, actions edit/delete + row hover. Add password protection for deletion (case-sensitive \"DeleteIsUnsafe\"). Add search (min 2 chars, 300ms debounce, AbortController; numeric-only => exact barcode; mixed => search barcode/name/description) + clear X + category filter dropdown (scrollable) integrated with pagination. Add add/edit scrollable modal (barcode required + disabled in edit; name required; category dropdown scrollable; optional price; description textarea with copy icon; inStock/isFeatured; photo upload accepting JPG/PNG/WebP with client-side WebP compression, preview, remove/replace, max 10MB; edit loads from current page without extra API call). Inline toggles make instant API calls with loading feedback and Spanish labels (En Stock/Sin Stock, Destacado/Normal). Mandatory usage of BigInt JSON utilities, SafeSelect sentinels, NumericConverter, ApiResponseHandler, Spanish toasts/error handling; preserve :root CSS variables block unchanged (append-only CSS).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-36",
-      "summary": "Implement backend Product storage and admin-protected CRUD + server-side pagination/search APIs in `backend/main.mo` using a `Product` type equivalent to: barcode (unique Text key), name (Text), categoryId (Nat), optional description (Text), optional price (Float), inStock (Bool), isFeatured (Bool), optional photo (stored as WebP bytes or absent), createdDate (Int timestamp), lastUpdatedDate (Int timestamp).",
-      "reqIds": [
-        "REQ-40"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-37",
-      "summary": "Add backend API methods to support TRUE server-side pagination and filtering for products, returning only the current page plus a server-provided total count. Support search behavior that differentiates numeric-only input (exact barcode match) vs mixed input (search barcode/name/description), and support an optional categoryId filter.",
-      "reqIds": [
-        "REQ-41"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-38",
-      "summary": "Implement backend APIs for inline table toggles (inStock and isFeatured) and secure deletion with password validation. Deletion must require the case-sensitive password `DeleteIsUnsafe` (validated server-side).",
-      "reqIds": [
-        "REQ-42"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-39",
-      "summary": "Implement backend support for product photos: accept uploaded image bytes from the admin UI, store them as WebP, and allow retrieving the stored photo for display. Photo is optional and can be removed/replaced.",
-      "reqIds": [
-        "REQ-43"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-48",
-      "summary": "Preserve the existing `:root` CSS custom properties block in `frontend/src/index.css` exactly as-is; if new CSS is required for Products (e.g., modal scroll tweaks, table hover states), append styles only below the existing variables block without changing names/values/structure.",
-      "reqIds": [
-        "REQ-52"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-49",
-      "summary": "Implement real /admin/on-sale-products management (replace placeholder): define SaleItem model and add backend admin-protected CRUD + TRUE server-side pagination/search/filter APIs; frontend page inside DashboardLayout with H2 \"Productos en Oferta\" + icon-only plus \"Agregar Producto en Oferta\"; lazy-loaded paginated table (10/50/100 default 10) with columns product (name + thumbnail), original price, sale price, discount %, start/end dates, active toggle, edit/delete; add/edit modal with Google-style product search dropdown (min 2 chars) to select product and populate read-only fields, validations (sale price < original, end date after start), auto-calculated discount %, active checkbox default true; status indicators (active/upcoming/expired), optional backend auto-deactivation for expired sales; page-level search + status filter + date range filter; toggle activation with loading + confirm deactivation; mobile responsive desktop table and <768px card layout. Mandatory use of shared utilities (BigInt JSON handling, SafeSelect sentinels, NumericConverter, ApiResponseHandler, toast/local error handling) and preserve :root CSS variables block (append-only CSS).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-52",
-      "summary": "Add backend support for Sale Items in the single Motoko actor (`backend/main.mo`): define a `SaleItem` type, persist Sale Items in canister state, and expose admin-protected CRUD and listing APIs that support true server-side pagination (lazy loading) and filtering as required by the `/admin/on-sale-products` page.",
-      "reqIds": [
-        "REQ-55"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-53",
-      "summary": "Implement backend automatic status management for sales: the backend must compute whether a sale is active based on the current canister time versus `startDate`/`endDate`, and ensure expired sales cannot remain active. If a manual activation flag is supported, enforce that it cannot override an expired state.",
-      "reqIds": [
-        "REQ-56"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-64",
-      "summary": "Preserve the `:root` CSS custom properties block in `frontend/src/index.css` exactly as-is; if any new CSS is required for the On-Sale Products page (e.g., card layout tweaks, modal scrolling adjustments), append styles only below the existing variables block without changing names, values, or structure.",
-      "reqIds": [
-        "REQ-67"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-65",
-      "summary": "Implement stable persistence for Sale Items across canister upgrades within the single Motoko actor, using `preupgrade`/`postupgrade` to serialize/restore Sale Items and the `lastSaleId` counter.",
-      "reqIds": [
-        "REQ-68"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-66",
-      "summary": "Implement real /admin/store-details management (replace placeholder): two-tab (Tienda 1/Tienda 2) admin page with independent forms + per-day StoreHours inputs (Spanish labels + helper text), live preview, save + restore-original controls with loading and Spanish toasts; update local state only after successful backend save. Backend: persist StoreDetails per storeId (1/2) in Map<Nat, StoreDetails> with stable upgrade persistence, create defaults once per store if missing, never share state between stores, never drop fields on update, storeHours kept as per-day structure, lastUpdated timestamp (BigInt/Int). Expose getStoreDetails(storeId) and updateStoreDetails(storeId, details) APIs; enforce mandatory shared utilities usage (parseJSONWithBigInt/stringifyWithBigInt, safeConvertToNumber + coordinate range validation, ApiResponseHandler) and preserve :root CSS variables block (append-only CSS).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-67",
-      "summary": "Implement upgrade-safe backend persistence for Store Details for exactly two stores (storeId 1 and 2) in the single Motoko actor, using a `Map<Nat, StoreDetails>` for in-memory access and stable storage so data survives canister upgrades. Each store’s data must be stored independently (no shared state), with store hours persisted per-day (not collapsed into a single string).",
-      "reqIds": [
-        "REQ-69"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-68",
-      "summary": "Add backend defaults that are auto-created once per store (storeId 1 and 2) if missing, and then persisted. Defaults must match the user-provided values for store 1 and store 2 (including coordinates and per-day storeHours).",
-      "reqIds": [
-        "REQ-70"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-69",
-      "summary": "Expose the required backend API methods for Store Details management: `getStoreDetails(storeId : Nat) : async StoreDetails` and `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()`. `updateStoreDetails` must update/persist all fields (no field dropping) and set `lastUpdated` to the current canister timestamp.",
-      "reqIds": [
-        "REQ-71"
+        "REQ-11"
       ],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Kelani Cosmetics",
+  "projectName": "Add Admin Import page with single-request atomic batch import for categories and products",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

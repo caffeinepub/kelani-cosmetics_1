@@ -9,6 +9,7 @@ export interface StoreDetailsFormData {
   name: string;
   email: string;
   phone: string;
+  whatsapp: string;
   address: string;
   description: string;
   latitude: string | number;
@@ -88,9 +89,15 @@ export function validateStoreDetails(data: StoreDetailsFormData): ValidationResu
   }
 
   if (!data.phone || data.phone.trim() === '') {
-    errors.phone = 'El WhatsApp es obligatorio';
+    errors.phone = 'El teléfono es obligatorio';
   } else if (!validatePhone(data.phone)) {
     errors.phone = 'El formato del número no es válido';
+  }
+
+  if (!data.whatsapp || data.whatsapp.trim() === '') {
+    errors.whatsapp = 'El WhatsApp es obligatorio';
+  } else if (!validatePhone(data.whatsapp)) {
+    errors.whatsapp = 'El formato del número no es válido';
   }
 
   if (!data.address || data.address.trim() === '') {

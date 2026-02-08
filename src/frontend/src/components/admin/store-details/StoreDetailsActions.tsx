@@ -16,29 +16,29 @@ export default function StoreDetailsActions({
   hasChanges,
 }: StoreDetailsActionsProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+    <div className="flex items-center justify-end gap-3">
       <Button
         variant="outline"
         onClick={onRestore}
-        disabled={isSaving || !hasChanges}
-        className="w-full sm:w-auto"
+        disabled={!hasChanges || isSaving}
+        className="gap-2"
       >
-        <RotateCcw className="h-4 w-4 mr-2" />
-        Restaurar Valores Originales
+        <RotateCcw className="h-4 w-4" />
+        Restaurar
       </Button>
       <Button
         onClick={onSave}
-        disabled={isSaving}
-        className="w-full sm:w-auto"
+        disabled={!hasChanges || isSaving}
+        className="gap-2"
       >
         {isSaving ? (
           <>
-            <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             Guardando...
           </>
         ) : (
           <>
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4" />
             Guardar Cambios
           </>
         )}

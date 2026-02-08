@@ -1,105 +1,123 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T01:07:11.545Z",
+  "generatedAt": "2026-02-08T15:09:51.230Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 5,
+    "total": 11,
+    "implemented": 6,
     "items": [
       {
-        "id": "REQ-69",
-        "summary": "Implement upgrade-safe backend persistence for Store Details for exactly two stores (storeId 1 and 2) in the single Motoko actor, using a `Map<Nat, StoreDetails>` for in-memory access and stable storage so data survives canister upgrades. Each store’s data must be stored independently (no shared state), with store hours persisted per-day (not collapsed into a single string).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-70",
-        "summary": "Add backend defaults that are auto-created once per store (storeId 1 and 2) if missing, and then persisted. Defaults must match the user-provided values for store 1 and store 2 (including coordinates and per-day storeHours).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-71",
-        "summary": "Expose the required backend API methods for Store Details management: `getStoreDetails(storeId : Nat) : async StoreDetails` and `updateStoreDetails(storeId : Nat, details : StoreDetails) : async ()`. `updateStoreDetails` must update/persist all fields (no field dropping) and set `lastUpdated` to the current canister timestamp.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-72",
-        "summary": "Replace the existing placeholder `frontend/src/pages/admin/StoreDetailsPage.tsx` with a fully functional `/admin/store-details` admin page rendered inside the existing DashboardLayout outlet, using a two-tab interface for managing Store 1 and Store 2 independently (tabs labeled exactly: \"Tienda 1\" and \"Tienda 2\").",
+        "id": "REQ-1",
+        "summary": "Create a new admin-only page at route `/admin/import` for importing categories and products from a JSON file previously exported by the existing Export page, using the exact ImportData structure (categories, products, exportTimestamp, itemCounts).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/pages/admin/ImportPage.tsx",
           "frontend/src/router.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/pages/admin/ImportPage.tsx",
+          "frontend/src/router.tsx"
         ]
       },
       {
-        "id": "REQ-73",
-        "summary": "Implement the Store Information form UI per store with required fields, Spanish labels, and validations: store name, email (email validation), WhatsApp (phone validation), address (textarea), description (textarea), latitude/longitude with defaults, and a Store Hours section with one input per day (Monday–Sunday) using Spanish day labels and the specified helper text and placeholders.",
+        "id": "REQ-10",
+        "summary": "Implement product import behavior in the backend: match products by `barcode`; if a product exists, update its fields; if not, create it. Preserve existing product photo/image data when the imported product has an empty/missing photo field during an update.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-11",
+        "summary": "Ensure backend data consistency for category-product references during import: products must only reference valid category IDs after the categories upsert step; reject/abort the import if references are invalid.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add navigation entries to reach `/admin/import` from (a) the admin sidebar left panel and (b) the admin dashboard cards; place the Import link/card after Export.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
-          "frontend/src/utils/storeDetailsValidation.ts",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/components/admin/AdminSidebar.tsx",
+          "frontend/src/pages/admin/DashboardHomePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
-          "frontend/src/utils/storeDetailsValidation.ts",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/components/admin/AdminSidebar.tsx",
+          "frontend/src/pages/admin/DashboardHomePage.tsx"
         ]
       },
       {
-        "id": "REQ-74",
-        "summary": "Add a live preview section on the Store Details page that updates in real time as the admin types, showing how the store’s information will appear on the public contact page: description rendering and formatted per-day store hours display.",
+        "id": "REQ-3",
+        "summary": "Implement the Import page UI sections: (1) Import Information section showing filename, counts, export date, and validation status after file selection; (2) Drag-and-drop + click-to-select upload area that only accepts `.json` files; (3) Clear/cancel button to remove the selected file and to stop an in-progress import request.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
-          "frontend/src/utils/storeHoursFormat.ts",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/pages/admin/ImportPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
-          "frontend/src/utils/storeHoursFormat.ts",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/pages/admin/ImportPage.tsx"
         ]
       },
       {
-        "id": "REQ-75",
-        "summary": "Implement save and restore controls per store: a \"Guardar Cambios\" button with loading state that persists to the backend, and a \"Restaurar Valores Originales\" action that reverts the form to the last successfully saved backend state. Show success/error toast notifications, and only update the locally cached 'saved/original' state after a successful backend save.",
+        "id": "REQ-4",
+        "summary": "Implement the required client-side flow: file selection → read with FileReader → parse using `parseJSONWithBigInt()` → validate structure and field types (including numeric validation/conversion) → if valid, automatically trigger the backend import call without an extra button click → display simple progress states (no real-time per-item progress).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/utils/importValidation.ts",
+          "frontend/src/pages/admin/ImportPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+          "frontend/src/utils/importValidation.ts",
+          "frontend/src/pages/admin/ImportPage.tsx"
         ]
       },
       {
-        "id": "REQ-76",
-        "summary": "Create a Store Details frontend data layer using TanStack Query and the existing actor hook to call `getStoreDetails(storeId)` and `updateStoreDetails(storeId, details)`, with correct BigInt/Nat conversions and mandatory shared-utility usage rules applied: do not use `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where serialization is needed; use `safeConvertToNumber()` before validating latitude/longitude; and use the existing toast-based local error strategy for Spanish user messages.",
+        "id": "REQ-5",
+        "summary": "Use the shared API utilities for the import request: call the backend batch import method via the actor and handle errors using the standardized `ApiResponseHandler` patterns; display Spanish error messages and a Spanish success toast summarizing imported/updated counts.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useStoreDetailsQueries.ts",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx",
-          "frontend/src/backend.d.ts"
+          "frontend/src/hooks/useAdminImport.ts",
+          "frontend/src/pages/admin/ImportPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useStoreDetailsQueries.ts",
-          "frontend/src/pages/admin/StoreDetailsPage.tsx",
-          "frontend/src/backend.d.ts"
+          "frontend/src/hooks/useAdminImport.ts",
+          "frontend/src/pages/admin/ImportPage.tsx"
         ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "After import completion, display an Import Results section with: counts for categories imported/updated, products imported/updated, and error count (if any); include post-import action links to the Categories and Products admin pages; include a button to clear/reset the import interface for the next file.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/admin/ImportPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/admin/ImportPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Add a new backend actor method `batchImportData(importData: ImportData) : async ImportResult` that processes the full import in a single request, upserting categories first and then products, and returns counts plus any errors.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Implement transactional/atomic import semantics in `batchImportData`: if any validation or consistency check fails, do not persist partial changes (rollback behavior) and return an ImportResult indicating failure/errors.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-9",
+        "summary": "Implement category ID counter management in the backend: after importing categories, ensure `lastCategoryId` is updated so that future category creation cannot conflict with imported IDs; set it to at least (max imported categoryId + 1) without decreasing it if it is already higher.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
@@ -112,15 +130,14 @@
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
-    "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
-    "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
+    "frontend/src/components/admin/AdminSidebar.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useStoreDetailsQueries.ts",
-    "frontend/src/pages/admin/StoreDetailsPage.tsx",
-    "frontend/src/utils/storeDetailsValidation.ts",
-    "frontend/src/utils/storeHoursFormat.ts",
+    "frontend/src/hooks/useAdminImport.ts",
+    "frontend/src/pages/admin/DashboardHomePage.tsx",
+    "frontend/src/pages/admin/ImportPage.tsx",
+    "frontend/src/router.tsx",
+    "frontend/src/utils/importValidation.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

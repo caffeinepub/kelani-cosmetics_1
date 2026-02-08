@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-existing-placeholder-frontend-src-pages-admin-storedetailspage-tsx-with-a-fully-functional-admin-store-details-admin-page-rendered-inside-the-existing-dashboardlayout-outlet-using-a-two-tab-interface-for-managing-store-1-and-store-2-independently-tabs-labeled-exactly-tienda-1-and-tienda-2",
-      "featureTitle": "Replace the existing placeholder `frontend/src/pages/admin/StoreDetailsPage.tsx` with a fully functional `/admin/store-details` admin page rendered inside the existing DashboardLayout outlet, using a two-tab interface for managing Store 1 and Store 2 independently (tabs labeled exactly: \"Tienda 1\" and \"Tienda 2\").",
+      "featureId": "feature-create-a-new-admin-only-page-at-route-admin-import-for-importing-categories-and-products-from-a-json-file-previously-exported-by-the-existing-export-page-using-the-exact-importdata-structure-categories-products-exporttimestamp-itemcounts",
+      "featureTitle": "Create a new admin-only page at route `/admin/import` for importing categories and products from a JSON file previously exported by the existing Export page, using the exact ImportData structure (categories, products, exportTimestamp, itemCounts).",
       "files": [
-        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        "frontend/src/pages/admin/ImportPage.tsx",
+        "frontend/src/router.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -16,17 +17,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-72"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-the-store-information-form-ui-per-store-with-required-fields-spanish-labels-and-validations-store-name-email-email-validation-whatsapp-phone-validation-address-textarea-description-textarea-latitude-longitude-with-defaults-and-a-store-hours-section-with-one-input-per-day-monday-sunday-using-spanish-day-labels-and-the-specified-helper-text-and-placeholders",
-      "featureTitle": "Implement the Store Information form UI per store with required fields, Spanish labels, and validations: store name, email (email validation), WhatsApp (phone validation), address (textarea), description (textarea), latitude/longitude with defaults, and a Store Hours section with one input per day (Monday–Sunday) using Spanish day labels and the specified helper text and placeholders.",
+      "featureId": "feature-add-navigation-entries-to-reach-admin-import-from-a-the-admin-sidebar-left-panel-and-b-the-admin-dashboard-cards-place-the-import-link-card-after-export",
+      "featureTitle": "Add navigation entries to reach `/admin/import` from (a) the admin sidebar left panel and (b) the admin dashboard cards; place the Import link/card after Export.",
       "files": [
-        "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
-        "frontend/src/pages/admin/StoreDetailsPage.tsx",
-        "frontend/src/utils/storeDetailsValidation.ts"
+        "frontend/src/components/admin/AdminSidebar.tsx",
+        "frontend/src/pages/admin/DashboardHomePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -37,17 +37,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-73"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-live-preview-section-on-the-store-details-page-that-updates-in-real-time-as-the-admin-types-showing-how-the-store-s-information-will-appear-on-the-public-contact-page-description-rendering-and-formatted-per-day-store-hours-display",
-      "featureTitle": "Add a live preview section on the Store Details page that updates in real time as the admin types, showing how the store’s information will appear on the public contact page: description rendering and formatted per-day store hours display.",
+      "featureId": "feature-implement-the-import-page-ui-sections-1-import-information-section-showing-filename-counts-export-date-and-validation-status-after-file-selection-2-drag-and-drop-click-to-select-upload-area-that-only-accepts-json-files-3-clear-cancel-button-to-remove-the-selected-file-and-to-stop-an-in-progress-import-request",
+      "featureTitle": "Implement the Import page UI sections: (1) Import Information section showing filename, counts, export date, and validation status after file selection; (2) Drag-and-drop + click-to-select upload area that only accepts `.json` files; (3) Clear/cancel button to remove the selected file and to stop an in-progress import request.",
       "files": [
-        "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
-        "frontend/src/pages/admin/StoreDetailsPage.tsx",
-        "frontend/src/utils/storeHoursFormat.ts"
+        "frontend/src/pages/admin/ImportPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -58,16 +56,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-74"
+        "REQ-3"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-save-and-restore-controls-per-store-a-guardar-cambios-button-with-loading-state-that-persists-to-the-backend-and-a-restaurar-valores-originales-action-that-reverts-the-form-to-the-last-successfully-saved-backend-state-show-success-error-toast-notifications-and-only-update-the-locally-cached-saved-original-state-after-a-successful-backend-save",
-      "featureTitle": "Implement save and restore controls per store: a \"Guardar Cambios\" button with loading state that persists to the backend, and a \"Restaurar Valores Originales\" action that reverts the form to the last successfully saved backend state. Show success/error toast notifications, and only update the locally cached 'saved/original' state after a successful backend save.",
+      "featureId": "feature-implement-the-required-client-side-flow-file-selection-read-with-filereader-parse-using-parsejsonwithbigint-validate-structure-and-field-types-including-numeric-validation-conversion-if-valid-automatically-trigger-the-backend-import-call-without-an-extra-button-click-display-simple-progress-states-no-real-time-per-item-progress",
+      "featureTitle": "Implement the required client-side flow: file selection → read with FileReader → parse using `parseJSONWithBigInt()` → validate structure and field types (including numeric validation/conversion) → if valid, automatically trigger the backend import call without an extra button click → display simple progress states (no real-time per-item progress).",
       "files": [
-        "frontend/src/components/admin/store-details/StoreDetailsActions.tsx",
-        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        "frontend/src/pages/admin/ImportPage.tsx",
+        "frontend/src/utils/importValidation.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -78,16 +76,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-75"
+        "REQ-4"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-create-a-store-details-frontend-data-layer-using-tanstack-query-and-the-existing-actor-hook-to-call-getstoredetails-storeid-and-updatestoredetails-storeid-details-with-correct-bigint-nat-conversions-and-mandatory-shared-utility-usage-rules-applied-do-not-use-json-parse-json-stringify-use-bigintserializer-helpers-where-serialization-is-needed-use-safeconverttonumber-before-validating-latitude-longitude-and-use-the-existing-toast-based-local-error-strategy-for-spanish-user-messages",
-      "featureTitle": "Create a Store Details frontend data layer using TanStack Query and the existing actor hook to call `getStoreDetails(storeId)` and `updateStoreDetails(storeId, details)`, with correct BigInt/Nat conversions and mandatory shared-utility usage rules applied: do not use `JSON.parse`/`JSON.stringify`; use BigIntSerializer helpers where serialization is needed; use `safeConvertToNumber()` before validating latitude/longitude; and use the existing toast-based local error strategy for Spanish user messages.",
+      "featureId": "feature-use-the-shared-api-utilities-for-the-import-request-call-the-backend-batch-import-method-via-the-actor-and-handle-errors-using-the-standardized-apiresponsehandler-patterns-display-spanish-error-messages-and-a-spanish-success-toast-summarizing-imported-updated-counts",
+      "featureTitle": "Use the shared API utilities for the import request: call the backend batch import method via the actor and handle errors using the standardized `ApiResponseHandler` patterns; display Spanish error messages and a Spanish success toast summarizing imported/updated counts.",
       "files": [
-        "frontend/src/hooks/useStoreDetailsQueries.ts",
-        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        "frontend/src/hooks/useAdminImport.ts",
+        "frontend/src/pages/admin/ImportPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -98,7 +96,26 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-76"
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-after-import-completion-display-an-import-results-section-with-counts-for-categories-imported-updated-products-imported-updated-and-error-count-if-any-include-post-import-action-links-to-the-categories-and-products-admin-pages-include-a-button-to-clear-reset-the-import-interface-for-the-next-file",
+      "featureTitle": "After import completion, display an Import Results section with: counts for categories imported/updated, products imported/updated, and error count (if any); include post-import action links to the Categories and Products admin pages; include a button to clear/reset the import interface for the next file.",
+      "files": [
+        "frontend/src/pages/admin/ImportPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

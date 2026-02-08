@@ -53,3 +53,21 @@ export function formatStoreHoursForDisplay(storeHours: StoreHours): FormattedSto
 export function getDayLabel(day: keyof StoreHours): string {
   return DAY_LABELS[day];
 }
+
+/**
+ * Translate English day name to Spanish
+ * Used for backend storeHours array entries
+ */
+export function translateDayToSpanish(englishDay: string): string {
+  const dayMap: Record<string, string> = {
+    'Monday': 'Lunes',
+    'Tuesday': 'Martes',
+    'Wednesday': 'Miércoles',
+    'Thursday': 'Jueves',
+    'Friday': 'Viernes',
+    'Saturday': 'Sábado',
+    'Sunday': 'Domingo',
+  };
+
+  return dayMap[englishDay] || englishDay;
+}
