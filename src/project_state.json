@@ -1,60 +1,51 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Admin dashboard feature: add an /admin/import page to restore categories and products from exported JSON via a single atomic batch import API, with Spanish UI and BigInt-safe JSON handling.",
+  "projectStateVersion": 5,
+  "summary": "Frontend: update home page mobile UI and category loading behavior — remove mobile header 'Contacto' link (keep in side panel), switch infinite scroll to scroll-triggered batch loading (5 categories when within 500px of bottom) with Spanish loading/end messages, and reduce mobile banner height by 20% via responsive CSS while preserving existing desktop behavior.",
   "architectural_notes": [
-    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css (theme color variables); only append new styles below it.",
-    "Import JSON must be parsed with BigInt support (parseJSONWithBigInt) to handle exportTimestamp and preserve format compatibility with the Export page.",
-    "Import must be executed as a single HTTP request and transactional/atomic (all-or-nothing rollback) while importing categories first then products."
+    "Do not modify the :root CSS custom properties block in index.css (theme variables). Append any new CSS only below the block without changing names/values/structure.",
+    "Batch import must be atomic (all-or-nothing) and must preserve imported nanosecond timestamps exactly as provided (map directly to Motoko Int, no overwrites)."
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-create-a-new-admin-only-page-at-route-admin-import-for-importing-categories-and-products-from-a-json-file-previously-exported-by-the-existing-export-page-using-the-exact-importdata-structure-categories-products-exporttimestamp-itemcounts",
-      "title": "Create a new admin-only page at route `/admin/import` for importing categories and products from a JSON file previously exported by the existing Export page, using the exact ImportData structure (categories, products, exportTimestamp, itemCounts).",
+      "id": "feature-update-the-public-header-so-that-the-contacto-navigation-link-is-hidden-on-mobile-screens-while-remaining-visible-on-desktop-and-ensure-the-contacto-link-remains-available-in-the-left-side-panel-navigation",
+      "title": "Update the public header so that the \"Contacto\" navigation link is hidden on mobile screens while remaining visible on desktop, and ensure the \"Contacto\" link remains available in the left side panel navigation.",
       "reqIds": [
-        "REQ-1"
+        "REQ-8"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-navigation-entries-to-reach-admin-import-from-a-the-admin-sidebar-left-panel-and-b-the-admin-dashboard-cards-place-the-import-link-card-after-export",
-      "title": "Add navigation entries to reach `/admin/import` from (a) the admin sidebar left panel and (b) the admin dashboard cards; place the Import link/card after Export.",
+      "id": "feature-replace-the-current-intersectionobserver-based-automatic-infinite-scroll-on-the-home-page-categories-list-with-a-throttled-window-scroll-listener-that-triggers-loading-only-when-the-user-scrolls-within-500px-of-the-bottom-of-the-page",
+      "title": "Replace the current IntersectionObserver-based automatic infinite scroll on the home page categories list with a throttled window scroll listener that triggers loading only when the user scrolls within 500px of the bottom of the page.",
       "reqIds": [
-        "REQ-2"
+        "REQ-9"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-the-import-page-ui-sections-1-import-information-section-showing-filename-counts-export-date-and-validation-status-after-file-selection-2-drag-and-drop-click-to-select-upload-area-that-only-accepts-json-files-3-clear-cancel-button-to-remove-the-selected-file-and-to-stop-an-in-progress-import-request",
-      "title": "Implement the Import page UI sections: (1) Import Information section showing filename, counts, export date, and validation status after file selection; (2) Drag-and-drop + click-to-select upload area that only accepts `.json` files; (3) Clear/cancel button to remove the selected file and to stop an in-progress import request.",
+      "id": "feature-change-home-page-category-pagination-so-that-each-scroll-trigger-loads-and-appends-exactly-5-additional-categories-including-their-associated-products-per-existing-implementation-preserving-the-existing-ordering-by-the-category-order-field-and-never-replacing-resetting-categories-already-rendered",
+      "title": "Change home page category pagination so that each scroll trigger loads and appends exactly 5 additional categories (including their associated products per existing implementation), preserving the existing ordering by the category order field and never replacing/resetting categories already rendered.",
       "reqIds": [
-        "REQ-3"
+        "REQ-10"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-the-required-client-side-flow-file-selection-read-with-filereader-parse-using-parsejsonwithbigint-validate-structure-and-field-types-including-numeric-validation-conversion-if-valid-automatically-trigger-the-backend-import-call-without-an-extra-button-click-display-simple-progress-states-no-real-time-per-item-progress",
-      "title": "Implement the required client-side flow: file selection → read with FileReader → parse using `parseJSONWithBigInt()` → validate structure and field types (including numeric validation/conversion) → if valid, automatically trigger the backend import call without an extra button click → display simple progress states (no real-time per-item progress).",
+      "id": "feature-implement-and-display-home-page-category-loading-states-beneath-the-last-loaded-category-show-a-centered-spinner-with-the-exact-spanish-text-cargando-m-s-categor-as-during-incremental-fetches-and-when-all-categories-are-loaded-replace-it-with-the-persistent-spanish-message-no-hay-m-s-categor-as-para-mostrar-until-the-user-leaves-the-page",
+      "title": "Implement and display home page category loading states beneath the last loaded category: show a centered spinner with the exact Spanish text \"Cargando más categorías...\" during incremental fetches, and when all categories are loaded replace it with the persistent Spanish message \"No hay más categorías para mostrar\" until the user leaves the page.",
       "reqIds": [
-        "REQ-4"
+        "REQ-11"
       ],
       "version": 1
     },
     {
-      "id": "feature-use-the-shared-api-utilities-for-the-import-request-call-the-backend-batch-import-method-via-the-actor-and-handle-errors-using-the-standardized-apiresponsehandler-patterns-display-spanish-error-messages-and-a-spanish-success-toast-summarizing-imported-updated-counts",
-      "title": "Use the shared API utilities for the import request: call the backend batch import method via the actor and handle errors using the standardized `ApiResponseHandler` patterns; display Spanish error messages and a Spanish success toast summarizing imported/updated counts.",
+      "id": "feature-reduce-the-home-page-banner-height-by-20-on-mobile-screens-only-keeping-the-desktop-banner-height-unchanged-using-responsive-css-media-queries-added-to-frontend-src-index-css-without-modifying-the-existing-root-css-variables-block",
+      "title": "Reduce the home page banner height by 20% on mobile screens only, keeping the desktop banner height unchanged, using responsive CSS media queries added to frontend/src/index.css without modifying the existing :root CSS variables block.",
       "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-after-import-completion-display-an-import-results-section-with-counts-for-categories-imported-updated-products-imported-updated-and-error-count-if-any-include-post-import-action-links-to-the-categories-and-products-admin-pages-include-a-button-to-clear-reset-the-import-interface-for-the-next-file",
-      "title": "After import completion, display an Import Results section with: counts for categories imported/updated, products imported/updated, and error count (if any); include post-import action links to the Categories and Products admin pages; include a button to clear/reset the import interface for the next file.",
-      "reqIds": [
-        "REQ-6"
+        "REQ-12"
       ],
       "version": 1
     }
@@ -62,64 +53,99 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Implement /admin/import page (admin-only) to import categories/products from exported JSON with client-side validation and auto-start import flow; show Spanish UI, progress states, results, and post-import links.",
+      "summary": "Fix/simplify backend batchImportData: preserve imported timestamps, upsert categories by categoryId and products by barcode, process categories then products atomically, update lastCategoryId to max, and return Spanish error messages",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add backend batchImportData(importData) endpoint to process a single-request atomic batch import: upsert categories then products (match by barcode), preserve existing photoUrl when imported photoUrl is empty, ensure category-product consistency, and update lastCategoryId = maxImportedCategoryId + 1.",
-      "reqIds": [],
+      "summary": "Update the Motoko backend method `batchImportData` (in `backend/main.mo`) to preserve imported timestamps exactly as provided: map imported `createdDate`/`lastUpdatedDate` values directly to Motoko `Int` and never replace them with `Time.now()` or any generated timestamp during import.",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Use shared utilities for import: parseJSONWithBigInt/stringifyWithBigInt for BigInt timestamps, numeric validation/conversion, standardized ApiResponseHandler, Spanish error messaging, and graceful handling of large JSON files.",
-      "reqIds": [],
+      "summary": "Simplify category import logic inside `batchImportData` to use `categoryId` as the unique identifier and perform an upsert: if `categories` already contains the `categoryId`, overwrite/update all fields with the imported category record; otherwise insert it as a new entry. Preserve imported timestamps in both cases.",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     },
     {
-      "id": "AR-10",
-      "summary": "Add a new backend actor method `batchImportData(importData: ImportData) : async ImportResult` that processes the full import in a single request, upserting categories first and then products, and returns counts plus any errors.",
+      "id": "AR-4",
+      "summary": "Within `batchImportData`, track the maximum `categoryId` across BOTH existing stored categories and imported categories, and set `lastCategoryId` to that maximum value after all categories are successfully processed.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Simplify product import logic inside `batchImportData` to use `barcode` as the unique identifier and perform an upsert: if `products` already contains the barcode, overwrite/update all fields with the imported product record; otherwise insert it as a new entry. Preserve imported timestamps in both cases.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Refactor `batchImportData` code to be straightforward and single-pass: avoid unnecessary cloning of the category/product maps, avoid multi-pass validation, and rely on the natural unique keys (`categoryId`, `barcode`) for duplicate prevention; use Motoko `Map` operations that naturally handle existence checks (e.g., `get` + `add`, or equivalent) during the upsert flow.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Ensure `batchImportData` import transaction behavior is atomic and ordered: (1) process and apply categories first, (2) then process and apply products. If any error occurs (including referential integrity issues), the import must result in no persisted changes (all-or-nothing).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Update `batchImportData` error reporting so that failures produce clear Spanish error messages intended for frontend display, preferably via the existing `ImportResult.errorMessages` array and/or trapped error text where applicable. Messages must be specific enough to help the user fix the import file.",
       "reqIds": [
         "REQ-7"
       ],
       "status": "pending"
     },
     {
+      "id": "AR-9",
+      "summary": "Home page mobile header: remove 'Contacto' link from the mobile header (keep it in the left side panel nav), leaving only hamburger menu + logo; desktop header unchanged.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Home page category loading: replace automatic infinite scroll with scroll-triggered loading—when within 500px of page bottom, fetch and append 5 more categories (with products) below existing ones; preserve product display logic and category ordering by existing 'order' field; do not reset/replace existing categories.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
       "id": "AR-11",
-      "summary": "Implement transactional/atomic import semantics in `batchImportData`: if any validation or consistency check fails, do not persist partial changes (rollback behavior) and return an ImportResult indicating failure/errors.",
-      "reqIds": [
-        "REQ-8"
-      ],
+      "summary": "Home page loading states/messages: show centered loading indicator below last category with Spanish text 'Cargando más categorías...' while fetching; when all categories are loaded, replace indicator with persistent Spanish message 'No hay más categorías para mostrar' until user leaves page.",
+      "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-12",
-      "summary": "Implement category ID counter management in the backend: after importing categories, ensure `lastCategoryId` is updated so that future category creation cannot conflict with imported IDs; set it to at least (max imported categoryId + 1) without decreasing it if it is already higher.",
-      "reqIds": [
-        "REQ-9"
-      ],
+      "summary": "Mobile-only banner height: reduce home page banner height by 20% on mobile screens via responsive CSS media queries (append CSS below existing :root variables block in index.css); ensure banner content scales/readability; desktop unchanged.",
+      "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-13",
-      "summary": "Implement product import behavior in the backend: match products by `barcode`; if a product exists, update its fields; if not, create it. Preserve existing product photo/image data when the imported product has an empty/missing photo field during an update.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "Ensure backend data consistency for category-product references during import: products must only reference valid category IDs after the categories upsert step; reject/abort the import if references are invalid.",
-      "reqIds": [
-        "REQ-11"
-      ],
+      "summary": "Scroll trigger implementation: add throttled scroll event listener, dynamically compute distance to bottom, and trigger loading only when user actively scrolls within 500px threshold; optimize for mobile touch scrolling performance and maintain Spanish UI.",
+      "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Add Admin Import page with single-request atomic batch import for categories and products",
+  "gameProjectType": "none",
+  "projectName": "Fix Motoko batchImportData upsert logic with timestamp preservation and atomic import",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

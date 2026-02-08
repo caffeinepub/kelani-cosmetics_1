@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-create-a-new-admin-only-page-at-route-admin-import-for-importing-categories-and-products-from-a-json-file-previously-exported-by-the-existing-export-page-using-the-exact-importdata-structure-categories-products-exporttimestamp-itemcounts",
-      "featureTitle": "Create a new admin-only page at route `/admin/import` for importing categories and products from a JSON file previously exported by the existing Export page, using the exact ImportData structure (categories, products, exportTimestamp, itemCounts).",
+      "featureId": "feature-update-the-public-header-so-that-the-contacto-navigation-link-is-hidden-on-mobile-screens-while-remaining-visible-on-desktop-and-ensure-the-contacto-link-remains-available-in-the-left-side-panel-navigation",
+      "featureTitle": "Update the public header so that the \"Contacto\" navigation link is hidden on mobile screens while remaining visible on desktop, and ensure the \"Contacto\" link remains available in the left side panel navigation.",
       "files": [
-        "frontend/src/pages/admin/ImportPage.tsx",
-        "frontend/src/router.tsx"
+        "frontend/src/components/public/PublicHeader.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,16 +16,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-8"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-navigation-entries-to-reach-admin-import-from-a-the-admin-sidebar-left-panel-and-b-the-admin-dashboard-cards-place-the-import-link-card-after-export",
-      "featureTitle": "Add navigation entries to reach `/admin/import` from (a) the admin sidebar left panel and (b) the admin dashboard cards; place the Import link/card after Export.",
+      "featureId": "feature-replace-the-current-intersectionobserver-based-automatic-infinite-scroll-on-the-home-page-categories-list-with-a-throttled-window-scroll-listener-that-triggers-loading-only-when-the-user-scrolls-within-500px-of-the-bottom-of-the-page",
+      "featureTitle": "Replace the current IntersectionObserver-based automatic infinite scroll on the home page categories list with a throttled window scroll listener that triggers loading only when the user scrolls within 500px of the bottom of the page.",
       "files": [
-        "frontend/src/components/admin/AdminSidebar.tsx",
-        "frontend/src/pages/admin/DashboardHomePage.tsx"
+        "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+        "frontend/src/utils/throttle.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -37,15 +36,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-9"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-the-import-page-ui-sections-1-import-information-section-showing-filename-counts-export-date-and-validation-status-after-file-selection-2-drag-and-drop-click-to-select-upload-area-that-only-accepts-json-files-3-clear-cancel-button-to-remove-the-selected-file-and-to-stop-an-in-progress-import-request",
-      "featureTitle": "Implement the Import page UI sections: (1) Import Information section showing filename, counts, export date, and validation status after file selection; (2) Drag-and-drop + click-to-select upload area that only accepts `.json` files; (3) Clear/cancel button to remove the selected file and to stop an in-progress import request.",
+      "featureId": "feature-change-home-page-category-pagination-so-that-each-scroll-trigger-loads-and-appends-exactly-5-additional-categories-including-their-associated-products-per-existing-implementation-preserving-the-existing-ordering-by-the-category-order-field-and-never-replacing-resetting-categories-already-rendered",
+      "featureTitle": "Change home page category pagination so that each scroll trigger loads and appends exactly 5 additional categories (including their associated products per existing implementation), preserving the existing ordering by the category order field and never replacing/resetting categories already rendered.",
       "files": [
-        "frontend/src/pages/admin/ImportPage.tsx"
+        "frontend/src/components/public/home/HomepageCategoriesSection.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -56,16 +55,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-10"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-the-required-client-side-flow-file-selection-read-with-filereader-parse-using-parsejsonwithbigint-validate-structure-and-field-types-including-numeric-validation-conversion-if-valid-automatically-trigger-the-backend-import-call-without-an-extra-button-click-display-simple-progress-states-no-real-time-per-item-progress",
-      "featureTitle": "Implement the required client-side flow: file selection → read with FileReader → parse using `parseJSONWithBigInt()` → validate structure and field types (including numeric validation/conversion) → if valid, automatically trigger the backend import call without an extra button click → display simple progress states (no real-time per-item progress).",
+      "featureId": "feature-implement-and-display-home-page-category-loading-states-beneath-the-last-loaded-category-show-a-centered-spinner-with-the-exact-spanish-text-cargando-m-s-categor-as-during-incremental-fetches-and-when-all-categories-are-loaded-replace-it-with-the-persistent-spanish-message-no-hay-m-s-categor-as-para-mostrar-until-the-user-leaves-the-page",
+      "featureTitle": "Implement and display home page category loading states beneath the last loaded category: show a centered spinner with the exact Spanish text \"Cargando más categorías...\" during incremental fetches, and when all categories are loaded replace it with the persistent Spanish message \"No hay más categorías para mostrar\" until the user leaves the page.",
       "files": [
-        "frontend/src/pages/admin/ImportPage.tsx",
-        "frontend/src/utils/importValidation.ts"
+        "frontend/src/components/public/home/HomepageCategoriesSection.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -76,16 +74,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-11"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-use-the-shared-api-utilities-for-the-import-request-call-the-backend-batch-import-method-via-the-actor-and-handle-errors-using-the-standardized-apiresponsehandler-patterns-display-spanish-error-messages-and-a-spanish-success-toast-summarizing-imported-updated-counts",
-      "featureTitle": "Use the shared API utilities for the import request: call the backend batch import method via the actor and handle errors using the standardized `ApiResponseHandler` patterns; display Spanish error messages and a Spanish success toast summarizing imported/updated counts.",
+      "featureId": "feature-reduce-the-home-page-banner-height-by-20-on-mobile-screens-only-keeping-the-desktop-banner-height-unchanged-using-responsive-css-media-queries-added-to-frontend-src-index-css-without-modifying-the-existing-root-css-variables-block",
+      "featureTitle": "Reduce the home page banner height by 20% on mobile screens only, keeping the desktop banner height unchanged, using responsive CSS media queries added to frontend/src/index.css without modifying the existing :root CSS variables block.",
       "files": [
-        "frontend/src/hooks/useAdminImport.ts",
-        "frontend/src/pages/admin/ImportPage.tsx"
+        "frontend/src/components/public/home/StoreBanner.tsx",
+        "frontend/src/index.css"
       ],
       "components": [
         "authorization@4.0.0",
@@ -96,26 +94,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-after-import-completion-display-an-import-results-section-with-counts-for-categories-imported-updated-products-imported-updated-and-error-count-if-any-include-post-import-action-links-to-the-categories-and-products-admin-pages-include-a-button-to-clear-reset-the-import-interface-for-the-next-file",
-      "featureTitle": "After import completion, display an Import Results section with: counts for categories imported/updated, products imported/updated, and error count (if any); include post-import action links to the Categories and Products admin pages; include a button to clear/reset the import interface for the next file.",
-      "files": [
-        "frontend/src/pages/admin/ImportPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
+        "REQ-12"
       ],
       "confidence": "high"
     }

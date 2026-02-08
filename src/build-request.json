@@ -1,248 +1,152 @@
 {
   "kind": "build_request",
-  "title": "Add Admin Import page with single-request atomic batch import for categories and products",
+  "title": "Home page mobile header, banner height, and scroll-triggered category loading",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Create a new admin-only page at route `/admin/import` for importing categories and products from a JSON file previously exported by the existing Export page, using the exact ImportData structure (categories, products, exportTimestamp, itemCounts).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Create `/admin/import` page for importing categories and products from previously exported JSON files.",
-          "type ImportData = { categories: Category[]; products: Product[]; exportTimestamp: bigint; itemCounts: { categories: number; products: number; }; };"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Visiting `/admin/import` as a non-admin shows the existing admin access denied flow (via AdminRoute protection).",
-        "Visiting `/admin/import` as an admin renders the import UI (no blank page / route not found).",
-        "The page accepts JSON files exported by `/admin/export` without needing manual edits to the file."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Add navigation entries to reach `/admin/import` from (a) the admin sidebar left panel and (b) the admin dashboard cards; place the Import link/card after Export.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Accessible from dashboard, after Export page and in the left panel"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Admin sidebar shows an Import entry after Export and it navigates to `/admin/import`.",
-        "Admin dashboard home shows an Import card after Export and it navigates to `/admin/import`.",
-        "The active route styling in the sidebar works for `/admin/import` like other admin routes."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Implement the Import page UI sections: (1) Import Information section showing filename, counts, export date, and validation status after file selection; (2) Drag-and-drop + click-to-select upload area that only accepts `.json` files; (3) Clear/cancel button to remove the selected file and to stop an in-progress import request.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Import Information Section",
-          "File Upload Section",
-          "Drag-and-drop area",
-          "File input: Accepts only `.json` files",
-          "Clear button: \"Cancelar importación\" to stop ongoing import or remove selected file"
-        ]
-      },
-      "acceptanceCriteria": [
-        "After selecting a JSON file, the page shows: selected filename, categories count, products count, and a formatted export date.",
-        "The page shows a clear valid/invalid indicator (green check vs red X) and a short compatibility message.",
-        "The file input prevents non-JSON selection (accept attribute) and the dropzone rejects non-JSON drops with a Spanish error message.",
-        "Clicking Cancel removes the selected file and resets validation/result state; if an import request is running, it is aborted/cancelled on the client side (e.g., AbortController) and the UI returns to idle."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Implement the required client-side flow: file selection → read with FileReader → parse using `parseJSONWithBigInt()` → validate structure and field types (including numeric validation/conversion) → if valid, automatically trigger the backend import call without an extra button click → display simple progress states (no real-time per-item progress).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Automatic Import Trigger: After successful client-side validation, the import process starts automatically without requiring additional button clicks",
-          "USE `parseJSONWithBigInt()` for parsing imported JSON files",
-          "VALIDATE all numeric fields in imported data",
-          "CONVERT string numbers to proper types before import",
-          "Progress Display: Show result without real time import status: \"Validando datos...\" / \"Importación completada\""
-        ]
-      },
-      "acceptanceCriteria": [
-        "Selecting a valid export JSON automatically starts the import API call (no separate Submit/Import button).",
-        "Parsing uses `parseJSONWithBigInt()` (not plain `JSON.parse`) to correctly handle BigInt-like timestamp fields.",
-        "Client-side validation catches and displays (in Spanish) at least: invalid JSON, missing required fields, and type mismatches.",
-        "All numeric fields are validated and converted before calling the backend (e.g., stringified numbers become numbers/bigints as required by the actor interface).",
-        "UI shows a validating/loading state and then a completed state; it does not attempt real-time progress updates."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Use the shared API utilities for the import request: call the backend batch import method via the actor and handle errors using the standardized `ApiResponseHandler` patterns; display Spanish error messages and a Spanish success toast summarizing imported/updated counts.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "USE standardized ApiResponseHandler for batch import API call",
-          "USE consistent Spanish error messages",
-          "Show success toast with import summary"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Import API failures are surfaced via a consistent Spanish message (no raw stack traces) and do not leave the UI stuck loading.",
-        "On success, a toast appears with a Spanish summary of imported/updated categories and products.",
-        "Large JSON files are handled gracefully: the UI remains responsive (shows loading state), and errors for oversized/slow parsing are reported clearly in Spanish."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "After import completion, display an Import Results section with: counts for categories imported/updated, products imported/updated, and error count (if any); include post-import action links to the Categories and Products admin pages; include a button to clear/reset the import interface for the next file.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Import Results Display",
-          "Post-import Actions: Links to categories and products pages",
-          "Clear Import Results: Button to reset import interface for next file"
-        ]
-      },
-      "acceptanceCriteria": [
-        "After a successful import, the results summary is visible on the page with category count, product count, and errors count if present.",
-        "The page provides working links to `/admin/categories` and `/admin/products`.",
-        "A Reset/Clear Results action returns the page to the initial state (no file selected, no validation status, no results)."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Add a new backend actor method `batchImportData(importData: ImportData) : async ImportResult` that processes the full import in a single request, upserting categories first and then products, and returns counts plus any errors.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Required Backend Method: `batchImportData(importData: ImportData) : async ImportResult`",
-          "Single HTTP Request: The entire import operation must be processed in a single HTTP request to the backend. All categories and products should be imported in one batch transaction.",
-          "First create/update categories and then create/update products"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The backend exposes `batchImportData` callable from the frontend actor.",
-        "All categories and products in the provided ImportData are handled within this single call (no per-item calls required by the frontend).",
-        "The method returns an ImportResult that includes success counts for categories and products and an errors list/count when applicable."
-      ]
-    },
-    {
       "id": "REQ-8",
-      "text": "Implement transactional/atomic import semantics in `batchImportData`: if any validation or consistency check fails, do not persist partial changes (rollback behavior) and return an ImportResult indicating failure/errors.",
-      "target": "backend",
+      "text": "Update the public header so that the \"Contacto\" navigation link is hidden on mobile screens while remaining visible on desktop, and ensure the \"Contacto\" link remains available in the left side panel navigation.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Atomic Operation: The batch import should be atomic - either all data imports successfully or none at all (rollback on failure).",
-          "Import Transaction Safety: Import should be transactional - all data imports or none"
+          "Remove the \"Contacto\" link from the mobile header",
+          "Keep the \"Contacto\" link in the left side panel navigation where it currently exists",
+          "Mobile header should only show hamburger menu icon and logo",
+          "Desktop header behavior remains unchanged"
         ]
       },
       "acceptanceCriteria": [
-        "When the import payload contains an invalid category/product (e.g., product references a non-existent category), the backend does not partially apply earlier updates.",
-        "When an error occurs, the method returns a structured error list/count and the pre-import state remains unchanged (categories/products counters and contents)."
+        "On mobile breakpoints, the header shows only the hamburger menu button and the logo/brand link (no \"Contacto\" link).",
+        "On desktop breakpoints, the header still shows the \"Contacto\" link as it does today.",
+        "The side panel navigation still includes the \"Contacto\" link and it continues to navigate to /contacto.",
+        "No other header navigation behavior is changed."
       ]
     },
     {
       "id": "REQ-9",
-      "text": "Implement category ID counter management in the backend: after importing categories, ensure `lastCategoryId` is updated so that future category creation cannot conflict with imported IDs; set it to at least (max imported categoryId + 1) without decreasing it if it is already higher.",
-      "target": "backend",
+      "text": "Replace the current IntersectionObserver-based automatic infinite scroll on the home page categories list with a throttled window scroll listener that triggers loading only when the user scrolls within 500px of the bottom of the page.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Post-import Category ID Increment: After importing categories, the backend must update the `lastCategoryId` counter to ensure it's higher than the highest imported `categoryId`",
-          "Calculation: `lastCategoryId = max(importedCategories.map(c => c.categoryId)) + 1`",
-          "Preservation: Existing categories (if any) maintain their IDs"
+          "Change from automatic infinite scroll to manual trigger loading",
+          "Implement scroll event listener with proper throttling for performance",
+          "Calculate distance to page bottom dynamically",
+          "Trigger loading when user scrolls within 500px of page bottom",
+          "Load only when user actively scrolls near bottom, not automatically"
         ]
       },
       "acceptanceCriteria": [
-        "If imported categories include a highest categoryId greater than the current counter, `lastCategoryId` becomes (maxImported + 1).",
-        "If the current `lastCategoryId` is already greater than maxImported, it is not reduced by the import.",
-        "After import, creating a new category results in an ID that does not conflict with any imported categoryId."
+        "Homepage category loading is not triggered by an IntersectionObserver sentinel (remove/disable sentinel-based triggering).",
+        "A scroll event listener is used, and it is throttled to avoid excessive calls during rapid scrolling.",
+        "Distance-to-bottom is computed dynamically from document height and current scroll position.",
+        "A load is triggered only when the user scrolls and the distance to bottom is <= 500px, and only when not already fetching and when more categories exist."
       ]
     },
     {
       "id": "REQ-10",
-      "text": "Implement product import behavior in the backend: match products by `barcode`; if a product exists, update its fields; if not, create it. Preserve existing product photo/image data when the imported product has an empty/missing photo field during an update.",
-      "target": "backend",
+      "text": "Change home page category pagination so that each scroll trigger loads and appends exactly 5 additional categories (including their associated products per existing implementation), preserving the existing ordering by the category order field and never replacing/resetting categories already rendered.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Barcode-based Updates: Products are matched by `barcode` field",
-          "Update Existing: If product with same barcode exists, update its fields",
-          "Add New: If barcode doesn't exist, create new product",
-          "Photo URL Preservation: If imported product has empty `photoUrl`, preserve existing product's photo (if updating)"
+          "When user scrolls near the bottom of the page (within 500px threshold), load and append 5 additional categories",
+          "Each loaded category should include its associated products as per current implementation",
+          "Newly loaded categories should appear below existing categories on the page",
+          "Append new categories to existing display without replacing or resetting",
+          "Maintain category ordering by existing order field",
+          "Track total number of categories to determine when all have been loaded"
         ]
       },
       "acceptanceCriteria": [
-        "Importing a product with a barcode that already exists updates the stored product rather than trapping with 'already exists'.",
-        "Importing a product with a new barcode creates it.",
-        "When updating an existing product and the import payload provides no photo (or an explicitly empty photo field), the existing stored photo remains unchanged."
+        "Initial home page render shows the first page of categories (as currently implemented), and subsequent loads append additional categories below the existing ones.",
+        "Each scroll-triggered load requests 5 categories per page (page size = 5 for incremental loads).",
+        "Loaded categories include their products exactly as returned today by the existing homepage categories query logic.",
+        "Category ordering remains consistent with the backend-provided ordering (by the existing order field).",
+        "The UI tracks total categories and correctly determines when all categories are loaded (hasMore becomes false at the right time).",
+        "No duplicate categories are appended when loading multiple pages."
       ]
     },
     {
       "id": "REQ-11",
-      "text": "Ensure backend data consistency for category-product references during import: products must only reference valid category IDs after the categories upsert step; reject/abort the import if references are invalid.",
-      "target": "backend",
+      "text": "Implement and display home page category loading states beneath the last loaded category: show a centered spinner with the exact Spanish text \"Cargando más categorías...\" during incremental fetches, and when all categories are loaded replace it with the persistent Spanish message \"No hay más categorías para mostrar\" until the user leaves the page.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Data Consistency: Ensure category-product references remain valid after import"
+          "Show a loading spinner with Spanish text \"Cargando más categorías...\" while new categories are being fetched",
+          "When all categories have been loaded, display a Spanish message \"No hay más categorías para mostrar\" where the loading indicator would appear",
+          "Show loading indicator below the last loaded category, centered horizontally",
+          "The \"no more categories\" message should replace the loading indicator when all categories are loaded",
+          "The end message should remain visible until user leaves the page",
+          "Spanish interface throughout"
         ]
       },
       "acceptanceCriteria": [
-        "If any imported product references a categoryId that does not exist after category upsert, the backend aborts the import atomically and returns an error describing the issue.",
-        "If all references are valid, the import completes successfully and products reference existing categories."
+        "While additional categories are being fetched (incremental fetch), a spinner is shown centered below the last rendered category with the text \"Cargando más categorías...\".",
+        "When there are no more categories to load, the loading area shows only \"No hay más categorías para mostrar\" and the message remains visible without disappearing or reverting.",
+        "The loading/end-of-content UI is positioned below the last loaded category and centered horizontally.",
+        "All displayed strings for these states match the required Spanish text exactly."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Reduce the home page banner height by 20% on mobile screens only, keeping the desktop banner height unchanged, using responsive CSS media queries added to frontend/src/index.css without modifying the existing :root CSS variables block.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Reduce the home page banner height by 20% on mobile devices only",
+          "Desktop banner height remains unchanged",
+          "Use responsive CSS media queries to apply height reduction only on mobile screens",
+          "Banner content and layout should adjust proportionally to the reduced height",
+          "Do not remove, modify, or overwrite the :root CSS custom properties block in index.css containing all theme color variables. Always preserve the exact variable names, values, and structure, appending new CSS styles only below this block without changes."
+        ]
+      },
+      "acceptanceCriteria": [
+        "On mobile breakpoints, the banner height is reduced by 20% relative to its current mobile height (e.g., 400px becomes 320px).",
+        "On desktop breakpoints, the banner height remains unchanged compared to current behavior.",
+        "The banner’s text remains readable and remains properly positioned within the reduced banner height (no clipping/overlap).",
+        "Any new CSS required for the mobile-only height adjustment is appended below the existing :root theme variables block in frontend/src/index.css, and the :root block is left completely unchanged (same variable names, values, and structure)."
       ]
     }
   ],
   "constraints": [
-    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; only append new styles below it if needed.",
-    "Do not edit files under `frontend/src/components/ui` (read-only UI components must be composed).",
-    "Do not edit immutable frontend hook/entry paths listed in SYSTEM_CONTEXT (e.g., `frontend/src/hooks/useInternetIdentity.ts(x)`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`).",
-    "Backend must remain a single Motoko actor in `backend/main.mo`; only add `backend/migration.mo` if a stable-state migration is strictly necessary.",
-    "The import must be initiated automatically after successful client-side validation (no additional user click).",
-    "The import must be processed by the backend in a single request and must be atomic (all-or-nothing).",
-    "Use `parseJSONWithBigInt()` for parsing the uploaded JSON and `stringifyWithBigInt()` for any JSON stringification involved in the import flow.",
-    "Use numeric validation/conversion utilities for numeric fields before sending data to the backend.",
-    "Use standardized API error handling patterns (ApiResponseHandler) and show Spanish UI/error messages in the app UI."
+    "Do not remove, modify, or overwrite the existing :root CSS custom properties block in frontend/src/index.css; only append new CSS styles below it.",
+    "Do not change desktop header behavior; only remove the \"Contacto\" link from the mobile header view.",
+    "Do not remove the \"Contacto\" link from the public side panel navigation.",
+    "Do not change existing product rendering logic within each category section (including current mobile product limits).",
+    "Use the exact Spanish UI strings provided for loading/end-of-content states: \"Cargando más categorías...\" and \"No hay más categorías para mostrar\"."
   ],
   "nonGoals": [
-    "Implement real-time per-item import progress updates (the UI only needs coarse states like validating/completed).",
-    "Support importing multiple files at once or merging multiple exports in one session.",
-    "Implement third-party authentication/authorization beyond the existing admin-only protection.",
-    "Importing or reconstructing product photos from the export file if photos are not present in the exported format."
+    "Do not introduce new routes or new navigation items beyond hiding the existing mobile header \"Contacto\" link.",
+    "Do not change backend canister methods or backend data models for this request.",
+    "Do not redesign the homepage layout beyond the specified banner height adjustment and scroll-loading behavior change.",
+    "Do not add third-party scrolling/infinite-scroll libraries."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

@@ -1,107 +1,36 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T15:09:51.226Z",
-  "summary": "Diff adds an admin Import page route and navigation entries, plus frontend import hook/validation utilities. However, several key requirements (especially backend batch import/atomic behavior and parts of the import UI/flow) are not verifiable from the provided truncated diff, and a migration module was added without an explicit requirement.",
+  "generatedAt": "2026-02-08T22:42:18.649Z",
+  "summary": "REQ-8 and the scroll-based throttled loader UI (REQ-9/REQ-11) appear implemented in the modified public header and homepage categories section. However, the mobile-only banner height reduction (REQ-12) is not evidenced in the provided index.css diff, and the category pagination/append semantics required by REQ-10 cannot be confirmed from the diff summary (hook logic not shown).",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "Import page must provide drag-and-drop + click-to-select area accepting only .json, show valid/invalid indicator and compatibility message, and include a cancel/clear button that aborts an in-progress import request.",
-      "reason": "ImportPage.tsx is truncated before the UI implementation for dropzone accept/reject behavior, validation indicators/messages, and cancel behavior during the actual backend request can be confirmed. While an AbortController/resetState exists, it is not evident that it cancels an in-flight actor call or that drop rejection/accept attributes and Spanish errors are wired.",
-      "evidence": [
-        "frontend/src/pages/admin/ImportPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Client-side flow must read file with FileReader, parse using parseJSONWithBigInt(), validate structure/types with numeric conversion, and auto-trigger backend import (no extra click) with coarse progress states.",
-      "reason": "Parsing with parseJSONWithBigInt() and auto-start intent are shown, but the diff shows using file.text() rather than FileReader, and the code section that prepares validated/converted ImportData and triggers the backend call is truncated.",
-      "evidence": [
-        "frontend/src/pages/admin/ImportPage.tsx (truncated)",
-        "frontend/src/utils/importValidation.ts (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Use standardized ApiResponseHandler patterns for backend import request, show Spanish errors, and show a Spanish success toast summarizing imported/updated counts.",
-      "reason": "useAdminImport uses createApiError and imports ApiResponseHandler utilities, but the standardized handler usage and success toast summarizing imported/updated counts are not confirmed in the truncated ImportPage implementation. Also, the returned result shape in useAdminImport does not show 'updated' counts.",
-      "evidence": [
-        "frontend/src/hooks/useAdminImport.ts",
-        "frontend/src/pages/admin/ImportPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "After import completion, show Import Results section with imported/updated counts for categories/products and error count, plus links to /admin/categories and /admin/products and a reset action.",
-      "reason": "ImportPage.tsx is truncated before any completed/results UI can be verified (counts display, error count, action links, reset/clear results).",
-      "evidence": [
-        "frontend/src/pages/admin/ImportPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Backend must expose batchImportData(importData: ImportData): async ImportResult handling full import in a single call and returning counts and errors.",
-      "reason": "Frontend calls actor.batchImportData, but the backend/main.mo diff is truncated and does not show the batchImportData method definition or ImportResult shape.",
-      "evidence": [
-        "frontend/src/hooks/useAdminImport.ts",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "requirement": "batchImportData must be atomic/transactional: any failure causes rollback/no partial persistence and returns structured errors.",
-      "reason": "No evidence in the truncated backend diff that the import applies changes atomically or performs rollback on failure.",
-      "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "requirement": "After importing categories, lastCategoryId must be updated to at least (max imported categoryId + 1) without decreasing.",
-      "reason": "A migration module contains logic to recompute lastCategoryId from existing categories, but there is no visible evidence that batchImportData updates lastCategoryId based on imported IDs at import time.",
-      "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
       "id": "REQ-10",
-      "requirement": "Product import must upsert by barcode; preserve existing photo when imported product photo is missing/empty on update.",
-      "reason": "No evidence in the truncated backend diff that products are matched by barcode, upserted, or that photo preservation logic exists.",
+      "requirement": "Each scroll trigger loads and appends exactly 5 additional categories without replacing/resetting existing ones; preserve backend ordering; track total/hasMore correctly; avoid duplicates.",
+      "reason": "The component passes a pageSize of 5 into the hook, but the diff does not show the hook implementation or any explicit logic proving that each trigger appends exactly 5 additional categories, maintains ordering by the order field, prevents duplicates, and correctly computes hasMore/total.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "frontend/src/components/public/home/HomepageCategoriesSection.tsx"
       ]
     },
     {
-      "id": "REQ-11",
-      "requirement": "Import must reject/abort if any product references invalid categoryId after category upsert, and do so atomically.",
-      "reason": "No evidence in the truncated backend diff of category reference validation and atomic abort behavior.",
+      "id": "REQ-12",
+      "requirement": "Reduce the home page banner height by 20% on mobile screens only via responsive CSS media queries appended below the existing :root block in frontend/src/index.css (do not modify the :root block); desktop banner unchanged.",
+      "reason": "The diff shows the :root block and other CSS, but does not show any appended media-query CSS that adjusts the .store-banner (or banner) height on mobile; StoreBanner was changed to use className=\"store-banner\" but no corresponding CSS change is evidenced.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "frontend/src/index.css",
+        "frontend/src/components/public/home/StoreBanner.tsx"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Added backend stable-state migration module (migration.mo) and wired actor to run migration.",
-      "reason": "BuildRequest allows adding migration.mo only if strictly necessary, but it did not explicitly request a migration. The diff introduces backend/migration.mo and modifies backend/main.mo to include it regardless of demonstrated necessity in the diff summary.",
-      "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (truncated)"
-      ]
-    }
-  ],
-  "confidence": 0.62,
+  "hallucinated_features": [],
+  "confidence": 0.72,
   "changed_files": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/admin/AdminSidebar.tsx",
-    "frontend/src/hooks/useAdminImport.ts",
-    "frontend/src/pages/admin/DashboardHomePage.tsx",
-    "frontend/src/pages/admin/ImportPage.tsx",
-    "frontend/src/router.tsx",
-    "frontend/src/utils/importValidation.ts",
+    "frontend/src/components/public/PublicHeader.tsx",
+    "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+    "frontend/src/components/public/home/StoreBanner.tsx",
+    "frontend/src/index.css",
+    "frontend/src/utils/throttle.ts",
     "project_state.json"
   ]
 }

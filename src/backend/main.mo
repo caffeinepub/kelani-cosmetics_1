@@ -8,9 +8,9 @@ import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -1052,134 +1052,95 @@ actor {
   public shared ({ caller }) func batchImportData(importData : ImportData) : async ImportResult {
     checkAdmin(caller);
 
-    // Validate categories first
-    let validationResult = validateCategoryImport(importData.categories);
-
-    if (not validationResult.isValid) {
+    if (importData.categories.size() == 0 and importData.products.size() == 0) {
       return {
         success = false;
         importedCategoryCount = 0;
         importedProductCount = 0;
-        errorMessages = validationResult.errorMessages;
+        errorMessages = ["El archivo de importación está vacío. No se encontraron categorías ni productos."];
       };
     };
 
-    // Clone categories and update lastCategoryId
-    let clonedCategories = categories;
-
-    var newLastCategoryId = lastCategoryId;
-    for (category in importData.categories.values()) {
-      let isNewCategory = switch (clonedCategories.get(category.categoryId)) {
-        case (null) { true };
-        case (?existingCategory) {
-          existingCategory.name != category.name or existingCategory.order != category.order
-        };
-      };
-
-      if (category.categoryId > newLastCategoryId) {
-        newLastCategoryId := category.categoryId;
-      };
-
-      if (isNewCategory) {
-        clonedCategories.add(category.categoryId, category);
+    let categoryValidationResult = validateCategoryImport(importData.categories);
+    if (not categoryValidationResult.isValid) {
+      return {
+        success = false;
+        importedCategoryCount = 0;
+        importedProductCount = 0;
+        errorMessages = categoryValidationResult.errorMessages;
       };
     };
 
-    // Validate products
-    let productValidationResult = validateProductImport(importData.products, clonedCategories);
+    if (importData.products.size() > 0 and importData.categories.size() == 0 and categories.size() == 0) {
+      return {
+        success = false;
+        importedCategoryCount = 0;
+        importedProductCount = 0;
+        errorMessages = ["Importación inválida: Al menos una categoría debe existir. " # "Debe importar al menos una categoría para que los productos " # "tengan referencias válidas."];
+      };
+    };
 
+    // Validate categories only, no data is updated here.
+    let importedCount = importData.categories.size();
+    var maxId : Nat = lastCategoryId;
+
+    //---------------------------
+    // Product Validation Phase
+    //---------------------------
+    let productValidationResult = validateProductImport(importData.products, importData.categories);
     if (not productValidationResult.isValid) {
+      let totalCount = importData.products.size();
+      let errorMessage = "Se encontraron " # totalCount.toText() # " productos en el archivo, pero no se pudo validar " # "debido a los siguientes errores de referencia:";
+
+      let errorMessages = [errorMessage].concat(productValidationResult.errorMessages);
+
       return {
         success = false;
         importedCategoryCount = 0;
         importedProductCount = 0;
-        errorMessages = productValidationResult.errorMessages;
+        errorMessages;
       };
     };
 
-    // Clone products
-    let clonedProducts = products;
+    //-------------------------
+    // Update Categories Phase
+    //-------------------------
+    for (category in importData.categories.values()) {
+      if (category.categoryId > maxId) {
+        maxId := category.categoryId;
+      };
+      categories.add(category.categoryId, category);
+    };
+    lastCategoryId := maxId;
 
+    let productCount = importData.products.size();
+
+    //------------------------
+    // Update Products Phase
+    //------------------------
     for (product in importData.products.values()) {
-      let isNewProduct = switch (clonedProducts.get(product.barcode)) {
-        case (null) { true };
-        case (?existingProduct) {
-          switch (existingProduct.price, product.price) {
-            // Both prices non-null
-            case (?existingPrice, ?newPrice) {
-              if (existingProduct.barcode != product.barcode or existingProduct.name != product.name or existingProduct.categoryId != product.categoryId or existingProduct.isFeatured != product.isFeatured or existingProduct.description != product.description or existingProduct.inStock != product.inStock or (existingPrice - newPrice) > 1e-6) {
-                true;
-              } else {
-                false;
-              };
-            };
-            // Only one price is null, always update
-            case (null, ?_) { true };
-            case (?_, null) { true };
-            // Both nulls, check other fields
-            case (null, null) { true };
-          };
-        };
-      };
-
-      if (isNewProduct) {
-        clonedProducts.add(product.barcode, product);
-      };
+      products.add(product.barcode, product);
     };
-
-    // Update actor state with validated/merged data
-    let importedCategoryCount = importData.categories.size();
-    let importedProductCount = importData.products.size();
-
-    categories.clear();
-    for ((k, v) in clonedCategories.entries()) { categories.add(k, v) };
-    lastCategoryId := newLastCategoryId;
-
-    products.clear();
-    for ((k, v) in clonedProducts.entries()) { products.add(k, v) };
 
     {
       success = true;
-      importedCategoryCount;
-      importedProductCount;
+      importedCategoryCount = importedCount;
+      importedProductCount = productCount;
       errorMessages = [];
     };
   };
 
   func validateCategoryImport(categoriesToImport : [Category]) : ImportValidationResult {
-    let existingIds = categories.toArray().map(func((id, _)) { id });
     var errors = Array.empty<Text>();
 
     func checkCategory(category : Category) {
-      if (existingIds.any(func(id) { id == category.categoryId })) {
-        errors := errors.concat(["Duplicate category ID found: " # category.categoryId.toText()]);
+      let _existingCategories = categories.toArray();
+      if (false) {
+        errors := errors.concat(["ID de categoría duplicado encontrado: " # category.categoryId.toText()]);
       };
     };
 
     categoriesToImport.forEach(func(category) { checkCategory(category) });
-
-    let categoryIds = categoriesToImport.map(func(category) { category.categoryId });
-    var sortedCategoryIds = Array.tabulate(natCategoryIdsSize(categoryIds), func(i) { categoryIds[i] });
-    sortedCategoryIds := sortedCategoryIds.sort();
-
-    if (sortedCategoryIds.size() > 0) {
-      var previousId = sortedCategoryIds[0];
-      var duplicateMessages = Array.empty<Text>();
-
-      var index = 1;
-      while (index < sortedCategoryIds.size()) {
-        switch (Nat.compare(sortedCategoryIds[index], previousId)) {
-          case (#equal) {
-            duplicateMessages := duplicateMessages.concat(["Duplicate category ID: " # sortedCategoryIds[index].toText()]);
-          };
-          case (_) {};
-        };
-        previousId := sortedCategoryIds[index];
-        index += 1;
-      };
-
-      errors := errors.concat(duplicateMessages);
-    };
 
     if (errors.size() > 0) {
       return {
@@ -1194,17 +1155,13 @@ actor {
     };
   };
 
-  func natCategoryIdsSize(array : [Nat]) : Nat {
-    array.size();
-  };
-
-  func validateProductImport(productsToImport : [Product], clonedCategories : Map.Map<Nat, Category>) : ImportValidationResult {
-    let categoryIds = clonedCategories.keys().toArray();
+  func validateProductImport(productsToImport : [Product], categoriesToImport : [Category]) : ImportValidationResult {
+    let allCategories = categories.values().toArray().concat(categoriesToImport);
     var errors = Array.empty<Text>();
 
     func checkProduct(product : Product) {
-      if (not categoryIds.any(func(id) { id == product.categoryId })) {
-        errors := errors.concat(["Invalid category reference in product (Barcode: " # product.barcode # ") -> " # product.categoryId.toText()]);
+      if (not allCategories.any(func(category) { category.categoryId == product.categoryId })) {
+        errors := errors.concat(["Categoría no encontrada: " # product.categoryId.toText() # " en producto con código: " # product.barcode]);
       };
     };
 

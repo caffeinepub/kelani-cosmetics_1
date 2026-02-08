@@ -1,19 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add an admin-only Import page to upload an exported JSON file and import categories and products in a single, atomic backend batch request.
+**Goal:** Refine the home page and navigation for better mobile UX: simplify the mobile header, adjust mobile banner height, and make category loading occur only when the user scrolls near the page bottom with clear loading/end states.
 
 **Planned changes:**
-- Create a new admin-protected route `/admin/import` that accepts previously exported JSON files matching the `ImportData` structure.
-- Add navigation to `/admin/import` from the admin sidebar and admin dashboard, positioned after Export, with correct active-route styling.
-- Build the Import page UI: JSON-only drag-and-drop/click upload, Import Information (filename/counts/date/validity), cancel/clear behavior (including aborting an in-flight request), progress states, and Spanish validation/error messages.
-- Implement client flow to read the file, parse via `parseJSONWithBigInt()`, validate/convert numeric fields, and automatically start the import call (no manual submit button).
-- Use shared API utilities and standardized `ApiResponseHandler` patterns; show Spanish success toast and errors; keep UI responsive for large files.
-- Show Import Results (imported/updated counts + error count), provide links to `/admin/categories` and `/admin/products`, and allow resetting the interface.
-- Add backend actor method `batchImportData(importData: ImportData): async ImportResult` to upsert categories first, then products, in a single request.
-- Enforce atomic/transactional semantics: on any validation/consistency failure, persist nothing and return structured errors.
-- Update backend `lastCategoryId` after category import to avoid future ID conflicts (without decreasing it).
-- Import products by matching on `barcode` (update if exists, create if not) and preserve existing product photo when the incoming photo field is empty/missing on update.
-- Validate category-product references during import and reject/abort atomically if any product references an invalid categoryId.
+- Update the public header so the “Contacto” link is hidden on mobile breakpoints (hamburger + logo only), while keeping desktop header behavior unchanged and retaining “Contacto” in the left side panel navigation linking to `/contacto`.
+- Replace the home page categories IntersectionObserver infinite-scroll trigger with a throttled window scroll listener that loads more only when the user scrolls within 500px of the bottom (and only when not already fetching and more categories exist).
+- Change incremental category pagination so each scroll trigger appends exactly 5 more categories (including associated products per current implementation), preserving category ordering and avoiding duplicates or resetting previously rendered categories.
+- Add a centered loading area beneath the last category: show a spinner with the exact text “Cargando más categorías...” during fetches, and when all categories are loaded show the persistent message “No hay más categorías para mostrar”.
+- Reduce the home page banner height by 20% on mobile only via media-query CSS appended to `frontend/src/index.css`, without modifying the existing `:root` CSS variables block.
 
-**User-visible outcome:** Admins can navigate to `/admin/import`, drop/select an exported JSON file, see validation info, and have categories/products imported automatically in one atomic operation, with Spanish status messages, a success toast, and a results summary plus links to manage categories/products.
+**User-visible outcome:** On mobile, the header shows only the menu button and logo (with “Contacto” still available in the side panel), the home banner is shorter, and more categories load only as the user scrolls near the bottom—showing “Cargando más categorías...” while loading and “No hay más categorías para mostrar” when finished.

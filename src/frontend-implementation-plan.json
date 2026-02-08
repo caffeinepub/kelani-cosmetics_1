@@ -1,124 +1,117 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin Import page with automatic JSON validation and batch import",
+  "title": "Mobile header adjustment, banner height tweak, and scroll-triggered homepage category loading",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Add a new admin-only /admin/import page that accepts the existing export JSON format and maps it into the backend ImportData call shape.",
+      "id": "REQ-8",
+      "summary": "Hide the \"Contacto\" link in the mobile public header while keeping desktop header behavior and side panel navigation unchanged.",
       "acceptanceCriteria": [
-        "Visiting `/admin/import` as a non-admin shows the existing admin access denied flow (via AdminRoute protection).",
-        "Visiting `/admin/import` as an admin renders the import UI (no blank page / route not found).",
-        "The page accepts JSON files exported by `/admin/export` without needing manual edits to the file."
+        "On mobile breakpoints, the header shows only the hamburger menu button and the logo/brand link (no \"Contacto\" link).",
+        "On desktop breakpoints, the header still shows the \"Contacto\" link as it does today.",
+        "The side panel navigation still includes the \"Contacto\" link and it continues to navigate to /contacto.",
+        "No other header navigation behavior is changed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/admin/ImportPage.tsx",
+          "path": "frontend/src/components/public/PublicHeader.tsx",
+          "operation": "modify",
+          "description": "Make the \"Contacto\" header nav link responsive (hidden on mobile, visible on desktop) using existing breakpoint classes; ensure the mobile header visually remains hamburger + logo only while keeping the /contacto Link intact for desktop."
+        },
+        {
+          "path": "frontend/src/components/public/PublicSidePanel.tsx",
+          "operation": "modify",
+          "description": "Confirm the side panel continues to render the \"Contacto\" link pointing to /contacto and that no changes are introduced while adjusting the header behavior."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Replace IntersectionObserver infinite-scroll triggering on the homepage categories list with a throttled window scroll listener that loads when within 500px of the page bottom.",
+      "acceptanceCriteria": [
+        "Homepage category loading is not triggered by an IntersectionObserver sentinel (remove/disable sentinel-based triggering).",
+        "A scroll event listener is used, and it is throttled to avoid excessive calls during rapid scrolling.",
+        "Distance-to-bottom is computed dynamically from document height and current scroll position.",
+        "A load is triggered only when the user scrolls and the distance to bottom is <= 500px, and only when not already fetching and when more categories exist."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+          "operation": "modify",
+          "description": "Remove sentinel/intersection-observer based triggering and implement a throttled window scroll listener; compute dynamic distance-to-bottom and call loadMore only on scroll when <= 500px, hasMore is true, and not already fetching."
+        },
+        {
+          "path": "frontend/src/hooks/useIntersectionObserver.ts",
+          "operation": "modify",
+          "description": "Ensure the IntersectionObserver hook is no longer required by the homepage categories flow (keep the file if used elsewhere); if unused after changes, simplify exports or add a clear comment noting it is not used by the homepage infinite loading anymore."
+        },
+        {
+          "path": "frontend/src/utils/throttle.ts",
           "operation": "create",
-          "description": "Create the Import admin page UI shell and state machine (idle/validating/importing/completed/error) and ensure it reads the exported JSON shape (categories, products, exportTimestamp, itemCounts) while preparing data for the backend import call. Use the authorization component via the existing AdminRoute protection to keep the page admin-only. Verify the component's usage instructions before implementing."
+          "description": "Add a small, reusable throttle utility for scroll handlers (time-based throttling) to avoid excessive calls during rapid scrolling."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Change homepage category pagination so each scroll trigger appends exactly 5 categories, preserves ordering, and avoids duplicates or resets.",
+      "acceptanceCriteria": [
+        "Initial home page render shows the first page of categories (as currently implemented), and subsequent loads append additional categories below the existing ones.",
+        "Each scroll-triggered load requests 5 categories per page (page size = 5 for incremental loads).",
+        "Loaded categories include their products exactly as returned today by the existing homepage categories query logic.",
+        "Category ordering remains consistent with the backend-provided ordering (by the existing order field).",
+        "The UI tracks total categories and correctly determines when all categories are loaded (hasMore becomes false at the right time).",
+        "No duplicate categories are appended when loading multiple pages."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+          "operation": "modify",
+          "description": "Set the homepage categories incremental page size to exactly 5 per scroll-triggered load (remove mobile-specific page size reduction for category pagination) while continuing to append newly fetched categories beneath existing ones."
         },
         {
-          "path": "frontend/src/router.tsx",
+          "path": "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
           "operation": "modify",
-          "description": "Register the new `/admin/import` route under the existing `/admin` protected route tree and wire it to the new ImportPage component so the page is reachable and not a route-not-found."
+          "description": "Ensure pagination/accumulation logic supports fixed page size = 5 for incremental loads, never resets already-rendered categories, preserves backend-provided ordering, correctly tracks totalCategories/hasMore, and prevents duplicates across pages."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Add Import navigation entry after Export in the admin sidebar and admin dashboard cards.",
+      "id": "REQ-11",
+      "summary": "Show centered incremental loading and end-of-content states beneath the last category with exact Spanish strings.",
       "acceptanceCriteria": [
-        "Admin sidebar shows an Import entry after Export and it navigates to `/admin/import`.",
-        "Admin dashboard home shows an Import card after Export and it navigates to `/admin/import`.",
-        "The active route styling in the sidebar works for `/admin/import` like other admin routes."
+        "While additional categories are being fetched (incremental fetch), a spinner is shown centered below the last rendered category with the text \"Cargando más categorías...\".",
+        "When there are no more categories to load, the loading area shows only \"No hay más categorías para mostrar\" and the message remains visible without disappearing or reverting.",
+        "The loading/end-of-content UI is positioned below the last loaded category and centered horizontally.",
+        "All displayed strings for these states match the required Spanish text exactly."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/admin/AdminSidebar.tsx",
+          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
           "operation": "modify",
-          "description": "Add an 'Importar' nav item after the existing 'Exportar' item, pointing to `/admin/import`, including an appropriate lucide icon, and ensure currentPath active styling applies for that route."
+          "description": "Render a dedicated bottom status area beneath the last category that (a) shows a centered spinner + exact text \"Cargando más categorías...\" during incremental fetches, and (b) replaces it with the persistent exact text \"No hay más categorías para mostrar\" when hasMore becomes false."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Reduce the home page banner height by 20% on mobile only via index.css media queries, keeping desktop unchanged and preserving the :root variables block.",
+      "acceptanceCriteria": [
+        "On mobile breakpoints, the banner height is reduced by 20% relative to its current mobile height (e.g., 400px becomes 320px).",
+        "On desktop breakpoints, the banner height remains unchanged compared to current behavior.",
+        "The banner’s text remains readable and remains properly positioned within the reduced banner height (no clipping/overlap).",
+        "Any new CSS required for the mobile-only height adjustment is appended below the existing :root theme variables block in frontend/src/index.css, and the :root block is left completely unchanged (same variable names, values, and structure)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/home/StoreBanner.tsx",
+          "operation": "modify",
+          "description": "Add a stable class name on the banner container (e.g., for targeting in CSS) and adjust Tailwind height usage so mobile height can be reduced via index.css while keeping the existing desktop height behavior unchanged."
         },
         {
-          "path": "frontend/src/pages/admin/DashboardHomePage.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Add an 'Importar' dashboard navigation card after 'Exportar', linking to `/admin/import`, using the existing DashboardNavCard composition."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Build Import page sections: import info, JSON-only dropzone/file picker, and cancel/clear that also stops in-progress work.",
-      "acceptanceCriteria": [
-        "After selecting a JSON file, the page shows: selected filename, categories count, products count, and a formatted export date.",
-        "The page shows a clear valid/invalid indicator (green check vs red X) and a short compatibility message.",
-        "The file input prevents non-JSON selection (accept attribute) and the dropzone rejects non-JSON drops with a Spanish error message.",
-        "Clicking Cancel removes the selected file and resets validation/result state; if an import request is running, it is aborted/cancelled on the client side (e.g., AbortController) and the UI returns to idle."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/ImportPage.tsx",
-          "operation": "modify",
-          "description": "Implement (1) Import Information section (filename, parsed counts, export date, validation status + compatibility message), (2) drag-and-drop + click-to-select area with `accept='.json,application/json'` and Spanish rejection messaging for non-JSON drops, and (3) a 'Cancelar importación' control that clears selected file + resets UI state and cancels in-flight FileReader/parsing/import flow via an AbortController-like pattern (best-effort cancellation, ensuring UI returns to idle)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Implement automatic client-side flow: read file, parse with parseJSONWithBigInt, validate/convert numeric fields, then auto-trigger backend import with coarse progress states.",
-      "acceptanceCriteria": [
-        "Selecting a valid export JSON automatically starts the import API call (no separate Submit/Import button).",
-        "Parsing uses `parseJSONWithBigInt()` (not plain `JSON.parse`) to correctly handle BigInt-like timestamp fields.",
-        "Client-side validation catches and displays (in Spanish) at least: invalid JSON, missing required fields, and type mismatches.",
-        "All numeric fields are validated and converted before calling the backend (e.g., stringified numbers become numbers/bigints as required by the actor interface).",
-        "UI shows a validating/loading state and then a completed state; it does not attempt real-time progress updates."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/importValidation.ts",
-          "operation": "create",
-          "description": "Add reusable import parsing/validation helpers that: read parsed export JSON (including exportTimestamp and itemCounts), validate presence/types, validate numeric fields (including IDs/orders/dates/prices), and convert values into the actor-compatible ImportData shape (BigInt for bigint fields; number for numeric fields like price; booleans for flags). Use parseJSONWithBigInt() and NumericConverter utilities for safe conversions and produce Spanish validation error messages when failing."
-        },
-        {
-          "path": "frontend/src/pages/admin/ImportPage.tsx",
-          "operation": "modify",
-          "description": "Wire the selection/drop flow to: FileReader read → parseJSONWithBigInt() → validate/convert via importValidation utilities → set status text in Spanish (e.g., 'Validando datos...', 'Importando...', 'Importación completada') → automatically start the import call immediately after validation success (no extra button). Ensure large-file scenarios keep UI responsive by using async breaks (e.g., microtask/setTimeout) around parsing/validation and by showing a loading state."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Call backend batch import via the shared actor utilities and standardized ApiResponseHandler-style error handling; show Spanish errors and a Spanish success toast summary.",
-      "acceptanceCriteria": [
-        "Import API failures are surfaced via a consistent Spanish message (no raw stack traces) and do not leave the UI stuck loading.",
-        "On success, a toast appears with a Spanish summary of imported/updated categories and products.",
-        "Large JSON files are handled gracefully: the UI remains responsive (shows loading state), and errors for oversized/slow parsing are reported clearly in Spanish."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useAdminImport.ts",
-          "operation": "create",
-          "description": "Create a dedicated admin import hook that uses the existing actor from useActor to call `batchImportData(...)` and applies standardized ApiResponseHandler patterns by wrapping/normalizing thrown errors (e.g., via createApiError) into consistent Spanish user-facing messages; expose a single async function used by the ImportPage."
-        },
-        {
-          "path": "frontend/src/pages/admin/ImportPage.tsx",
-          "operation": "modify",
-          "description": "Use the new useAdminImport hook to invoke the batch import call, handle success/failure via standardized patterns (ApiResponseHandler-style normalization + reportErrorWithToast), and show a Spanish success toast summarizing imported/updated counts from the ImportResult (and any error count messaging), ensuring loading state always resolves."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Show Import Results after completion with counts, links to Categories/Products pages, and a reset action to start another import.",
-      "acceptanceCriteria": [
-        "After a successful import, the results summary is visible on the page with category count, product count, and errors count if present.",
-        "The page provides working links to `/admin/categories` and `/admin/products`.",
-        "A Reset/Clear Results action returns the page to the initial state (no file selected, no validation status, no results)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/ImportPage.tsx",
-          "operation": "modify",
-          "description": "Add an Import Results section rendered after import completion, showing counts from ImportResult (categories imported/updated, products imported/updated, and error count/messages if present), add navigation links to `/admin/categories` and `/admin/products`, and provide a reset button that returns the entire import UI to the initial idle state."
+          "description": "Append (below the existing :root block without modifying it) responsive CSS media queries that reduce the StoreBanner mobile height by 20% (e.g., 400px -> 320px) while leaving desktop height unchanged; ensure banner content remains readable (no clipping/overlap)."
         }
       ]
     }

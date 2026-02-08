@@ -1,28 +1,42 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useHomepageCategoriesInfinite } from '../../../hooks/useHomepageCategoriesInfinite';
-import { useIntersectionObserver } from '../../../hooks/useIntersectionObserver';
-import { useIsMobile } from '../../../hooks/useMediaQuery';
+import { throttle } from '../../../utils/throttle';
 import CategorySection from './CategorySection';
+import { useIsMobile } from '../../../hooks/useMediaQuery';
 
 const HomepageCategoriesSection = React.memo(function HomepageCategoriesSection() {
   const isMobile = useIsMobile();
-  const pageSize = isMobile ? 3 : 5;
+  // Fixed page size of 5 categories per load for all devices
+  const pageSize = 5;
 
   const { categories, isLoading, isFetchingMore, hasMore, error, loadMore } =
     useHomepageCategoriesInfinite(pageSize);
 
-  const [sentinelRef, isIntersecting] = useIntersectionObserver({
-    threshold: 0.1,
-    rootMargin: '100px',
-  });
+  // Scroll handler with throttling
+  const handleScroll = useCallback(
+    throttle(() => {
+      // Calculate distance to bottom
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+      const distanceToBottom = scrollHeight - (scrollTop + clientHeight);
 
-  // Trigger load more when sentinel is visible
+      // Trigger load when within 500px of bottom
+      if (distanceToBottom <= 500 && hasMore && !isFetchingMore) {
+        loadMore();
+      }
+    }, 200), // Throttle to 200ms
+    [hasMore, isFetchingMore, loadMore]
+  );
+
+  // Attach scroll listener
   useEffect(() => {
-    if (isIntersecting && hasMore && !isFetchingMore) {
-      loadMore();
-    }
-  }, [isIntersecting, hasMore, isFetchingMore, loadMore]);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
 
   if (isLoading) {
     return (
@@ -58,18 +72,15 @@ const HomepageCategoriesSection = React.memo(function HomepageCategoriesSection(
         />
       ))}
 
-      {/* Infinite scroll sentinel */}
-      {hasMore && (
-        <div ref={sentinelRef as React.RefObject<HTMLDivElement>} className="py-8">
-          {isFetchingMore && (
-            <div className="flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-              <span className="text-muted-foreground">Cargando más categorías...</span>
-            </div>
-          )}
+      {/* Loading indicator when fetching more */}
+      {isFetchingMore && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+          <span className="text-muted-foreground">Cargando más categorías...</span>
         </div>
       )}
 
+      {/* End of content message */}
       {!hasMore && categories.length > 0 && (
         <div className="text-center py-8">
           <p className="text-muted-foreground text-sm">No hay más categorías para mostrar</p>

@@ -24,6 +24,59 @@ interface ImportResultData {
   errorMessages: string[];
 }
 
+/**
+ * Safely formats a nanosecond timestamp (BigInt) for display
+ * @param timestampNs - Nanosecond timestamp as BigInt
+ * @returns Formatted date string or "Desconocida" if invalid
+ */
+function formatNanosecondTimestamp(timestampNs: bigint | number | string | undefined): string {
+  try {
+    if (timestampNs === undefined || timestampNs === null) {
+      return 'Desconocida';
+    }
+
+    // Convert to BigInt if needed
+    let nsBigInt: bigint;
+    if (typeof timestampNs === 'bigint') {
+      nsBigInt = timestampNs;
+    } else if (typeof timestampNs === 'number') {
+      nsBigInt = BigInt(Math.floor(timestampNs));
+    } else if (typeof timestampNs === 'string') {
+      nsBigInt = BigInt(timestampNs);
+    } else {
+      return 'Desconocida';
+    }
+
+    // Convert nanoseconds to milliseconds
+    const msTimestamp = nsBigInt / 1_000_000n;
+
+    // Check if the millisecond value is within safe integer range for Date
+    const MAX_SAFE_MS = BigInt(Number.MAX_SAFE_INTEGER);
+    if (msTimestamp > MAX_SAFE_MS || msTimestamp < 0n) {
+      return 'Desconocida';
+    }
+
+    // Safe to convert to number for Date constructor
+    const date = new Date(Number(msTimestamp));
+    
+    // Validate the date
+    if (isNaN(date.getTime())) {
+      return 'Desconocida';
+    }
+
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch (error) {
+    console.warn('Error formatting timestamp:', error);
+    return 'Desconocida';
+  }
+}
+
 export default function ImportPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,20 +149,12 @@ export default function ImportPage() {
       // Check if operation was cancelled
       if (signal.aborted) return;
 
-      // Extract file info
+      // Extract file info with safe timestamp formatting
       const info: FileInfo = {
         name: file.name,
         categoriesCount: parsedData.categories?.length || 0,
         productsCount: parsedData.products?.length || 0,
-        exportDate: parsedData.exportTimestamp
-          ? new Date(Number(parsedData.exportTimestamp)).toLocaleString('es-ES', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'Desconocida',
+        exportDate: formatNanosecondTimestamp(parsedData.exportTimestamp),
       };
       setFileInfo(info);
 
@@ -119,7 +164,7 @@ export default function ImportPage() {
       // Auto-start import after successful validation
       setStatus('importing');
 
-      // Prepare import data
+      // Prepare import data - timestamps are already BigInt from validation
       const importPayload: ImportData = {
         categories: validation.validatedData.categories,
         products: validation.validatedData.products,
@@ -128,7 +173,7 @@ export default function ImportPage() {
       // Check if operation was cancelled
       if (signal.aborted) return;
 
-      // Call backend import
+      // Call backend import - no serialization needed, actor handles BigInt
       const result = await importData(importPayload);
 
       // Check if operation was cancelled
@@ -158,313 +203,266 @@ export default function ImportPage() {
         );
       }
     } catch (error: any) {
-      // Don't show error if operation was cancelled
       if (signal.aborted) return;
 
       console.error('Import error:', error);
-      setValidationError(
-        error.message || 'Error inesperado durante la importación'
-      );
+      setValidationError(error.message || 'Error desconocido durante la importación');
       setStatus('error');
-      reportErrorWithToast(error, 'Error al procesar el archivo');
+      reportErrorWithToast(error, 'Error durante la importación');
     }
   }, [importData]);
 
-  const handleFileSelect = useCallback((file: File | null) => {
-    if (!file) return;
-
-    // Validate file type
-    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-      reportErrorWithToast(
-        new Error('Invalid file type'),
-        'Solo se permiten archivos JSON'
-      );
-      return;
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      processFile(file);
     }
-
-    processFile(file);
   }, [processFile]);
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    handleFileSelect(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsDragging(false);
 
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-        reportErrorWithToast(
-          new Error('Invalid file type'),
-          'Solo se permiten archivos JSON'
-        );
-        return;
-      }
-      handleFileSelect(file);
+    const file = event.dataTransfer.files?.[0];
+    if (file && file.type === 'application/json') {
+      processFile(file);
+    } else {
+      setValidationError('Por favor, selecciona un archivo JSON válido');
+      setStatus('error');
     }
-  };
+  }, [processFile]);
 
-  const handleClickUpload = () => {
+  const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
-  };
-
-  const isValidFormat = status === 'validating' || status === 'importing' || status === 'completed';
-  const isInvalidFormat = status === 'error';
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-          <Upload className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Importar Datos
-          </h1>
-          <p className="text-muted-foreground">
-            Importación de categorías y productos desde archivo JSON
-          </p>
-        </div>
+    <div className="container mx-auto max-w-4xl py-8 px-4">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Importar Datos</h1>
+        <p className="text-muted-foreground">
+          Importa categorías y productos desde un archivo JSON exportado previamente
+        </p>
       </div>
 
-      {/* Import Information Section */}
-      {fileInfo && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Información del Archivo</CardTitle>
-            <CardDescription>
-              Detalles del archivo seleccionado
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* File Statistics */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <FileJson className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-foreground">Archivo seleccionado:</span>
-                <span className="text-muted-foreground">{fileInfo.name}</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <Tag className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-foreground">Categorías en archivo:</span>
-                <span className="text-muted-foreground">{fileInfo.categoriesCount}</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-foreground">Productos en archivo:</span>
-                <span className="text-muted-foreground">{fileInfo.productsCount}</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-foreground">Fecha de exportación:</span>
-                <span className="text-muted-foreground">{fileInfo.exportDate}</span>
-              </div>
-            </div>
-
-            {/* Validation Status */}
-            <div className="rounded-lg border border-border bg-muted/30 p-4">
-              <div className="flex items-center gap-3">
-                {isValidFormat && (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">✓ Formato válido</p>
-                      <p className="text-xs text-muted-foreground">
-                        Estructura JSON compatible con Kelani Cosmetics
-                      </p>
-                    </div>
-                  </>
-                )}
-                {isInvalidFormat && (
-                  <>
-                    <XCircle className="h-5 w-5 text-destructive" />
-                    <div>
-                      <p className="text-sm font-medium text-destructive">✗ Formato inválido</p>
-                      <p className="text-xs text-muted-foreground">
-                        {validationError || 'Error de validación'}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* File Upload Section */}
-      {status !== 'completed' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Seleccionar Archivo</CardTitle>
-            <CardDescription>
-              Arrastra tu archivo JSON aquí o haz clic para seleccionar
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Drag and Drop Area */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={handleClickUpload}
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors ${
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50'
-              }`}
-            >
-              <FileJson className="mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="mb-2 text-sm font-medium text-foreground">
-                {isDragging
-                  ? 'Suelta el archivo aquí'
-                  : 'Arrastra tu archivo JSON aquí o haz clic para seleccionar'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Solo archivos .json
-              </p>
-            </div>
-
+      {/* Upload Area */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Seleccionar Archivo</CardTitle>
+          <CardDescription>
+            Arrastra y suelta un archivo JSON o haz clic para seleccionar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`
+              border-2 border-dashed rounded-lg p-12 text-center transition-colors
+              ${isDragging ? 'border-primary bg-primary/5' : 'border-border'}
+              ${status === 'idle' || status === 'error' ? 'cursor-pointer hover:border-primary hover:bg-primary/5' : ''}
+            `}
+            onClick={status === 'idle' || status === 'error' ? handleUploadClick : undefined}
+          >
             <input
               ref={fileInputRef}
               type="file"
-              accept=".json,application/json"
-              onChange={handleFileInputChange}
+              accept="application/json"
+              onChange={handleFileSelect}
               className="hidden"
+              disabled={status === 'validating' || status === 'importing'}
             />
 
-            {/* Status Messages */}
+            {status === 'idle' && (
+              <>
+                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">Selecciona un archivo JSON</p>
+                <p className="text-sm text-muted-foreground">
+                  o arrastra y suelta aquí
+                </p>
+              </>
+            )}
+
             {status === 'validating' && (
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="text-sm text-foreground">Validando datos...</p>
-              </div>
+              <>
+                <FileJson className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
+                <p className="text-lg font-medium mb-2">Validando archivo...</p>
+                <p className="text-sm text-muted-foreground">
+                  Por favor espera mientras se valida el contenido
+                </p>
+              </>
             )}
 
             {status === 'importing' && (
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="text-sm text-foreground">Importando datos...</p>
-              </div>
+              <>
+                <Upload className="w-12 h-12 mx-auto mb-4 text-primary animate-bounce" />
+                <p className="text-lg font-medium mb-2">Importando datos...</p>
+                <p className="text-sm text-muted-foreground">
+                  Esto puede tomar unos momentos
+                </p>
+              </>
             )}
 
-            {status === 'error' && validationError && (
-              <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-                <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-destructive">Error de validación</p>
-                  <p className="mt-1 text-xs text-destructive/80">{validationError}</p>
-                </div>
-              </div>
+            {status === 'completed' && (
+              <>
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-600" />
+                <p className="text-lg font-medium mb-2 text-green-600">
+                  ¡Importación completada!
+                </p>
+              </>
             )}
 
-            {/* Cancel Button */}
-            {(status === 'validating' || status === 'importing' || status === 'error') && (
+            {status === 'error' && (
+              <>
+                <XCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+                <p className="text-lg font-medium mb-2 text-destructive">
+                  Error en la importación
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Haz clic para intentar de nuevo
+                </p>
+              </>
+            )}
+          </div>
+
+          {status !== 'idle' && (
+            <div className="mt-4 flex justify-center">
               <Button
-                onClick={resetState}
                 variant="outline"
-                className="w-full sm:w-auto"
+                onClick={resetState}
+                disabled={status === 'validating' || status === 'importing'}
               >
-                Cancelar importación
+                Reiniciar
               </Button>
-            )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* File Info */}
+      {fileInfo && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Información del Archivo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <FileJson className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Nombre del archivo</p>
+                <p className="text-sm text-muted-foreground">{fileInfo.name}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Tag className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Categorías</p>
+                <p className="text-sm text-muted-foreground">{fileInfo.categoriesCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Package className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Productos</p>
+                <p className="text-sm text-muted-foreground">{fileInfo.productsCount}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Fecha de exportación</p>
+                <p className="text-sm text-muted-foreground">{fileInfo.exportDate}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Import Results Section */}
-      {status === 'completed' && importResult && (
-        <Card>
+      {/* Validation Error */}
+      {validationError && status === 'error' && (
+        <Card className="mb-6 border-destructive">
           <CardHeader>
-            <CardTitle>Importación Completada</CardTitle>
-            <CardDescription>
-              Resumen de la importación
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              Error de Validación
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Results Summary */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-foreground">
-                  ✓ {importResult.importedCategoryCount.toString()} categorías importadas/actualizadas
-                </span>
+          <CardContent>
+            <p className="text-sm text-destructive">{validationError}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Import Results */}
+      {importResult && status === 'completed' && (
+        <Card className="mb-6 border-green-600">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle2 className="w-5 h-5" />
+              Resultados de la Importación
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                  Categorías Importadas
+                </p>
+                <p className="text-2xl font-bold text-green-600">
+                  {importResult.importedCategoryCount.toString()}
+                </p>
               </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-foreground">
-                  ✓ {importResult.importedProductCount.toString()} productos importados/actualizados
-                </span>
-              </div>
-
-              {importResult.errorMessages.length > 0 && (
-                <div className="flex items-start gap-2 text-sm">
-                  <XCircle className="h-4 w-4 shrink-0 text-destructive" />
-                  <div>
-                    <span className="font-medium text-destructive">
-                      ✗ {importResult.errorMessages.length} errores
-                    </span>
-                    <ul className="mt-1 list-inside list-disc text-xs text-destructive/80">
-                      {importResult.errorMessages.map((msg, idx) => (
-                        <li key={idx}>{msg}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Post-import Actions */}
-            <div className="space-y-3 pt-4">
-              <p className="text-sm font-medium text-foreground">Ver datos importados:</p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={() => navigate({ to: '/admin/categories' })}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Tag className="mr-2 h-4 w-4" />
-                  Ir a Categorías
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={() => navigate({ to: '/admin/products' })}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Package className="mr-2 h-4 w-4" />
-                  Ir a Productos
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                  Productos Importados
+                </p>
+                <p className="text-2xl font-bold text-green-600">
+                  {importResult.importedProductCount.toString()}
+                </p>
               </div>
             </div>
 
-            {/* Clear Results Button */}
-            <div className="pt-4">
+            {importResult.errorMessages.length > 0 && (
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-2">
+                  Advertencias:
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  {importResult.errorMessages.map((msg, idx) => (
+                    <li key={idx} className="text-sm text-yellow-800 dark:text-yellow-200">
+                      {msg}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
               <Button
-                onClick={resetState}
-                variant="default"
-                className="w-full sm:w-auto"
+                onClick={() => navigate({ to: '/admin/categories' })}
+                className="flex-1"
               >
-                Importar otro archivo
+                Ver Categorías
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                onClick={() => navigate({ to: '/admin/products' })}
+                variant="outline"
+                className="flex-1"
+              >
+                Ver Productos
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </CardContent>

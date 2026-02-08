@@ -31,8 +31,8 @@ export default function PublicHeader({ onToggleSidePanel }: PublicHeaderProps) {
             </Link>
           </div>
 
-          {/* Right section: Contact link */}
-          <nav>
+          {/* Right section: Contact link - hidden on mobile, visible on desktop */}
+          <nav className="hidden md:block">
             <Link
               to="/contacto"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors px-4 py-2"

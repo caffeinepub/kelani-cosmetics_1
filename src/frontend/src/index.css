@@ -174,3 +174,14 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Store Banner Mobile Height Reduction - 20% smaller on mobile */
+.store-banner {
+  height: 320px; /* 400px reduced by 20% = 320px */
+}
+
+@media (min-width: 768px) {
+  .store-banner {
+    height: 500px; /* Desktop height unchanged */
+  }
+}

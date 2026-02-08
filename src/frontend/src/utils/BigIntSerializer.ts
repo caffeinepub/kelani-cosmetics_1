@@ -104,36 +104,44 @@ export function isValidBigIntString(value: string): boolean {
 }
 
 /**
- * Custom JSON parser that handles BigInt strings in specific fields
- * Fields processed as BigInt: createdDate, lastUpdatedDate, timestamp, any field ending with "Date" or "Timestamp"
+ * Custom JSON parser that handles BigInt strings in timestamp fields
+ * Timestamp fields (createdDate, lastUpdatedDate, exportTimestamp, or ending with Date/Timestamp)
+ * are ALWAYS converted to BigInt to preserve nanosecond precision for ICP timestamps.
  * @param jsonString - JSON string to parse
- * @returns Parsed object with BigInt fields converted
+ * @returns Parsed object with timestamp fields as BigInt
  */
 export function parseJSONWithBigInt(jsonString: string): any {
   try {
     return JSON.parse(jsonString, (key, value) => {
-      // Check if this is a field that should be converted to BigInt
-      const shouldConvertToBigInt = 
+      // Check if this is a timestamp field that should be converted to BigInt
+      const isTimestampField = 
         key === 'createdDate' ||
         key === 'lastUpdatedDate' ||
-        key === 'timestamp' ||
+        key === 'exportTimestamp' ||
         key.endsWith('Date') ||
         key.endsWith('Timestamp');
 
-      if (shouldConvertToBigInt && typeof value === 'string' && isValidBigIntString(value)) {
+      // For timestamp fields, always convert valid numeric strings to BigInt
+      if (isTimestampField && typeof value === 'string' && isValidBigIntString(value)) {
         const bigIntValue = safeStringToBigInt(value);
-        // Convert to number if it fits in safe integer range, otherwise keep as BigInt
         if (bigIntValue !== null) {
-          try {
-            const numValue = Number(bigIntValue);
-            if (Number.isSafeInteger(numValue)) {
-              return numValue;
-            }
-            return bigIntValue;
-          } catch {
-            return bigIntValue;
+          return bigIntValue;
+        }
+      }
+
+      // For timestamp fields that are already numbers, convert to BigInt
+      // This handles cases where JSON.parse already converted the string to a number
+      if (isTimestampField && typeof value === 'number') {
+        // Check if precision was lost
+        if (!Number.isSafeInteger(value)) {
+          if (isDevelopment) {
+            console.warn(
+              `[BigIntSerializer] Timestamp field "${key}" has unsafe integer value ${value}. ` +
+              'Precision may have been lost. Ensure timestamps are stored as strings in JSON.'
+            );
           }
         }
+        return BigInt(Math.floor(value));
       }
 
       return value;
