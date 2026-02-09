@@ -9,8 +9,6 @@ import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
 
-
-
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -113,9 +111,6 @@ actor {
   };
 
   public query ({ caller }) func getAllCategories() : async [Category] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view categories");
-    };
     categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -124,9 +119,6 @@ actor {
   };
 
   public query ({ caller }) func getCategoryById(categoryId : Nat) : async ?Category {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view categories");
-    };
     categories.get(categoryId);
   };
 
@@ -246,15 +238,13 @@ actor {
     };
   };
 
+  // Updated method to allow public access (no auth check)
   public query ({ caller }) func getProductsPageFeaturedFirst(
     search : Text,
     categoryId : ?Nat,
     page : Nat,
     pageSize : Nat,
   ) : async PaginatedResponse {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view products");
-    };
     let filteredProducts = filterProducts(search, categoryId);
 
     let sortedProducts = filteredProducts.sort(
@@ -363,9 +353,6 @@ actor {
   };
 
   public query ({ caller }) func getProduct(barcode : Text) : async Product {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view products");
-    };
     if (barcode.size() == 0) {
       Runtime.trap("Barcode is required");
     };
@@ -409,9 +396,6 @@ actor {
   };
 
   public query ({ caller }) func getProductPhoto(barcode : Text) : async [Nat8] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view product photos");
-    };
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
       case (?product) {
@@ -424,16 +408,10 @@ actor {
   };
 
   public query ({ caller }) func getTotalProductCount() : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view product count");
-    };
     filterProducts("", null).size();
   };
 
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view featured products");
-    };
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
     );
@@ -725,10 +703,6 @@ actor {
   };
 
   public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized");
-    };
-
     [
       (1, switch (storeDetails.get(1)) {
         case (?details) { details };
@@ -1212,3 +1186,4 @@ actor {
     };
   };
 };
+

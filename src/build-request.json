@@ -1,196 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Implement full /contacto page with two-store details, stable actor data fetching, and embedded maps",
+  "title": "Allow public access to featured-first product pagination and fix PublicHeader edge alignment",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Replace the current static `frontend/src/pages/public/ContactoPage.tsx` with a fully featured `/contacto` page that uses the existing public header/footer via `PublicLayout`, and renders all content inside a centered max-width container (1200px) with a responsive two-store layout (side-by-side on desktop, stacked on mobile) and clear visual separation between the two stores.",
-      "target": "frontend",
+      "text": "Update the backend query method `getProductsPageFeaturedFirst(search, categoryId, page, pageSize)` to allow unauthenticated (public) callers by removing the current permission/admin verification that traps with \"Unauthorized: Only authenticated users can view products\". Preserve the existing response type (`PaginatedResponse`), filtering behavior, featured-first sort order, pagination logic, and error/validation behavior unrelated to auth.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Create a beautifully designed `/contacto` page... Two-store layout... side by side on desktop, stacked on mobile"
+          "Method to Update: - `getProductsPageFeaturedFirst()`",
+          "Required Fix: Remove admin verification from this method",
+          "Current Issue: Public homepage cannot load category products without admin login"
         ]
       },
       "acceptanceCriteria": [
-        "Navigating to `/contacto` renders inside the existing `PublicLayout` (no duplicate header/footer).",
-        "The page content remains constrained to 1200px max width (consistent with `PublicLayout`).",
-        "On `md` and up, the two store sections render as two equal-width columns; on mobile they stack vertically.",
-        "Each store is visually separated (e.g., card borders/spacing/divider) and the layout remains readable at common breakpoints."
+        "Calling `getProductsPageFeaturedFirst` from an anonymous principal (not logged in) succeeds and returns a `PaginatedResponse` rather than trapping for authorization.",
+        "The returned `items` are still sorted with featured products first, and pagination (`page`, `pageSize`) continues to work as before.",
+        "No admin checks are removed or loosened for any write/mutation methods (create/update/delete/toggle/reorder)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement contact-page data fetching using the stable actor pattern to prevent repeated calls caused by actor reference changes: stabilize the actor reference with `useState` + `useEffect`, and fetch both stores via a single backend call to `getBothStoreDetails()` (React Query `queryKey: ['both-store-details']`, `enabled` only when stable actor exists, `staleTime` 30 minutes, and `refetchOnWindowFocus: false`).",
+      "text": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), reduce the hamburger menu visual size by changing the hamburger icon sizing class from `size-9` to `size-6` (apply the equivalent change to the element that currently controls the hamburger icon size). Ensure the hamburger remains visible on all screen sizes and keeps the same click/tap behavior (toggles the side panel).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Stable Actor Pattern: All data fetching uses stable actor pattern to prevent multiple API calls",
-          "Fetch store details using `getBothStoreDetails()` backend method",
-          "staleTime: 1000 * 60 * 30, // 30 minutes"
+          "Hamburger Menu Size Reduction: Current: Uses `size-9` class; Change to: `size-6` class",
+          "Location: Header left side (visible on all screen sizes)"
         ]
       },
       "acceptanceCriteria": [
-        "The contact page performs at most one `getBothStoreDetails()` call per mount when the actor becomes available (no repeated calls due to actor reference churn).",
-        "The React Query fetch is disabled until the stabilized actor is available.",
-        "Query caching uses a 30-minute stale time and does not refetch on window focus."
+        "The hamburger menu icon renders at `size-6` (or equivalent) and remains clickable/tappable to open the side panel on all breakpoints.",
+        "No layout regressions are introduced in the header height or spacing."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add an initial loading-state controller for the contact page using an explicit `isInitialLoading` state that shows immediately on first paint and is set to false only when the store-details fetch completes (success or error). During initial loading, show a centered spinner with the text \"Cargando información de contacto...\" using the same spinner styling pattern as the public category page (Loader2 icon, animate-spin, primary color).",
+      "text": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), remove the `px-4` class from the desktop-only Contact link so it aligns with the right content boundary while keeping existing typography, hover styles, and vertical padding intact.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Use `isInitialLoading` state to track initial page load",
-          "Show centered spinner with \"Cargando información de contacto...\" text during initial load",
-          "Use same spinner design and styling as categories page"
+          "Contact Link Padding Removal: Current: Contact \"a\" link has `px-4` class (visible on desktop only); Change: Remove `px-4` class from contact link"
         ]
       },
       "acceptanceCriteria": [
-        "On navigation to `/contacto`, the loading UI appears immediately (before data is available).",
-        "The spinner uses the same visual styling pattern as `frontend/src/pages/public/CategoryPage.tsx` (centered layout, `Loader2` with `animate-spin` and `text-primary`).",
-        "`isInitialLoading` is set to `false` only after the query resolves successfully or errors."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "After initial loading completes, implement robust error/empty/partial-data handling: (1) if the fetch errors, show \"Error al cargar la información de contacto\" and a retry button that retries the query using the same UX pattern as the public category page; (2) if no store details are returned, show an empty-state message; (3) if only one store is available, render the available store and show a clear message for the missing store; (4) only render a store card when its `isActive` field is true.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Error State Handling... Include retry button similar to categories page pattern",
-          "Data Availability Check... Handle partial data... Only display stores where `isActive` field is true",
-          "Final State Flow... Success with data for one store... show message for missing store"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the query errors, the page shows the specified error text and a retry button that triggers a refetch.",
-        "If the query succeeds but returns no store details, the page shows a dedicated empty state rather than blank space.",
-        "If exactly one active store is available, that store renders and the UI indicates the other store is unavailable/missing.",
-        "Inactive stores (`isActive === false`) are not rendered anywhere on the page."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Render the page header exactly with: main title \"Contacto - Variety Discount Store\" and subtitle \"Visítanos en nuestras tiendas o contáctanos directamente\"; keep the interface copy on the page in Spanish as specified (section headings, button labels, loading/error text, and store labels \"Tienda 1\" and \"Tienda 2\").",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Main Title: \"Contacto - Variety Discount Store\"",
-          "Subtitle: \"Visítanos en nuestras tiendas o contáctanos directamente\"",
-          "Spanish interface throughout"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The contact page header matches the specified title and subtitle strings exactly.",
-        "All user-visible labels on this page use the specified Spanish copy (including store labels for the two columns/sections)."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "For each active store, render a store information card that includes: store name (prominent), address (with a location icon and clickable directions link), phone (tel: link + formatted display), WhatsApp (wa.me link + formatted display), email (mailto: link), and social links shown only when present (Facebook, Instagram, Website), each with a recognizable icon and opening in a new tab when applicable.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Contact Details... Address... Phone... WhatsApp... Email... Social Media Links... Conditionally display social media icons"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Each rendered store card shows the store name and all available contact fields.",
-        "Address is clickable for directions when coordinates are valid; otherwise it is rendered as non-clickable text.",
-        "Phone links use `tel:` and WhatsApp uses a `wa.me`-style link; both display formatted numbers in the UI.",
-        "Email is a `mailto:` link.",
-        "Facebook/Instagram/Website links only render if their corresponding field has a value."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Implement an elegant store-hours section per store titled \"Horario de Apertura\" that parses the backend-provided `storeHours` tuple array and displays each day as a bold Spanish label (Monday→Lunes, Tuesday→Martes, Wednesday→Miércoles, Thursday→Jueves, Friday→Viernes, Saturday→Sábado, Sunday→Domingo) with the hours on a separate line below, with clean spacing and alignment.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Parse `storeHours` array of tuples into beautiful display",
-          "Day Name Translation: Convert English day names from backend to Spanish"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Store hours are rendered as a per-day list where day name and hours are visually separated (day on its own line, hours below).",
-        "English day labels from the backend are translated to the correct Spanish day labels.",
-        "If a store has no hours data, the hours section is omitted (or a clear closed/unknown message is shown consistently)."
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Add a map section per store that (a) parses the `coordinates` JSON string in the format `{ \"lat\": number, \"lng\": number }`, (b) lazy-loads a responsive Google Maps embed (300px height, rounded corners) centered on those coordinates with interactive zoom/pan, and (c) renders a primary \"Obtener Direcciones\" button (with a navigation icon) below the map that opens `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}` in a new tab. If coordinates cannot be parsed/validated, hide the embed and button and show a clear fallback message.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Google Maps Embed: Lazy-loaded interactive map for each store",
-          "Coordinates Parsing... `{ \"lat\": 39.266422, \"lng\": -76.505659 }`",
-          "Get Directions Button... Link Format: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Valid coordinates produce a visible embedded map per store with a fixed ~300px height and responsive width.",
-        "The map iframe is lazy-loaded (e.g., `loading=\"lazy\"`) and remains usable (zoom/pan) within the iframe constraints.",
-        "The \"Obtener Direcciones\" button opens the exact directions URL format with the store’s coordinates.",
-        "Invalid/missing coordinates do not crash the page; instead the map section renders a fallback message and does not show a broken iframe/button."
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "text": "Ensure styling changes do not remove, modify, or overwrite the existing `:root` CSS custom-properties block in `frontend/src/index.css`; any new global styles (if needed) must be appended below the existing variables block without changing variable names, values, or structure.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Do not remove, modify, or overwrite the :root CSS custom properties block in index.css... appending new CSS styles only below this block"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The `:root` block in `frontend/src/index.css` remains byte-for-byte unchanged.",
-        "Any added CSS appears after the existing variables block and does not alter the existing theme tokens."
+        "On desktop breakpoints, the Contact link no longer includes `px-4` horizontal padding.",
+        "The Contact link remains hidden on mobile and visible on desktop, and still navigates to `/contacto`.",
+        "Header left/right edges align consistently with the page content container boundaries (`max-w-[1200px] px-4`)."
       ]
     }
   ],
   "constraints": [
-    "Use the existing single backend call `getBothStoreDetails()` to load both stores for the contact page.",
-    "All contact-page data fetching must use a stabilized actor reference (stable actor pattern) to avoid duplicate calls.",
-    "Do not edit any files under `frontend/src/components/ui` (compose existing UI components instead).",
-    "Do not remove, modify, or overwrite the existing `:root` CSS variables block in `frontend/src/index.css`; only append new styles below it if needed."
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css` containing all theme color variables. Preserve the exact variable names, values, and structure; append any new CSS styles only below this block without changes.",
+    "Backend must remain single-actor (all Motoko logic in `backend/main.mo`).",
+    "Use English for any new or modified user-facing text introduced by these changes."
   ],
   "nonGoals": [
-    "Changing the admin store-details editor or its validation rules.",
-    "Introducing third-party map SDKs or API-key-based Google Maps Embed APIs.",
-    "Adding new authentication methods beyond the existing Internet Identity setup.",
-    "Implementing real-time updates; the contact page may rely on React Query caching/stale times."
+    "Do not change authorization requirements for any admin-only write operations (create/update/delete/reorder/toggles).",
+    "Do not redesign the public header beyond the specified hamburger size and Contact link padding adjustments.",
+    "Do not change other product/category/store query endpoints unless required to implement the above fixes."
   ],
   "imageRequirements": {
     "required": [],

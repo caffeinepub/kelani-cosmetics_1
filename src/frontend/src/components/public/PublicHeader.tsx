@@ -20,7 +20,7 @@ export default function PublicHeader({ onToggleSidePanel }: PublicHeaderProps) {
               aria-label="Abrir menú de navegación"
               className="hover:bg-accent"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6" />
             </Button>
             
             <Link 
@@ -35,7 +35,7 @@ export default function PublicHeader({ onToggleSidePanel }: PublicHeaderProps) {
           <nav className="hidden md:block">
             <Link
               to="/contacto"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors px-4 py-2"
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors py-2"
             >
               Contacto
             </Link>

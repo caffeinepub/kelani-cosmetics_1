@@ -1,72 +1,39 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T00:09:51.305Z",
-  "summary": "ContactoPage was heavily updated with stable-actor React Query fetching, initial loading spinner, basic error + retry, and active-store filtering. However, the diff is truncated, so key layout/rendering requirements (PublicLayout usage, two-store responsive cards, partial-data handling, hours, and maps behavior) cannot be fully verified. The implemented Google Maps embed URL uses an API key, which conflicts with the explicit non-goal/constraint to avoid API-key-based Google Maps embeds.",
+  "generatedAt": "2026-02-09T11:14:44.614Z",
+  "summary": "Frontend PublicHeader changes implement the requested hamburger size reduction and Contact link padding removal. Backend change for making getProductsPageFeaturedFirst public is not evidenced in the provided backend diff (truncated before product methods), so REQ-1 cannot be verified as implemented. Additionally, the header button aria-label is Spanish, which conflicts with the constraint to use English for new/modified user-facing text.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Use PublicLayout and render all content inside a centered max-width (1200px) container with a responsive two-store layout and clear visual separation.",
-      "reason": "The ContactoPage diff is truncated right where the two-store layout begins, and there is no visible evidence of wrapping the page in PublicLayout or enforcing a 1200px container / responsive two-column layout with separation.",
+      "requirement": "Update backend query method getProductsPageFeaturedFirst(search, categoryId, page, pageSize) to allow unauthenticated callers by removing the current auth/admin verification trap, while preserving response type, filtering, featured-first sort, pagination, and other validation behavior.",
+      "reason": "The backend diff snippet is truncated before the product/query methods; there is no visible evidence that getProductsPageFeaturedFirst was modified to remove authorization checks.",
       "evidence": [
-        "frontend/src/pages/public/ContactoPage.tsx (truncated at the two-store layout: `div className=\"grid grid-cols-1 md:g...`)"
+        "backend/main.mo (truncated; no getProductsPageFeaturedFirst shown)"
       ]
     },
     {
-      "id": "REQ-4",
-      "requirement": "After loading, handle partial-data: if only one store is available, render it and show a clear message that the other store is missing; do not render inactive stores.",
-      "reason": "The diff shows filtering `isActive` and an empty state when no active stores exist, but there is no visible evidence of the required messaging/UX when exactly one active store is available (partial-data state).",
+      "requirement": "Use English for any new or modified user-facing text introduced by these changes.",
+      "reason": "PublicHeader includes a Spanish aria-label (\"Abrir menú de navegación\"). If this was introduced or modified in this change, it violates the English-text constraint.",
       "evidence": [
-        "frontend/src/pages/public/ContactoPage.tsx (shows `activeStores` filter + empty state, but truncated before store rendering)"
+        "frontend/src/components/public/PublicHeader.tsx"
       ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "Render per-store information card with name, address (clickable directions only when coordinates valid), phone (tel:), WhatsApp (wa.me), email (mailto:), and conditional social links (Facebook/Instagram/Website) with icons and new-tab behavior.",
-      "reason": "Imports and some utilities exist (icons, `formatWhatsAppApiNumber`), but the actual per-store card rendering is not visible due to truncation, so the presence/behavior of the required links and conditional rendering cannot be confirmed.",
-      "evidence": [
-        "frontend/src/pages/public/ContactoPage.tsx (truncated before store card content is shown)"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Render store hours section titled \"Horario de Apertura\" translating backend English day names to Spanish with specified formatting.",
-      "reason": "`translateDayToSpanish` is imported, but the hours UI is not visible in the truncated ContactoPage diff, so the required section title, translation coverage, and day/hour layout cannot be verified.",
-      "evidence": [
-        "frontend/src/pages/public/ContactoPage.tsx (imports `translateDayToSpanish` but rendering is truncated)"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "requirement": "Per-store map section: parse coordinates JSON; lazy-load responsive embed (~300px height, rounded corners) without API-key-based Google Maps embed; show \"Obtener Direcciones\" button using the specified directions URL; show fallback when invalid.",
-      "reason": "ContactoPage defines parsing and directions URL, but also defines an embed URL that uses `google.com/maps/embed/v1/place?key=...` (API key). Additionally, the actual iframe/button rendering, lazy-loading, 300px height, and fallback UI are not visible due to truncation.",
-      "evidence": [
-        "frontend/src/pages/public/ContactoPage.tsx (`getMapEmbedUrl` uses `.../embed/v1/place?key=...`)",
-        "frontend/src/pages/public/ContactoPage.tsx (truncated before map section rendering can be verified)"
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "requirement": "Do not modify the existing :root CSS variables block in frontend/src/index.css; only append new styles below it if needed.",
-      "reason": "No diff for `frontend/src/index.css` is included, so compliance cannot be verified from the provided changes.",
-      "evidence": []
     }
   ],
   "hallucinated_features": [
     {
-      "description": "API-key-based Google Maps Embed URL (`https://www.google.com/maps/embed/v1/place?key=...`) for the contact page map embed.",
-      "reason": "The BuildRequest explicitly lists as a non-goal/constraint: not introducing API-key-based Google Maps Embed APIs. The diff hardcodes an API key into the embed URL generator.",
+      "description": "Changed/introduced a Spanish aria-label text (\"Abrir menú de navegación\") on the hamburger button.",
+      "reason": "Not requested by REQ-2/REQ-3; also potentially conflicts with the constraint requiring English for new/modified user-facing text.",
       "evidence": [
-        "frontend/src/pages/public/ContactoPage.tsx (`getMapEmbedUrl` includes `embed/v1/place?key=...`)"
+        "frontend/src/components/public/PublicHeader.tsx"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/pages/public/ContactoPage.tsx",
-    "frontend/src/utils/googleMaps.ts",
-    "frontend/src/utils/phoneFormat.ts",
+    "frontend/src/components/public/PublicHeader.tsx",
     "project_state.json"
   ]
 }

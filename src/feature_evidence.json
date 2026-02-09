@@ -2,29 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-current-static-frontend-src-pages-public-contactopage-tsx-with-a-fully-featured-contacto-page-that-uses-the-existing-public-header-footer-via-publiclayout-and-renders-all-content-inside-a-centered-max-width-container-1200px-with-a-responsive-two-store-layout-side-by-side-on-desktop-stacked-on-mobile-and-clear-visual-separation-between-the-two-stores",
-      "featureTitle": "Replace the current static `frontend/src/pages/public/ContactoPage.tsx` with a fully featured `/contacto` page that uses the existing public header/footer via `PublicLayout`, and renders all content inside a centered max-width container (1200px) with a responsive two-store layout (side-by-side on desktop, stacked on mobile) and clear visual separation between the two stores.",
+      "featureId": "feature-in-the-public-site-header-component-frontend-src-components-public-publicheader-tsx-reduce-the-hamburger-menu-visual-size-by-changing-the-hamburger-icon-sizing-class-from-size-9-to-size-6-apply-the-equivalent-change-to-the-element-that-currently-controls-the-hamburger-icon-size-ensure-the-hamburger-remains-visible-on-all-screen-sizes-and-keeps-the-same-click-tap-behavior-toggles-the-side-panel",
+      "featureTitle": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), reduce the hamburger menu visual size by changing the hamburger icon sizing class from `size-9` to `size-6` (apply the equivalent change to the element that currently controls the hamburger icon size). Ensure the hamburger remains visible on all screen sizes and keeps the same click/tap behavior (toggles the side panel).",
       "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-contact-page-data-fetching-using-the-stable-actor-pattern-to-prevent-repeated-calls-caused-by-actor-reference-changes-stabilize-the-actor-reference-with-usestate-useeffect-and-fetch-both-stores-via-a-single-backend-call-to-getbothstoredetails-react-query-querykey-both-store-details-enabled-only-when-stable-actor-exists-staletime-30-minutes-and-refetchonwindowfocus-false",
-      "featureTitle": "Implement contact-page data fetching using the stable actor pattern to prevent repeated calls caused by actor reference changes: stabilize the actor reference with `useState` + `useEffect`, and fetch both stores via a single backend call to `getBothStoreDetails()` (React Query `queryKey: ['both-store-details']`, `enabled` only when stable actor exists, `staleTime` 30 minutes, and `refetchOnWindowFocus: false`).",
-      "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
+        "frontend/src/components/public/PublicHeader.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -40,10 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-an-initial-loading-state-controller-for-the-contact-page-using-an-explicit-isinitialloading-state-that-shows-immediately-on-first-paint-and-is-set-to-false-only-when-the-store-details-fetch-completes-success-or-error-during-initial-loading-show-a-centered-spinner-with-the-text-cargando-informaci-n-de-contacto-using-the-same-spinner-styling-pattern-as-the-public-category-page-loader2-icon-animate-spin-primary-color",
-      "featureTitle": "Add an initial loading-state controller for the contact page using an explicit `isInitialLoading` state that shows immediately on first paint and is set to false only when the store-details fetch completes (success or error). During initial loading, show a centered spinner with the text \"Cargando información de contacto...\" using the same spinner styling pattern as the public category page (Loader2 icon, animate-spin, primary color).",
+      "featureId": "feature-in-the-public-site-header-component-frontend-src-components-public-publicheader-tsx-remove-the-px-4-class-from-the-desktop-only-contact-link-so-it-aligns-with-the-right-content-boundary-while-keeping-existing-typography-hover-styles-and-vertical-padding-intact",
+      "featureTitle": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), remove the `px-4` class from the desktop-only Contact link so it aligns with the right content boundary while keeping existing typography, hover styles, and vertical padding intact.",
       "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
+        "frontend/src/components/public/PublicHeader.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -55,104 +36,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-after-initial-loading-completes-implement-robust-error-empty-partial-data-handling-1-if-the-fetch-errors-show-error-al-cargar-la-informaci-n-de-contacto-and-a-retry-button-that-retries-the-query-using-the-same-ux-pattern-as-the-public-category-page-2-if-no-store-details-are-returned-show-an-empty-state-message-3-if-only-one-store-is-available-render-the-available-store-and-show-a-clear-message-for-the-missing-store-4-only-render-a-store-card-when-its-isactive-field-is-true",
-      "featureTitle": "After initial loading completes, implement robust error/empty/partial-data handling: (1) if the fetch errors, show \"Error al cargar la información de contacto\" and a retry button that retries the query using the same UX pattern as the public category page; (2) if no store details are returned, show an empty-state message; (3) if only one store is available, render the available store and show a clear message for the missing store; (4) only render a store card when its `isActive` field is true.",
-      "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-render-the-page-header-exactly-with-main-title-contacto-variety-discount-store-and-subtitle-vis-tanos-en-nuestras-tiendas-o-cont-ctanos-directamente-keep-the-interface-copy-on-the-page-in-spanish-as-specified-section-headings-button-labels-loading-error-text-and-store-labels-tienda-1-and-tienda-2",
-      "featureTitle": "Render the page header exactly with: main title \"Contacto - Variety Discount Store\" and subtitle \"Visítanos en nuestras tiendas o contáctanos directamente\"; keep the interface copy on the page in Spanish as specified (section headings, button labels, loading/error text, and store labels \"Tienda 1\" and \"Tienda 2\").",
-      "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-for-each-active-store-render-a-store-information-card-that-includes-store-name-prominent-address-with-a-location-icon-and-clickable-directions-link-phone-tel-link-formatted-display-whatsapp-wa-me-link-formatted-display-email-mailto-link-and-social-links-shown-only-when-present-facebook-instagram-website-each-with-a-recognizable-icon-and-opening-in-a-new-tab-when-applicable",
-      "featureTitle": "For each active store, render a store information card that includes: store name (prominent), address (with a location icon and clickable directions link), phone (tel: link + formatted display), WhatsApp (wa.me link + formatted display), email (mailto: link), and social links shown only when present (Facebook, Instagram, Website), each with a recognizable icon and opening in a new tab when applicable.",
-      "files": [
-        "frontend/src/pages/public/ContactoPage.tsx",
-        "frontend/src/utils/googleMaps.ts",
-        "frontend/src/utils/phoneFormat.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-an-elegant-store-hours-section-per-store-titled-horario-de-apertura-that-parses-the-backend-provided-storehours-tuple-array-and-displays-each-day-as-a-bold-spanish-label-monday-lunes-tuesday-martes-wednesday-mi-rcoles-thursday-jueves-friday-viernes-saturday-s-bado-sunday-domingo-with-the-hours-on-a-separate-line-below-with-clean-spacing-and-alignment",
-      "featureTitle": "Implement an elegant store-hours section per store titled \"Horario de Apertura\" that parses the backend-provided `storeHours` tuple array and displays each day as a bold Spanish label (Monday→Lunes, Tuesday→Martes, Wednesday→Miércoles, Thursday→Jueves, Friday→Viernes, Saturday→Sábado, Sunday→Domingo) with the hours on a separate line below, with clean spacing and alignment.",
-      "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-map-section-per-store-that-a-parses-the-coordinates-json-string-in-the-format-lat-number-lng-number-b-lazy-loads-a-responsive-google-maps-embed-300px-height-rounded-corners-centered-on-those-coordinates-with-interactive-zoom-pan-and-c-renders-a-primary-obtener-direcciones-button-with-a-navigation-icon-below-the-map-that-opens-https-www-google-com-maps-dir-api-1-destination-latitude-longitude-in-a-new-tab-if-coordinates-cannot-be-parsed-validated-hide-the-embed-and-button-and-show-a-clear-fallback-message",
-      "featureTitle": "Add a map section per store that (a) parses the `coordinates` JSON string in the format `{ \"lat\": number, \"lng\": number }`, (b) lazy-loads a responsive Google Maps embed (300px height, rounded corners) centered on those coordinates with interactive zoom/pan, and (c) renders a primary \"Obtener Direcciones\" button (with a navigation icon) below the map that opens `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}` in a new tab. If coordinates cannot be parsed/validated, hide the embed and button and show a clear fallback message.",
-      "files": [
-        "frontend/src/pages/public/ContactoPage.tsx",
-        "frontend/src/utils/googleMaps.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-8"
       ],
       "confidence": "high"
     }

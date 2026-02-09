@@ -1,129 +1,53 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T00:09:51.309Z",
+  "generatedAt": "2026-02-09T11:14:44.617Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 9,
-    "implemented": 8,
+    "total": 3,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Replace the current static `frontend/src/pages/public/ContactoPage.tsx` with a fully featured `/contacto` page that uses the existing public header/footer via `PublicLayout`, and renders all content inside a centered max-width container (1200px) with a responsive two-store layout (side-by-side on desktop, stacked on mobile) and clear visual separation between the two stores.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ]
+        "summary": "Update the backend query method `getProductsPageFeaturedFirst(search, categoryId, page, pageSize)` to allow unauthenticated (public) callers by removing the current permission/admin verification that traps with \"Unauthorized: Only authenticated users can view products\". Preserve the existing response type (`PaginatedResponse`), filtering behavior, featured-first sort order, pagination logic, and error/validation behavior unrelated to auth.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Implement contact-page data fetching using the stable actor pattern to prevent repeated calls caused by actor reference changes: stabilize the actor reference with `useState` + `useEffect`, and fetch both stores via a single backend call to `getBothStoreDetails()` (React Query `queryKey: ['both-store-details']`, `enabled` only when stable actor exists, `staleTime` 30 minutes, and `refetchOnWindowFocus: false`).",
+        "summary": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), reduce the hamburger menu visual size by changing the hamburger icon sizing class from `size-9` to `size-6` (apply the equivalent change to the element that currently controls the hamburger icon size). Ensure the hamburger remains visible on all screen sizes and keeps the same click/tap behavior (toggles the side panel).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useBothStoreDetails.ts",
-          "frontend/src/pages/public/ContactoPage.tsx"
+          "frontend/src/components/public/PublicHeader.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
+          "frontend/src/components/public/PublicHeader.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add an initial loading-state controller for the contact page using an explicit `isInitialLoading` state that shows immediately on first paint and is set to false only when the store-details fetch completes (success or error). During initial loading, show a centered spinner with the text \"Cargando información de contacto...\" using the same spinner styling pattern as the public category page (Loader2 icon, animate-spin, primary color).",
+        "summary": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), remove the `px-4` class from the desktop-only Contact link so it aligns with the right content boundary while keeping existing typography, hover styles, and vertical padding intact.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
+          "frontend/src/components/public/PublicHeader.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
+          "frontend/src/components/public/PublicHeader.tsx"
         ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "After initial loading completes, implement robust error/empty/partial-data handling: (1) if the fetch errors, show \"Error al cargar la información de contacto\" and a retry button that retries the query using the same UX pattern as the public category page; (2) if no store details are returned, show an empty-state message; (3) if only one store is available, render the available store and show a clear message for the missing store; (4) only render a store card when its `isActive` field is true.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Render the page header exactly with: main title \"Contacto - Variety Discount Store\" and subtitle \"Visítanos en nuestras tiendas o contáctanos directamente\"; keep the interface copy on the page in Spanish as specified (section headings, button labels, loading/error text, and store labels \"Tienda 1\" and \"Tienda 2\").",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "For each active store, render a store information card that includes: store name (prominent), address (with a location icon and clickable directions link), phone (tel: link + formatted display), WhatsApp (wa.me link + formatted display), email (mailto: link), and social links shown only when present (Facebook, Instagram, Website), each with a recognizable icon and opening in a new tab when applicable.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx",
-          "frontend/src/utils/phoneFormat.ts",
-          "frontend/src/utils/googleMaps.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx",
-          "frontend/src/utils/phoneFormat.ts",
-          "frontend/src/utils/googleMaps.ts"
-        ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Implement an elegant store-hours section per store titled \"Horario de Apertura\" that parses the backend-provided `storeHours` tuple array and displays each day as a bold Spanish label (Monday→Lunes, Tuesday→Martes, Wednesday→Miércoles, Thursday→Jueves, Friday→Viernes, Saturday→Sábado, Sunday→Domingo) with the hours on a separate line below, with clean spacing and alignment.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Add a map section per store that (a) parses the `coordinates` JSON string in the format `{ \"lat\": number, \"lng\": number }`, (b) lazy-loads a responsive Google Maps embed (300px height, rounded corners) centered on those coordinates with interactive zoom/pan, and (c) renders a primary \"Obtener Direcciones\" button (with a navigation icon) below the map that opens `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}` in a new tab. If coordinates cannot be parsed/validated, hide the embed and button and show a clear fallback message.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx",
-          "frontend/src/utils/googleMaps.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx",
-          "frontend/src/utils/googleMaps.ts"
-        ]
-      },
-      {
-        "id": "REQ-9",
-        "summary": "Ensure styling changes do not remove, modify, or overwrite the existing `:root` CSS custom-properties block in `frontend/src/index.css`; any new global styles (if needed) must be appended below the existing variables block without changing variable names, values, or structure.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/index.css"
-        ],
-        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/public/ContactoPage.tsx",
-    "frontend/src/utils/googleMaps.ts",
-    "frontend/src/utils/phoneFormat.ts",
+    "frontend/src/components/public/PublicHeader.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

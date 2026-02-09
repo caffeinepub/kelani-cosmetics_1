@@ -1,6 +1,7 @@
 import { useState, ComponentPropsWithoutRef } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '../../../stores/toastStore';
 
 interface CopyToClipboardButtonProps extends ComponentPropsWithoutRef<typeof Button> {
   textToCopy: string;
@@ -17,11 +18,39 @@ export default function CopyToClipboardButton({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(textToCopy);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        toast.success('Enlace copiado al portapapeles');
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand('copy');
+          if (successful) {
+            setCopied(true);
+            toast.success('Enlace copiado al portapapeles');
+            setTimeout(() => setCopied(false), 2000);
+          } else {
+            throw new Error('Copy command failed');
+          }
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
     } catch (error) {
       console.error('Failed to copy:', error);
+      toast.error('Error al copiar el enlace');
     }
   };
 

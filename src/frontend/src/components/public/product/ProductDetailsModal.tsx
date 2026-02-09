@@ -140,6 +140,9 @@ export default function ProductDetailsModal() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
+  // Construct complete product URL for sharing
+  const productShareUrl = `${window.location.origin}/product/${barcode}`;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -236,7 +239,7 @@ export default function ProductDetailsModal() {
               </Button>
 
               <CopyToClipboardButton
-                textToCopy={window.location.href}
+                textToCopy={productShareUrl}
                 variant="outline"
                 size="lg"
                 className="w-full h-12 text-base"

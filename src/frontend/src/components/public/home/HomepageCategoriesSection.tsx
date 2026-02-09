@@ -44,7 +44,7 @@ const HomepageCategoriesSection = React.memo(function HomepageCategoriesSection(
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Cargando categorías...</p>
+        <p className="text-muted-foreground">Cargando productos...</p>
       </div>
     );
   }
