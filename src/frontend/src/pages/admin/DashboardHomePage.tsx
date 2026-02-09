@@ -6,6 +6,7 @@ import {
   Store,
   Download,
   Upload,
+  Users,
 } from 'lucide-react';
 
 export default function DashboardHomePage() {
@@ -24,6 +25,11 @@ export default function DashboardHomePage() {
       title: 'Categorías',
       icon: FolderTree,
       path: '/admin/categories',
+    },
+    {
+      title: 'Usuarios Admin',
+      icon: Users,
+      path: '/admin/user-management',
     },
     {
       title: 'Datos de Tienda',

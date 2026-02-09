@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
@@ -84,17 +85,16 @@ function filterByDateRange(items: SaleItem[], startDate: string, endDate: string
   const endTimestamp = endDate ? dateStringToTimestamp(endDate) : null;
   
   return items.filter(item => {
-    if (startTimestamp && item.endDate < startTimestamp) return false;
-    if (endTimestamp && item.startDate > endTimestamp) return false;
+    if (startTimestamp && item.startDate < startTimestamp) return false;
+    if (endTimestamp && item.endDate > endTimestamp) return false;
     return true;
   });
 }
 
 // Query Keys
 const QUERY_KEYS = {
-  saleItems: (search: string, page: number, pageSize: number, status: SaleStatus, startDate: string, endDate: string) =>
-    ['saleItems', search, page, pageSize, status, startDate, endDate] as const,
-  saleItem: (saleId: number) => ['saleItem', saleId] as const,
+  saleItems: (search: string, page: number, pageSize: number, includeInactive: boolean) =>
+    ['sale-items', search, page, pageSize, includeInactive] as const,
 };
 
 // ============================================================================
@@ -108,44 +108,60 @@ export function useGetSaleItemsPage(
   search: string,
   page: number,
   pageSize: number,
-  status: SaleStatus,
-  startDate: string,
-  endDate: string
+  includeInactive: boolean,
+  statusFilter: SaleStatus,
+  startDateFilter: string,
+  endDateFilter: string
 ) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   return useQuery<{ items: SaleItem[]; totalCount: number }>({
-    queryKey: QUERY_KEYS.saleItems(search, page, pageSize, status, startDate, endDate),
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+    queryKey: QUERY_KEYS.saleItems(search, page, pageSize, includeInactive),
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
 
       try {
-        // Backend doesn't support status/date filters yet, so we fetch all and filter client-side
-        const response: SaleItemArray = await actor.getSaleItemsPage(
+        const response: SaleItemArray = await stableActor.getSaleItemsPage(
           search,
           BigInt(page),
           BigInt(pageSize),
-          true // includeInactive = true to get all items
+          includeInactive
         );
 
         let items = response.items.map(backendSaleItemToUI);
         
         // Apply client-side filters
-        items = filterByStatus(items, status);
-        items = filterByDateRange(items, startDate, endDate);
+        items = filterByStatus(items, statusFilter);
+        items = filterByDateRange(items, startDateFilter, endDateFilter);
 
         return {
           items,
           totalCount: items.length,
         };
       } catch (error) {
-        reportErrorWithToast(error, 'Error al cargar productos en oferta', {
+        reportErrorWithToast(error, 'Error al cargar los productos en oferta', {
           operation: 'getSaleItemsPage',
         });
         throw error;
       }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
@@ -181,17 +197,17 @@ export function useCreateSaleItem() {
       const backendSaleItem = await actor.createSaleItem(
         productBarcode,
         salePrice,
-        BigInt(startTimestamp),
-        BigInt(endTimestamp)
+        numberToBigInt(startTimestamp),
+        numberToBigInt(endTimestamp)
       );
       return backendSaleItemToUI(backendSaleItem);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saleItems'] });
+      queryClient.invalidateQueries({ queryKey: ['sale-items'] });
       reportSuccessWithToast('Producto en oferta creado exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(error, 'Error al crear producto en oferta', {
+      reportErrorWithToast(error, 'Error al crear el producto en oferta', {
         operation: 'createSaleItem',
       });
     },
@@ -225,18 +241,17 @@ export function useUpdateSaleItem() {
       const backendSaleItem = await actor.updateSaleItem(
         numberToBigInt(saleId),
         salePrice,
-        BigInt(startTimestamp),
-        BigInt(endTimestamp)
+        numberToBigInt(startTimestamp),
+        numberToBigInt(endTimestamp)
       );
       return backendSaleItemToUI(backendSaleItem);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['saleItems'] });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.saleItem(variables.saleId) });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sale-items'] });
       reportSuccessWithToast('Producto en oferta actualizado exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(error, 'Error al actualizar producto en oferta', {
+      reportErrorWithToast(error, 'Error al actualizar el producto en oferta', {
         operation: 'updateSaleItem',
       });
     },
@@ -254,14 +269,14 @@ export function useDeleteSaleItem() {
     mutationFn: async (saleId: number) => {
       if (!actor) throw new Error('Actor not available');
 
-      await actor.deleteSaleItem(numberToBigInt(saleId));
+      return await actor.deleteSaleItem(numberToBigInt(saleId));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saleItems'] });
+      queryClient.invalidateQueries({ queryKey: ['sale-items'] });
       reportSuccessWithToast('Producto en oferta eliminado exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(error, 'Error al eliminar producto en oferta', {
+      reportErrorWithToast(error, 'Error al eliminar el producto en oferta', {
         operation: 'deleteSaleItem',
       });
     },
@@ -283,12 +298,12 @@ export function useToggleSaleItemActive() {
       return { saleId, newStatus };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saleItems'] });
+      queryClient.invalidateQueries({ queryKey: ['sale-items'] });
       reportSuccessWithToast('Estado actualizado exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(error, 'Error al actualizar estado', {
-        operation: 'toggleSaleItemActiveStatus',
+      reportErrorWithToast(error, 'Error al actualizar el estado', {
+        operation: 'toggleSaleItemActive',
       });
     },
   });

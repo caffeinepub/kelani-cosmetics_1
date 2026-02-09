@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, MapPin, Phone, Mail, Navigation, MessageCircle } from 'lucide-react';
+import { Loader2, MapPin, Phone, Mail, Navigation, MessageCircle, Map as MapIcon } from 'lucide-react';
 import { SiFacebook, SiInstagram } from 'react-icons/si';
 import { Globe } from 'lucide-react';
 import { useActor } from '../../hooks/useActor';
@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../components/ui/button';
 import { translateDayToSpanish } from '../../utils/storeHoursFormat';
 import { formatWhatsAppApiNumber } from '../../utils/phoneFormat';
+import { isConsentAccepted, setConsent } from '../../utils/cookieUtils';
 import type { StoreDetails } from '../../backend';
 
 interface ParsedCoordinates {
@@ -43,10 +44,31 @@ export default function ContactoPage() {
   const { actor: rawActor, isFetching: actorFetching } = useActor();
   const [stableActor, setStableActor] = useState<typeof rawActor>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showMaps, setShowMaps] = useState(false);
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  // Check consent status on mount and listen for changes
+  useEffect(() => {
+    const checkConsent = () => {
+      setShowMaps(isConsentAccepted());
+    };
+    
+    checkConsent();
+    
+    // Listen for consent changes
+    const handleConsentChange = () => {
+      checkConsent();
+    };
+    
+    window.addEventListener('cookie-consent-changed', handleConsentChange);
+    
+    return () => {
+      window.removeEventListener('cookie-consent-changed', handleConsentChange);
+    };
   }, []);
 
   // Stabilize actor reference
@@ -79,6 +101,11 @@ export default function ContactoPage() {
       setIsInitialLoading(false);
     }
   }, [isLoading, storeDetailsData, error]);
+
+  const handleEnableMaps = () => {
+    setConsent('accepted');
+    setShowMaps(true);
+  };
 
   // Show loading spinner during initial load
   if (isInitialLoading || (!stableActor && actorFetching)) {
@@ -252,37 +279,79 @@ export default function ContactoPage() {
                 </div>
               )}
 
-              {/* Map */}
+              {/* Map Section - Conditional Rendering */}
               {mapEmbedUrl && (
                 <div className="pt-4 border-t border-border space-y-3">
                   <h3 className="font-semibold text-foreground">Ubicación</h3>
-                  <div className="relative w-full h-64 bg-muted rounded-lg overflow-hidden">
-                    <iframe
-                      src={mapEmbedUrl}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title={`Mapa de ${store.name}`}
-                    />
-                  </div>
-                  {directionsUrl && (
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <a
-                        href={directionsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Navigation className="h-4 w-4 mr-2" />
-                        Cómo llegar
-                      </a>
-                    </Button>
+                  
+                  {showMaps ? (
+                    <>
+                      <div className="relative w-full h-64 bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src={mapEmbedUrl}
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          title={`Mapa de ${store.name}`}
+                        />
+                      </div>
+                      {directionsUrl && (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <a
+                            href={directionsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Navigation className="h-4 w-4 mr-2" />
+                            Cómo llegar
+                          </a>
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-muted rounded-lg p-6 space-y-4 text-center">
+                      <MapIcon className="h-12 w-12 text-muted-foreground mx-auto" />
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          Los mapas requieren cookies para funcionar.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Acepta las cookies para ver el mapa integrado.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                        <Button
+                          onClick={handleEnableMaps}
+                          size="sm"
+                          variant="default"
+                        >
+                          Aceptar cookies
+                        </Button>
+                        {directionsUrl && (
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                          >
+                            <a
+                              href={directionsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Navigation className="h-4 w-4 mr-2" />
+                              Ver en Google Maps
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

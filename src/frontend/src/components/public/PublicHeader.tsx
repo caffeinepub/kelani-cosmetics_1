@@ -18,7 +18,7 @@ export default function PublicHeader({ onToggleSidePanel }: PublicHeaderProps) {
               size="icon"
               onClick={onToggleSidePanel}
               aria-label="Abrir menú de navegación"
-              className="hover:bg-accent"
+              className="size-6 hover:bg-accent"
             >
               <Menu className="h-6 w-6" />
             </Button>

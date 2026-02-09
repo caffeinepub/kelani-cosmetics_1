@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
@@ -29,7 +30,7 @@ function backendCategoryToUI(backendCat: BackendCategory): Category {
 // Query Keys
 const QUERY_KEYS = {
   categories: ['categories'] as const,
-  category: (id: number) => ['category', id] as const,
+  category: (id: number) => ['categories', 'single', id] as const,
 };
 
 // ============================================================================
@@ -40,15 +41,27 @@ const QUERY_KEYS = {
  * Fetch all categories sorted by order
  */
 export function useGetAllCategories() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   return useQuery<Category[]>({
     queryKey: QUERY_KEYS.categories,
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
       
       try {
-        const backendCategories = await actor.getAllCategories();
+        const backendCategories = await stableActor.getAllCategories();
         return backendCategories.map(backendCategoryToUI);
       } catch (error) {
         reportErrorWithToast(
@@ -59,7 +72,11 @@ export function useGetAllCategories() {
         throw error;
       }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
@@ -68,15 +85,27 @@ export function useGetAllCategories() {
  * Fetch single category by ID
  */
 export function useGetCategoryById(categoryId: number | null) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   return useQuery<Category | null>({
     queryKey: QUERY_KEYS.category(categoryId ?? 0),
-    queryFn: async () => {
-      if (!actor || categoryId === null) return null;
+    queryFn: async ({ signal }) => {
+      if (!stableActor || categoryId === null) return null;
+      if (signal?.aborted) throw new Error('Query aborted');
       
       try {
-        const result = await actor.getCategoryById(numberToBigInt(categoryId));
+        const result = await stableActor.getCategoryById(numberToBigInt(categoryId));
         return result ? backendCategoryToUI(result) : null;
       } catch (error) {
         reportErrorWithToast(
@@ -87,7 +116,11 @@ export function useGetCategoryById(categoryId: number | null) {
         throw error;
       }
     },
-    enabled: !!actor && !actorFetching && categoryId !== null,
+    enabled: Boolean(stableActor) && !actorFetching && categoryId !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }

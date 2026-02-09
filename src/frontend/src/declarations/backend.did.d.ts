@@ -10,6 +10,7 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AppUser { 'principal' : Principal, 'role' : UserRole }
 export interface CategorizedProductWithSale {
   'categoryId' : bigint,
   'totalProducts' : bigint,
@@ -150,6 +151,7 @@ export interface _SERVICE {
   'deleteCategory' : ActorMethod<[bigint], boolean>,
   'deleteProduct' : ActorMethod<[string, string], undefined>,
   'deleteSaleItem' : ActorMethod<[bigint], boolean>,
+  'demoteToUserForAdmin' : ActorMethod<[Principal], undefined>,
   'exportAllData' : ActorMethod<[], ExportPayload>,
   'filterProductsForSales' : ActorMethod<[string], Array<Product>>,
   'getActiveSales' : ActorMethod<[], Array<SaleItem>>,
@@ -182,6 +184,8 @@ export interface _SERVICE {
   'getTotalProductCount' : ActorMethod<[], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'listManagedUsersForAdmin' : ActorMethod<[], Array<AppUser>>,
+  'promoteToAdminForAdmin' : ActorMethod<[Principal], undefined>,
   'reorderCategories' : ActorMethod<[Array<[bigint, bigint]>], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchHomepageProducts' : ActorMethod<[string], Array<HomepageSearchResult>>,

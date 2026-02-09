@@ -1,73 +1,98 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import type { StoreDetails } from '../../../hooks/useStoreDetailsQueries';
-import { formatStoreHoursForDisplay } from '../../../utils/storeHoursFormat';
 
 interface StoreDetailsPreviewProps {
   formData: StoreDetails;
 }
 
 export default function StoreDetailsPreview({ formData }: StoreDetailsPreviewProps) {
-  const formattedHours = formatStoreHoursForDisplay(formData.storeHours);
+  // Convert storeHours array to display format
+  const daysInSpanish: Record<string, string> = {
+    'Monday': 'Lunes',
+    'Tuesday': 'Martes',
+    'Wednesday': 'Miércoles',
+    'Thursday': 'Jueves',
+    'Friday': 'Viernes',
+    'Saturday': 'Sábado',
+    'Sunday': 'Domingo',
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-4">Vista Previa</h3>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Así se verá la información en la página de contacto
         </p>
       </div>
 
-      {/* Store Name */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">{formData.name || 'Nombre de la Tienda'}</h2>
-        {formData.description && (
-          <p className="mt-2 text-muted-foreground">{formData.description}</p>
-        )}
-      </div>
+      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+        {/* Store Name */}
+        <div>
+          <h4 className="text-xl font-bold text-foreground">{formData.name}</h4>
+        </div>
 
-      {/* Contact Information */}
-      <div className="space-y-3">
+        {/* Address */}
         <div className="flex items-start gap-3">
           <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <p className="text-foreground">{formData.address || 'Dirección no especificada'}</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Phone className="h-5 w-5 text-primary flex-shrink-0" />
-          <p className="text-foreground">{formData.phone || 'Teléfono no especificado'}</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Mail className="h-5 w-5 text-primary flex-shrink-0" />
-          <p className="text-foreground">{formData.email || 'Email no especificado'}</p>
-        </div>
-      </div>
-
-      {/* Store Hours */}
-      {formattedHours.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Horario de Atención</h3>
-          </div>
-          <div className="space-y-2 pl-7">
-            {formattedHours.map((item, index) => (
-              <div key={index} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{item.day}:</span>
-                <span className="text-foreground font-medium">{item.hours}</span>
-              </div>
-            ))}
+          <div>
+            <p className="text-sm font-medium text-foreground">Dirección</p>
+            <p className="text-sm text-muted-foreground">{formData.address}</p>
           </div>
         </div>
-      )}
 
-      {/* Coordinates */}
-      <div className="pt-4 border-t border-border">
-        <p className="text-sm text-muted-foreground">
-          Coordenadas: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-        </p>
+        {/* Phone */}
+        <div className="flex items-start gap-3">
+          <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Teléfono</p>
+            <p className="text-sm text-muted-foreground">{formData.phone}</p>
+          </div>
+        </div>
+
+        {/* Email */}
+        <div className="flex items-start gap-3">
+          <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Email</p>
+            <p className="text-sm text-muted-foreground">{formData.email}</p>
+          </div>
+        </div>
+
+        {/* Store Hours */}
+        <div className="flex items-start gap-3">
+          <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground mb-2">Horarios</p>
+            <div className="space-y-1">
+              {formData.storeHours.map(([day, hours]) => (
+                <div key={day} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{daysInSpanish[day] || day}:</span>
+                  <span className="text-foreground font-medium">{hours}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Social Media */}
+        {(formData.facebook || formData.instagram || formData.website) && (
+          <div className="pt-4 border-t border-border">
+            <p className="text-sm font-medium text-foreground mb-2">Redes Sociales</p>
+            <div className="space-y-1">
+              {formData.facebook && (
+                <p className="text-sm text-muted-foreground">Facebook: {formData.facebook}</p>
+              )}
+              {formData.instagram && (
+                <p className="text-sm text-muted-foreground">Instagram: {formData.instagram}</p>
+              )}
+              {formData.website && (
+                <p className="text-sm text-muted-foreground">Web: {formData.website}</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

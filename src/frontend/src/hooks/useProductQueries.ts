@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
@@ -40,7 +41,7 @@ function backendProductToUI(backendProduct: BackendProduct): Product {
 const QUERY_KEYS = {
   products: (search: string, categoryId: number | null, page: number, pageSize: number) =>
     ['products', search, categoryId, page, pageSize] as const,
-  product: (barcode: string) => ['product', barcode] as const,
+  product: (barcode: string) => ['products', 'single', barcode] as const,
 };
 
 // ============================================================================
@@ -56,15 +57,27 @@ export function useGetProductsPage(
   page: number,
   pageSize: number
 ) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   return useQuery<{ items: Product[]; totalCount: number }>({
     queryKey: QUERY_KEYS.products(search, categoryId, page, pageSize),
     queryFn: async ({ signal }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
 
       try {
-        const response: PaginatedResponse = await actor.getProductsPage(
+        const response: PaginatedResponse = await stableActor.getProductsPage(
           search,
           categoryId !== null ? numberToBigInt(categoryId) : null,
           BigInt(page),
@@ -82,7 +95,11 @@ export function useGetProductsPage(
         throw error;
       }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
@@ -91,15 +108,27 @@ export function useGetProductsPage(
  * Fetch single product by barcode
  */
 export function useGetProduct(barcode: string | null) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   return useQuery<Product | null>({
     queryKey: QUERY_KEYS.product(barcode ?? ''),
-    queryFn: async () => {
-      if (!actor || !barcode) return null;
+    queryFn: async ({ signal }) => {
+      if (!stableActor || !barcode) return null;
+      if (signal?.aborted) throw new Error('Query aborted');
 
       try {
-        const result = await actor.getProduct(barcode);
+        const result = await stableActor.getProduct(barcode);
         return backendProductToUI(result);
       } catch (error) {
         reportErrorWithToast(error, 'Failed to load product', {
@@ -109,7 +138,11 @@ export function useGetProduct(barcode: string | null) {
         throw error;
       }
     },
-    enabled: !!actor && !actorFetching && !!barcode,
+    enabled: Boolean(stableActor) && !actorFetching && !!barcode,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }

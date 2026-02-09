@@ -73,6 +73,10 @@ export interface HomepageCategoriesResult {
     categories: Array<CategorizedProductWithSale>;
     totalCategories: bigint;
 }
+export interface AppUser {
+    principal: Principal;
+    role: UserRole;
+}
 export interface SaleItemArray {
     totalCount: bigint;
     items: Array<SaleItem>;
@@ -141,6 +145,7 @@ export interface backendInterface {
     deleteCategory(categoryId: bigint): Promise<boolean>;
     deleteProduct(barcode: string, password: string): Promise<void>;
     deleteSaleItem(saleId: bigint): Promise<boolean>;
+    demoteToUserForAdmin(userToDemote: Principal): Promise<void>;
     exportAllData(): Promise<ExportPayload>;
     filterProductsForSales(search: string): Promise<Array<Product>>;
     getActiveSales(): Promise<Array<SaleItem>>;
@@ -161,6 +166,8 @@ export interface backendInterface {
     getTotalProductCount(): Promise<bigint>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    listManagedUsersForAdmin(): Promise<Array<AppUser>>;
+    promoteToAdminForAdmin(userToPromote: Principal): Promise<void>;
     reorderCategories(newOrder: Array<[bigint, bigint]>): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchHomepageProducts(searchQuery: string): Promise<Array<HomepageSearchResult>>;

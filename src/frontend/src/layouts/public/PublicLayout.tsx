@@ -4,6 +4,7 @@ import PublicHeader from '../../components/public/PublicHeader';
 import PublicSidePanel from '../../components/public/PublicSidePanel';
 import PublicFooter from '../../components/public/PublicFooter';
 import ProductModalHost from '../../components/public/product/ProductModalHost';
+import CookieConsentBanner from '../../components/public/CookieConsentBanner';
 
 export default function PublicLayout() {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
@@ -35,6 +36,9 @@ export default function PublicLayout() {
       
       {/* Product Modal Host - mounted at layout level */}
       <ProductModalHost />
+      
+      {/* Cookie Consent Banner - mounted at layout level */}
+      <CookieConsentBanner />
     </div>
   );
 }

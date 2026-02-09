@@ -185,3 +185,120 @@
     height: 500px; /* Desktop height unchanged */
   }
 }
+
+/* Cookie Consent Banner Styles */
+.cookie-consent-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9998; /* Below modals (9999), above normal content */
+  background: oklch(var(--background) / 0.95);
+  border-top: 1px solid oklch(var(--border));
+  box-shadow: 0 -2px 8px rgb(0 0 0 / 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.cookie-consent-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 16px;
+}
+
+.cookie-consent-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cookie-consent-text {
+  font-size: 13px;
+  line-height: 1.3;
+  color: oklch(var(--foreground));
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.cookie-consent-link {
+  color: oklch(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cookie-consent-link:hover {
+  color: oklch(var(--primary));
+  opacity: 0.8;
+}
+
+.cookie-consent-link:focus-visible {
+  outline: 2px solid oklch(var(--ring));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.cookie-consent-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cookie-consent-button {
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .cookie-consent-container {
+    padding: 8px 12px;
+  }
+
+  .cookie-consent-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .cookie-consent-text {
+    font-size: 12px;
+    text-align: center;
+    min-width: unset;
+  }
+
+  .cookie-consent-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cookie-consent-button {
+    flex: 1;
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  /* Ensure banner doesn't exceed 25% of viewport height on mobile */
+  .cookie-consent-banner {
+    max-height: 25vh;
+    overflow-y: auto;
+  }
+}
+
+/* Desktop single-line layout */
+@media (min-width: 768px) {
+  .cookie-consent-content {
+    flex-wrap: nowrap;
+  }
+
+  .cookie-consent-text {
+    flex: 1 1 auto;
+  }
+
+  .cookie-consent-actions {
+    flex: 0 0 auto;
+  }
+}

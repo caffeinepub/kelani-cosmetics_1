@@ -2,10 +2,41 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-public-site-header-component-frontend-src-components-public-publicheader-tsx-reduce-the-hamburger-menu-visual-size-by-changing-the-hamburger-icon-sizing-class-from-size-9-to-size-6-apply-the-equivalent-change-to-the-element-that-currently-controls-the-hamburger-icon-size-ensure-the-hamburger-remains-visible-on-all-screen-sizes-and-keeps-the-same-click-tap-behavior-toggles-the-side-panel",
-      "featureTitle": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), reduce the hamburger menu visual size by changing the hamburger icon sizing class from `size-9` to `size-6` (apply the equivalent change to the element that currently controls the hamburger icon size). Ensure the hamburger remains visible on all screen sizes and keeps the same click/tap behavior (toggles the side panel).",
+      "featureId": "feature-update-all-admin-page-get-data-fetching-react-query-hooks-to-use-the-stable-actor-pattern-stabilize-the-actor-reference-via-usestate-useeffect-and-only-run-queries-once-the-stable-actor-exists-to-prevent-duplicate-api-calls-caused-by-actor-reference-changes",
+      "featureTitle": "Update all admin-page GET data-fetching React Query hooks to use the stable-actor pattern (stabilize the actor reference via `useState` + `useEffect` and only run queries once the stable actor exists), to prevent duplicate API calls caused by actor reference changes.",
       "files": [
-        "frontend/src/components/public/PublicHeader.tsx"
+        "frontend/src/hooks/useAdminExport.ts",
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/hooks/useProductQueries.ts",
+        "frontend/src/hooks/useProductSearchForSales.ts",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/hooks/useStoreDetailsQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-the-standardized-react-query-cache-configuration-to-every-admin-page-get-query-including-products-categories-on-sale-items-store-details-export-statistics-and-user-management-listings",
+      "featureTitle": "Apply the standardized React Query cache configuration to every admin-page GET query (including products, categories, on-sale items, store details, export/statistics, and user management listings).",
+      "files": [
+        "frontend/src/hooks/useAdminExport.ts",
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/hooks/useProductQueries.ts",
+        "frontend/src/hooks/useProductSearchForSales.ts",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/hooks/useStoreDetailsQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,10 +52,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-the-public-site-header-component-frontend-src-components-public-publicheader-tsx-remove-the-px-4-class-from-the-desktop-only-contact-link-so-it-aligns-with-the-right-content-boundary-while-keeping-existing-typography-hover-styles-and-vertical-padding-intact",
-      "featureTitle": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), remove the `px-4` class from the desktop-only Contact link so it aligns with the right content boundary while keeping existing typography, hover styles, and vertical padding intact.",
+      "featureId": "feature-implement-stable-actor-standardized-query-configuration-specifically-for-the-admin-products-page-get-queries-ensuring-all-product-related-get-hooks-used-by-the-products-admin-ui-follow-the-same-pattern-and-config",
+      "featureTitle": "Implement stable-actor + standardized query configuration specifically for the admin Products page GET queries (ensuring all product-related GET hooks used by the Products admin UI follow the same pattern and config).",
       "files": [
-        "frontend/src/components/public/PublicHeader.tsx"
+        "frontend/src/hooks/useProductQueries.ts",
+        "frontend/src/pages/admin/ProductsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -36,6 +68,159 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-stable-actor-standardized-query-configuration-for-the-admin-categories-page-get-queries-including-usegetallcategories-and-any-other-category-get-hooks-used-by-the-categories-admin-ui",
+      "featureTitle": "Implement stable-actor + standardized query configuration for the admin Categories page GET queries (including `useGetAllCategories()` and any other category GET hooks used by the Categories admin UI).",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/admin/CategoriesPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-stable-actor-standardized-query-configuration-for-the-admin-on-sale-products-page-get-queries-sale-items-pagination-listing-and-any-product-search-get-hooks-used-for-sale-item-creation-editing",
+      "featureTitle": "Implement stable-actor + standardized query configuration for the admin On-Sale Products page GET queries (sale items pagination/listing and any product-search GET hooks used for sale item creation/editing).",
+      "files": [
+        "frontend/src/hooks/useProductSearchForSales.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/pages/admin/OnSaleProductsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-stable-actor-standardized-query-configuration-for-the-admin-store-details-page-get-queries-store-details-fetch-for-each-store",
+      "featureTitle": "Implement stable-actor + standardized query configuration for the admin Store Details page GET queries (store details fetch for each store).",
+      "files": [
+        "frontend/src/hooks/useStoreDetailsQueries.ts",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-stable-actor-standardized-query-configuration-for-the-admin-export-page-get-queries-export-statistics-and-any-other-export-related-get-queries",
+      "featureTitle": "Implement stable-actor + standardized query configuration for the admin Export page GET queries (export statistics and any other export-related GET queries).",
+      "files": [
+        "frontend/src/hooks/useAdminExport.ts",
+        "frontend/src/pages/admin/ExportPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-stable-actor-standardized-query-configuration-for-the-admin-user-management-page-get-queries-e-g-listing-users-roles",
+      "featureTitle": "Implement stable-actor + standardized query configuration for the admin User Management page GET queries (e.g., listing users/roles).",
+      "files": [
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/pages/admin/UserManagementPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-react-query-cache-cleanup-on-unmount-for-each-admin-page-component-by-removing-queries-using-the-specified-query-key-prefixes-exact-false-so-returning-to-the-page-results-in-a-fresh-load",
+      "featureTitle": "Add React Query cache cleanup on unmount for each admin page component by removing queries using the specified query-key prefixes (exact: false), so returning to the page results in a fresh load.",
+      "files": [
+        "frontend/src/hooks/useAdminExport.ts",
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/hooks/useProductSearchForSales.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/hooks/useStoreDetailsQueries.ts",
+        "frontend/src/pages/admin/CategoriesPage.tsx",
+        "frontend/src/pages/admin/ExportPage.tsx",
+        "frontend/src/pages/admin/OnSaleProductsPage.tsx",
+        "frontend/src/pages/admin/ProductsPage.tsx",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx",
+        "frontend/src/pages/admin/UserManagementPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-preserve-existing-spanish-ui-and-error-messages-while-implementing-the-stable-actor-pattern-standardized-react-query-config-and-unmount-cache-cleanup-do-not-translate-or-replace-spanish-strings-already-present-in-the-ui-toasts",
+      "featureTitle": "Preserve existing Spanish UI and error messages while implementing the stable-actor pattern, standardized React Query config, and unmount cache cleanup (do not translate or replace Spanish strings already present in the UI/toasts).",
+      "files": [
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/hooks/useProductSearchForSales.ts",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/pages/admin/StoreDetailsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-10"
       ],
       "confidence": "high"
     }

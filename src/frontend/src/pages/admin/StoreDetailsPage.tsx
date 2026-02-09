@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Store, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,6 +15,7 @@ import { reportErrorWithToast } from '../../utils/reportErrorWithToast';
 import { stringifyWithBigInt } from '../../utils/BigIntSerializer';
 
 export default function StoreDetailsPage() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'1' | '2'>('1');
   const [formData1, setFormData1] = useState<StoreDetails | null>(null);
   const [formData2, setFormData2] = useState<StoreDetails | null>(null);
@@ -21,6 +23,13 @@ export default function StoreDetailsPage() {
   const [originalData2, setOriginalData2] = useState<StoreDetails | null>(null);
   const [errors1, setErrors1] = useState<Record<string, string>>({});
   const [errors2, setErrors2] = useState<Record<string, string>>({});
+
+  // Clear query cache on unmount
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ['store-details'], exact: false });
+    };
+  }, [queryClient]);
 
   // Fetch store details with individual queries
   const store1Query = useGetStoreDetails(1);

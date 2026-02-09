@@ -1,53 +1,216 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T11:14:44.617Z",
+  "generatedAt": "2026-02-09T13:10:23.632Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 10,
+    "implemented": 10,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the backend query method `getProductsPageFeaturedFirst(search, categoryId, page, pageSize)` to allow unauthenticated (public) callers by removing the current permission/admin verification that traps with \"Unauthorized: Only authenticated users can view products\". Preserve the existing response type (`PaginatedResponse`), filtering behavior, featured-first sort order, pagination logic, and error/validation behavior unrelated to auth.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Update all admin-page GET data-fetching React Query hooks to use the stable-actor pattern (stabilize the actor reference via `useState` + `useEffect` and only run queries once the stable actor exists), to prevent duplicate API calls caused by actor reference changes.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts"
+        ]
+      },
+      {
+        "id": "REQ-10",
+        "summary": "Preserve existing Spanish UI and error messages while implementing the stable-actor pattern, standardized React Query config, and unmount cache cleanup (do not translate or replace Spanish strings already present in the UI/toasts).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/hooks/useAdminUserManagement.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/hooks/useAdminUserManagement.ts"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), reduce the hamburger menu visual size by changing the hamburger icon sizing class from `size-9` to `size-6` (apply the equivalent change to the element that currently controls the hamburger icon size). Ensure the hamburger remains visible on all screen sizes and keeps the same click/tap behavior (toggles the side panel).",
+        "summary": "Apply the standardized React Query cache configuration to every admin-page GET query (including products, categories, on-sale items, store details, export/statistics, and user management listings).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/PublicHeader.tsx"
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/PublicHeader.tsx"
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "In the public site header component (`frontend/src/components/public/PublicHeader.tsx`), remove the `px-4` class from the desktop-only Contact link so it aligns with the right content boundary while keeping existing typography, hover styles, and vertical padding intact.",
+        "summary": "Implement stable-actor + standardized query configuration specifically for the admin Products page GET queries (ensuring all product-related GET hooks used by the Products admin UI follow the same pattern and config).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/PublicHeader.tsx"
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/pages/admin/ProductsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/PublicHeader.tsx"
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/pages/admin/ProductsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Implement stable-actor + standardized query configuration for the admin Categories page GET queries (including `useGetAllCategories()` and any other category GET hooks used by the Categories admin UI).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/admin/CategoriesPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/admin/CategoriesPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Implement stable-actor + standardized query configuration for the admin On-Sale Products page GET queries (sale items pagination/listing and any product-search GET hooks used for sale item creation/editing).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/pages/admin/OnSaleProductsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/pages/admin/OnSaleProductsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Implement stable-actor + standardized query configuration for the admin Store Details page GET queries (store details fetch for each store).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Implement stable-actor + standardized query configuration for the admin Export page GET queries (export statistics and any other export-related GET queries).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/pages/admin/ExportPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/pages/admin/ExportPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Implement stable-actor + standardized query configuration for the admin User Management page GET queries (e.g., listing users/roles).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAdminUserManagement.ts",
+          "frontend/src/pages/admin/UserManagementPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAdminUserManagement.ts",
+          "frontend/src/pages/admin/UserManagementPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "Add React Query cache cleanup on unmount for each admin page component by removing queries using the specified query-key prefixes (exact: false), so returning to the page results in a fresh load.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/admin/ProductsPage.tsx",
+          "frontend/src/pages/admin/CategoriesPage.tsx",
+          "frontend/src/pages/admin/OnSaleProductsPage.tsx",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/pages/admin/ExportPage.tsx",
+          "frontend/src/pages/admin/UserManagementPage.tsx",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/admin/ProductsPage.tsx",
+          "frontend/src/pages/admin/CategoriesPage.tsx",
+          "frontend/src/pages/admin/OnSaleProductsPage.tsx",
+          "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "frontend/src/pages/admin/ExportPage.tsx",
+          "frontend/src/pages/admin/UserManagementPage.tsx",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/public/PublicHeader.tsx",
+    "frontend/src/components/admin/sales/SaleItemUpsertModal.tsx",
+    "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
+    "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
+    "frontend/src/hooks/useAdminExport.ts",
+    "frontend/src/hooks/useAdminUserManagement.ts",
+    "frontend/src/hooks/useAdminVerification.ts",
+    "frontend/src/hooks/useProductQueries.ts",
+    "frontend/src/hooks/useProductSearchForSales.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useSaleItemQueries.ts",
+    "frontend/src/hooks/useStoreDetailsQueries.ts",
+    "frontend/src/pages/admin/CategoriesPage.tsx",
+    "frontend/src/pages/admin/ExportPage.tsx",
+    "frontend/src/pages/admin/OnSaleProductsPage.tsx",
+    "frontend/src/pages/admin/ProductsPage.tsx",
+    "frontend/src/pages/admin/StoreDetailsPage.tsx",
+    "frontend/src/pages/admin/UserManagementPage.tsx",
+    "frontend/src/utils/storeDetailsValidation.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import {
   useGetAllCategories,
@@ -45,6 +46,7 @@ interface CategoryFormData {
 }
 
 export default function CategoriesPage() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -54,6 +56,13 @@ export default function CategoriesPage() {
     order: '0',
   });
   const [formErrors, setFormErrors] = useState<Partial<CategoryFormData>>({});
+
+  // Clear query cache on unmount
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ['categories'], exact: false });
+    };
+  }, [queryClient]);
 
   // Queries and mutations
   const { data: categories = [], isLoading } = useGetAllCategories();
@@ -383,10 +392,10 @@ export default function CategoriesPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar categoría?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. La categoría "
-              {deleteConfirmCategory?.name}" será eliminada permanentemente.
+              Esta acción no se puede deshacer. Se eliminará permanentemente la categoría{' '}
+              <strong>{deleteConfirmCategory?.name}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

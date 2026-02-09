@@ -7,6 +7,7 @@ import CategoriesPage from './pages/admin/CategoriesPage';
 import StoreDetailsPage from './pages/admin/StoreDetailsPage';
 import ExportPage from './pages/admin/ExportPage';
 import ImportPage from './pages/admin/ImportPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
 import PublicLayout from './layouts/public/PublicLayout';
 import HomePage from './pages/public/HomePage';
 import ContactoPage from './pages/public/ContactoPage';
@@ -104,6 +105,12 @@ const importRoute = createRoute({
   component: ImportPage,
 });
 
+const userManagementRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/user-management',
+  component: UserManagementPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   publicLayoutRoute.addChildren([
     homeRoute,
@@ -120,5 +127,6 @@ export const routeTree = rootRoute.addChildren([
     storeDetailsRoute,
     exportRoute,
     importRoute,
+    userManagementRoute,
   ]),
 ]);

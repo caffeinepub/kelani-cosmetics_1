@@ -117,6 +117,10 @@ export const SaleItemArray = IDL.Record({
   'totalCount' : IDL.Nat,
   'items' : IDL.Vec(SaleItem),
 });
+export const AppUser = IDL.Record({
+  'principal' : IDL.Principal,
+  'role' : UserRole,
+});
 export const HomepageSearchResult = IDL.Record({
   'categoryId' : IDL.Nat,
   'productImageUrl' : IDL.Opt(IDL.Text),
@@ -156,6 +160,7 @@ export const idlService = IDL.Service({
   'deleteCategory' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'deleteProduct' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'deleteSaleItem' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'demoteToUserForAdmin' : IDL.Func([IDL.Principal], [], []),
   'exportAllData' : IDL.Func([], [ExportPayload], []),
   'filterProductsForSales' : IDL.Func(
       [IDL.Text],
@@ -208,6 +213,8 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'listManagedUsersForAdmin' : IDL.Func([], [IDL.Vec(AppUser)], ['query']),
+  'promoteToAdminForAdmin' : IDL.Func([IDL.Principal], [], []),
   'reorderCategories' : IDL.Func(
       [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Nat))],
       [IDL.Bool],
@@ -357,6 +364,10 @@ export const idlFactory = ({ IDL }) => {
     'totalCount' : IDL.Nat,
     'items' : IDL.Vec(SaleItem),
   });
+  const AppUser = IDL.Record({
+    'principal' : IDL.Principal,
+    'role' : UserRole,
+  });
   const HomepageSearchResult = IDL.Record({
     'categoryId' : IDL.Nat,
     'productImageUrl' : IDL.Opt(IDL.Text),
@@ -396,6 +407,7 @@ export const idlFactory = ({ IDL }) => {
     'deleteCategory' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'deleteProduct' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'deleteSaleItem' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'demoteToUserForAdmin' : IDL.Func([IDL.Principal], [], []),
     'exportAllData' : IDL.Func([], [ExportPayload], []),
     'filterProductsForSales' : IDL.Func(
         [IDL.Text],
@@ -448,6 +460,8 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'listManagedUsersForAdmin' : IDL.Func([], [IDL.Vec(AppUser)], ['query']),
+    'promoteToAdminForAdmin' : IDL.Func([IDL.Principal], [], []),
     'reorderCategories' : IDL.Func(
         [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Nat))],
         [IDL.Bool],

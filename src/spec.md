@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Make the featured-first product pagination endpoint usable from the public site and fix minor alignment/sizing issues in the public header.
+**Goal:** Prevent duplicate admin-page GET requests by stabilizing the backend actor reference in React Query hooks, standardizing cache behavior, and clearing relevant caches on page unmount.
 
 **Planned changes:**
-- Backend: Update `getProductsPageFeaturedFirst(search, categoryId, page, pageSize)` to allow unauthenticated callers by removing the current auth/admin verification that traps, while preserving existing pagination, filtering, featured-first sorting, and non-auth validation/error behavior.
-- Frontend: In `frontend/src/components/public/PublicHeader.tsx`, reduce the hamburger icon size from `size-9` to `size-6` (or equivalent sizing control) without changing its toggle behavior.
-- Frontend: In `frontend/src/components/public/PublicHeader.tsx`, remove the `px-4` class from the desktop-only Contact link so the right edge aligns with the page content boundary, keeping other styles and `/contacto` navigation intact.
+- Update all admin-page GET React Query hooks to use a stable-actor pattern (`useState` + `useEffect`) and only run queries once the stable actor is available.
+- Apply a standardized React Query configuration to every admin GET query (staleTime, gcTime, refetch behaviors, retry, and enabled gating) while keeping existing query-key patterns.
+- Ensure the admin Products, Categories, On-Sale Products, Store Details, Export, and User Management GET hooks all follow the same stable-actor + standardized cache configuration approach.
+- Add per-admin-page unmount cleanup that removes cached queries by the specified query-key prefixes (exact: false) so revisiting pages triggers a fresh load.
+- Preserve all existing Spanish UI labels and user-facing error/toast messages while implementing these changes.
 
-**User-visible outcome:** Public visitors can browse category products on the homepage without logging in, and the public header’s hamburger icon and Contact link align/size correctly across breakpoints.
+**User-visible outcome:** Admin pages load more reliably with fewer duplicate GET calls, consistent caching behavior, and fresh data reloads when returning to an admin page after navigating away—without changing the UI or Spanish messaging.

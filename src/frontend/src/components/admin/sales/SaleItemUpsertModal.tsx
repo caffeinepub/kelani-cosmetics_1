@@ -85,7 +85,6 @@ export default function SaleItemUpsertModal({
         name: editingSaleItem.name,
         price: editingSaleItem.price ?? 0,
         categoryId: editingSaleItem.categoryId,
-        description: editingSaleItem.description,
       });
       setSearchQuery('');
     } else {

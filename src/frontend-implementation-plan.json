@@ -1,36 +1,336 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix public header hamburger icon sizing and desktop Contact link alignment",
+  "title": "Admin GET hooks: stable actor + standardized React Query caching + unmount cache cleanup",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Reduce the public header hamburger icon size while preserving side panel toggle behavior across breakpoints.",
+      "id": "REQ-1",
+      "summary": "Stabilize actor reference for all admin GET React Query hooks to prevent duplicate calls caused by actor identity changes.",
       "acceptanceCriteria": [
-        "The hamburger menu icon renders at `size-6` (or equivalent) and remains clickable/tappable to open the side panel on all breakpoints.",
-        "No layout regressions are introduced in the header height or spacing."
+        "All admin GET hooks derive `rawActor` and `actorFetching` from `useActor()` and then create a `stableActor` state set once when `rawActor` becomes available.",
+        "Each admin GET hook’s `queryFn` uses `stableActor` (not `rawActor`) for backend calls and throws a clear error when `stableActor` is not available.",
+        "Each admin GET hook sets `enabled: Boolean(stableActor) && !actorFetching` so the query cannot fire before the actor is stable.",
+        "No admin GET hook triggers multiple backend calls solely due to actor reference changes (verified by observing network/agent calls when navigating to admin pages)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/public/PublicHeader.tsx",
+          "path": "frontend/src/hooks/useProductQueries.ts",
           "operation": "modify",
-          "description": "Update the hamburger icon sizing from the current larger size to `size-6` equivalent (e.g., `h-6 w-6`) while keeping the existing button and `onToggleSidePanel` click/tap behavior unchanged and visible on all screen sizes."
+          "description": "Update admin product GET hooks (e.g., paginated products and single-product fetch) to use the stable-actor pattern (stableActor via useState/useEffect; queryFn calls stableActor; enabled gated by Boolean(stableActor) && !actorFetching)."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update admin category GET hooks (useGetAllCategories, useGetCategoryById) to use the stable-actor pattern (stableActor via useState/useEffect; queryFn calls stableActor; enabled gated by Boolean(stableActor) && !actorFetching). Ensure existing Spanish error messages remain unchanged."
+        },
+        {
+          "path": "frontend/src/hooks/useSaleItemQueries.ts",
+          "operation": "modify",
+          "description": "Update admin sale-items listing GET hook to use the stable-actor pattern (stableActor via useState/useEffect; queryFn calls stableActor; enabled gated by Boolean(stableActor) && !actorFetching). Ensure existing Spanish error messages remain unchanged."
+        },
+        {
+          "path": "frontend/src/hooks/useProductSearchForSales.ts",
+          "operation": "modify",
+          "description": "Update admin sale-workflow product-search GET hook to use the stable-actor pattern (stableActor via useState/useEffect; queryFn calls stableActor; enabled gated by Boolean(stableActor) && !actorFetching plus current search-length gating). Ensure existing Spanish error messages remain unchanged."
+        },
+        {
+          "path": "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "operation": "modify",
+          "description": "Update admin store-details GET hook (useGetStoreDetails) to use the stable-actor pattern (stableActor via useState/useEffect; queryFn calls stableActor; enabled gated by Boolean(stableActor) && !actorFetching). Preserve existing Spanish toasts triggered in StoreDetailsPage."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminExport.ts",
+          "operation": "modify",
+          "description": "Update admin export statistics GET hook(s) to use the stable-actor pattern (stableActor via useState/useEffect; queryFn calls stableActor; enabled gated by Boolean(stableActor) && !actorFetching)."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserManagement.ts",
+          "operation": "modify",
+          "description": "Align the existing stable-actor usage for user-management listing GET hook(s) so that `enabled` also accounts for `!actorFetching` and `queryFn` throws a clear error when `stableActor` is unavailable, matching the stable-actor pattern used elsewhere."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Standardize React Query cache configuration for every admin-page GET query while keeping query keys consistent with existing invalidation/refetch patterns.",
+      "acceptanceCriteria": [
+        "Every admin GET `useQuery` sets: `staleTime: 5 * 60 * 1000`, `gcTime: 30 * 60 * 1000`, `refetchOnMount: false`, `refetchOnWindowFocus: false`, and `retry: 1`.",
+        "Every admin GET `useQuery` uses `enabled: Boolean(stableActor) && !actorFetching` (with the stable actor from REQ-1).",
+        "Query keys remain consistent with existing patterns already in the codebase (e.g., existing `['products', ...]`, `['categories']`, etc.), so other parts of the app that invalidate/refetch still work.",
+        "Existing behavior, loading states, and error handling remain intact aside from reducing duplicate calls."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useProductQueries.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to admin product queries (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1) while preserving existing query-key patterns used for product invalidation."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to admin category queries (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1) while keeping existing category query-key patterns. Preserve Spanish error/toast strings."
+        },
+        {
+          "path": "frontend/src/hooks/useSaleItemQueries.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to admin sale-items listing query (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1) and keep query keys consistent with the admin pages’ invalidation/removal needs."
+        },
+        {
+          "path": "frontend/src/hooks/useProductSearchForSales.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to admin sales product-search query (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1) while preserving the minimum-search-length gating behavior."
+        },
+        {
+          "path": "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to admin store-details query (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1), replacing non-standard retry/retryDelay settings for GET to match the required admin GET defaults."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminExport.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to admin export-related GET queries (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1)."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserManagement.ts",
+          "operation": "modify",
+          "description": "Apply standardized React Query GET configuration to user-management listing GET query (staleTime 5m, gcTime 30m, refetchOnMount false, refetchOnWindowFocus false, retry 1) while preserving current UI behavior and Spanish messaging."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Align the desktop-only Contact link to the right content boundary by removing extra horizontal padding.",
+      "summary": "Ensure the admin Products experience uses stable actor + standardized React Query caching for all product-related GET hooks it depends on.",
       "acceptanceCriteria": [
-        "On desktop breakpoints, the Contact link no longer includes `px-4` horizontal padding.",
-        "The Contact link remains hidden on mobile and visible on desktop, and still navigates to `/contacto`.",
-        "Header left/right edges align consistently with the page content container boundaries (`max-w-[1200px] px-4`)."
+        "`useGetProductsPage(...)` continues to work and uses the stable-actor pattern and the standardized cache configuration.",
+        "Any additional product-related GET hooks used by the admin products experience (e.g., single-product fetch used within admin flows, if applicable) also use the stable-actor pattern and standardized cache configuration.",
+        "No regressions in the ProductsPage UI: searching, filtering, pagination, and modals still function as before."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/public/PublicHeader.tsx",
+          "path": "frontend/src/hooks/useProductQueries.ts",
           "operation": "modify",
-          "description": "Remove the `px-4` class from the desktop-only Contact link while preserving existing typography, hover styles, and vertical padding (`py-2`), and ensure it still links to `/contacto` and remains hidden on mobile."
+          "description": "Confirm/adjust `useGetProductsPage(...)` and any other product-related GET hooks used by the admin Products UI to: (1) use stableActor, (2) gate enabled by Boolean(stableActor) && !actorFetching, and (3) apply standardized caching options."
+        },
+        {
+          "path": "frontend/src/pages/admin/ProductsPage.tsx",
+          "operation": "modify",
+          "description": "Add React Query cache cleanup on unmount for the Products admin page using the required query-key prefix removal, without changing existing ProductsPage layout or behavior."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Implement stable actor + standardized React Query caching for admin Categories page GET hooks, preserving Spanish error messages.",
+      "acceptanceCriteria": [
+        "`useGetAllCategories()` uses a stable actor (via local `stableActor` state) and the standardized cache configuration.",
+        "Any other category GET query hooks used on admin categories screens (e.g., `useGetCategoryById(...)` if used) use the same stable-actor pattern + standardized cache configuration.",
+        "Spanish error messages used in category GET hooks remain Spanish (e.g., existing messages like “Error al cargar las categorías”)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update `useGetAllCategories()` (and any category GET hooks used by admin pages, such as `useGetCategoryById`) to stableActor + standardized React Query GET config, preserving existing Spanish error/toast messages."
+        },
+        {
+          "path": "frontend/src/pages/admin/CategoriesPage.tsx",
+          "operation": "modify",
+          "description": "Add React Query cache cleanup on unmount for the Categories admin page using the required query-key prefix removal, keeping the existing Spanish UI intact."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Implement stable actor + standardized React Query caching for admin On-Sale Products page sale listing and product-search GET hooks.",
+      "acceptanceCriteria": [
+        "The sale-items listing GET hook(s) (e.g., the paginated sale items query used by `OnSaleProductsPage`) use the stable-actor pattern and the standardized cache configuration.",
+        "Any product-search GET hook used for sale workflows (e.g., searching products to attach to a sale item) uses the stable-actor pattern and the standardized cache configuration.",
+        "Search, filters, and pagination on `OnSaleProductsPage` work unchanged, with reduced duplicate fetches."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useSaleItemQueries.ts",
+          "operation": "modify",
+          "description": "Update the sale-items listing GET hook used by `OnSaleProductsPage` to stableActor + standardized React Query GET config, preserving current filters/pagination behavior."
+        },
+        {
+          "path": "frontend/src/hooks/useProductSearchForSales.ts",
+          "operation": "modify",
+          "description": "Update the product-search-for-sales GET hook to stableActor + standardized React Query GET config, while preserving Spanish error messaging and current search-length gating."
+        },
+        {
+          "path": "frontend/src/pages/admin/OnSaleProductsPage.tsx",
+          "operation": "modify",
+          "description": "Add React Query cache cleanup on unmount for OnSaleProductsPage using the required query-key prefix removals for both sale items and sales product search."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Implement stable actor + standardized React Query caching for admin Store Details page store-details GET queries, preserving Spanish user-facing errors/toasts.",
+      "acceptanceCriteria": [
+        "`useGetStoreDetails(storeId)` uses the stable-actor pattern and the standardized cache configuration.",
+        "Both store detail queries in `StoreDetailsPage` continue to load reliably and only run once per mount when the actor becomes available.",
+        "Existing Spanish error handling/toasts in the Store Details flow remain Spanish."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "operation": "modify",
+          "description": "Update `useGetStoreDetails(storeId)` to stableActor + standardized React Query GET config. Ensure the hook still supports the StoreDetailsPage’s dual-store querying behavior without introducing duplicate calls."
+        },
+        {
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Add React Query cache cleanup on unmount for StoreDetailsPage using the required query-key prefix removal, without changing existing Spanish UI/toasts."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Implement stable actor + standardized React Query caching for admin Export page GET queries (export statistics and related GET reads).",
+      "acceptanceCriteria": [
+        "The export statistics GET query hook(s) (e.g., `useExportStatistics()`) use the stable-actor pattern and the standardized cache configuration.",
+        "Any export data GET query hook(s) that fetch backend data for export previewing/statistics also use the stable-actor pattern + standardized cache configuration.",
+        "The Export page renders statistics and export actions as before, without duplicate GET calls on mount due to actor changes."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useAdminExport.ts",
+          "operation": "modify",
+          "description": "Update export-related GET hooks (e.g., `useExportStatistics`) to stableActor + standardized React Query GET config, and align query keys with the admin export cache cleanup prefix requirement."
+        },
+        {
+          "path": "frontend/src/pages/admin/ExportPage.tsx",
+          "operation": "modify",
+          "description": "Add React Query cache cleanup on unmount for ExportPage using the required query-key prefix removal, keeping export UI behavior unchanged."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Implement stable actor + standardized React Query caching for admin User Management page GET queries (user/role listing), preserving admin access behavior and Spanish UI.",
+      "acceptanceCriteria": [
+        "The user listing/roles GET query hook(s) used by `UserManagementPage` use the stable-actor pattern and the standardized cache configuration.",
+        "The User Management page still enforces admin access as before and maintains existing Spanish messages and labels.",
+        "No duplicate GET calls occur on initial load due to actor reference changes."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useAdminUserManagement.ts",
+          "operation": "modify",
+          "description": "Update user-management listing GET hook(s) to fully match stableActor + standardized React Query GET config, and align query keys with the required user-management cache cleanup prefix."
+        },
+        {
+          "path": "frontend/src/pages/admin/UserManagementPage.tsx",
+          "operation": "modify",
+          "description": "Add React Query cache cleanup on unmount for UserManagementPage using the required query-key prefix removal, preserving existing admin-only behavior and Spanish UI."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Remove admin page React Query caches on unmount using the specified query-key prefixes (exact: false) so returning to a page triggers a fresh load.",
+      "acceptanceCriteria": [
+        "`ProductsPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['products'], exact: false })`.",
+        "`CategoriesPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['categories'], exact: false })`.",
+        "`OnSaleProductsPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['sale-items'], exact: false })` and `queryClient.removeQueries({ queryKey: ['products', 'search'], exact: false })`.",
+        "`StoreDetailsPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['store-details'], exact: false })`.",
+        "`ExportPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['export-data'], exact: false })`.",
+        "`UserManagementPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['user-roles'], exact: false })`.",
+        "After navigating away from an admin page and returning, the page performs a new GET fetch rather than using stale cached data from the prior visit."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/admin/ProductsPage.tsx",
+          "operation": "modify",
+          "description": "On component unmount, remove admin product queries from React Query cache using `queryClient.removeQueries({ queryKey: ['products'], exact: false })`."
+        },
+        {
+          "path": "frontend/src/pages/admin/CategoriesPage.tsx",
+          "operation": "modify",
+          "description": "On component unmount, remove admin category queries from React Query cache using `queryClient.removeQueries({ queryKey: ['categories'], exact: false })`."
+        },
+        {
+          "path": "frontend/src/pages/admin/OnSaleProductsPage.tsx",
+          "operation": "modify",
+          "description": "On component unmount, remove sale-items and sales product-search queries using `queryClient.removeQueries({ queryKey: ['sale-items'], exact: false })` and `queryClient.removeQueries({ queryKey: ['products', 'search'], exact: false })`."
+        },
+        {
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "operation": "modify",
+          "description": "On component unmount, remove store-details queries using `queryClient.removeQueries({ queryKey: ['store-details'], exact: false })`."
+        },
+        {
+          "path": "frontend/src/pages/admin/ExportPage.tsx",
+          "operation": "modify",
+          "description": "On component unmount, remove export-related GET queries using `queryClient.removeQueries({ queryKey: ['export-data'], exact: false })`."
+        },
+        {
+          "path": "frontend/src/pages/admin/UserManagementPage.tsx",
+          "operation": "modify",
+          "description": "On component unmount, remove user-management listing/roles queries using `queryClient.removeQueries({ queryKey: ['user-roles'], exact: false })`."
+        },
+        {
+          "path": "frontend/src/hooks/useSaleItemQueries.ts",
+          "operation": "modify",
+          "description": "Align admin sale-items GET query keys to use the required `['sale-items', ...]` prefix so OnSaleProductsPage unmount cleanup removes the correct cached queries."
+        },
+        {
+          "path": "frontend/src/hooks/useProductSearchForSales.ts",
+          "operation": "modify",
+          "description": "Align admin sales product-search GET query keys to use the required `['products', 'search', ...]` prefix so OnSaleProductsPage unmount cleanup removes the correct cached queries."
+        },
+        {
+          "path": "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "operation": "modify",
+          "description": "Align admin store-details GET query keys to use the required `['store-details', ...]` prefix so StoreDetailsPage unmount cleanup removes the correct cached queries."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminExport.ts",
+          "operation": "modify",
+          "description": "Align admin export GET query keys to use the required `['export-data', ...]` prefix so ExportPage unmount cleanup removes the correct cached queries."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserManagement.ts",
+          "operation": "modify",
+          "description": "Align admin user-management listing GET query keys to use the required `['user-roles', ...]` prefix so UserManagementPage unmount cleanup removes the correct cached queries."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Preserve existing Spanish UI and user-facing error messages while implementing stable actor pattern, standardized caching, and unmount cache cleanup.",
+      "acceptanceCriteria": [
+        "All existing Spanish UI labels, placeholders, and toasts remain Spanish (no unintended text changes).",
+        "Any newly introduced internal errors (e.g., 'Actor not available') remain developer-facing only and do not replace existing Spanish user-facing errors.",
+        "Existing error-handling utilities (e.g., toast reporting) continue to be used as before."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "While refactoring category GET hooks for stableActor + standardized caching, keep existing Spanish error strings (e.g., “Error al cargar las categorías”, “Error al cargar la categoría”) unchanged and continue using existing toast error utilities."
+        },
+        {
+          "path": "frontend/src/hooks/useSaleItemQueries.ts",
+          "operation": "modify",
+          "description": "While refactoring sale-items GET hooks for stableActor + standardized caching and key-prefix alignment, preserve existing Spanish user-facing error messages and keep any new 'Actor not available' errors developer-facing (thrown)."
+        },
+        {
+          "path": "frontend/src/hooks/useProductSearchForSales.ts",
+          "operation": "modify",
+          "description": "While refactoring sales product-search GET hook for stableActor + standardized caching and key-prefix alignment, preserve the existing Spanish toast message “Error al buscar productos” and keep any new 'Actor not available' errors developer-facing (thrown)."
+        },
+        {
+          "path": "frontend/src/pages/admin/StoreDetailsPage.tsx",
+          "operation": "modify",
+          "description": "While adding unmount cache cleanup, ensure StoreDetailsPage’s existing Spanish toasts (e.g., “Error al cargar los datos de Tienda 1/2”) remain unchanged."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserManagement.ts",
+          "operation": "modify",
+          "description": "While standardizing user-management listing GET caching and key-prefix alignment, preserve existing Spanish toast messages (e.g., “No se pudieron cargar los usuarios”) and keep any new 'Actor not available' errors developer-facing (thrown)."
         }
       ]
     }

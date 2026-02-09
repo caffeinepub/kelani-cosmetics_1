@@ -8,6 +8,7 @@ import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
+import Iter "mo:core/Iter";
 
 actor {
   let accessControlState = AccessControl.initState();
@@ -19,6 +20,57 @@ actor {
     };
   };
 
+  // User Management ------------------------------------------
+  public type UserRole = AccessControl.UserRole;
+
+  public type AppUser = {
+    principal : Principal;
+    role : UserRole;
+  };
+
+  // Track all users who have interacted with the system
+  let knownUsers = Map.empty<Principal, Bool>();
+
+  // Server-side list logic - returns all known users except caller
+  public query ({ caller }) func listManagedUsersForAdmin() : async [AppUser] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can list users");
+    };
+
+    let usersArray = knownUsers.keys().toArray();
+    let filteredUsers = usersArray.filter(func(userPrincipal) { userPrincipal != caller });
+    
+    filteredUsers.map(func(userPrincipal) : AppUser {
+      {
+        principal = userPrincipal;
+        role = AccessControl.getUserRole(accessControlState, userPrincipal);
+      }
+    });
+  };
+
+  // Promote user to admin - enforces admin check server-side
+  public shared ({ caller }) func promoteToAdminForAdmin(userToPromote : Principal) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can promote users");
+    };
+    
+    // Track this user
+    knownUsers.add(userToPromote, true);
+    
+    // Perform the actual promotion using AccessControl
+    AccessControl.assignRole(accessControlState, caller, userToPromote, #admin);
+  };
+
+  // Demote admin to user
+  public shared ({ caller }) func demoteToUserForAdmin(userToDemote : Principal) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can demote users");
+    };
+    
+    // Perform the actual demotion using AccessControl
+    AccessControl.assignRole(accessControlState, caller, userToDemote, #user);
+  };
+
   public type UserProfile = {
     name : Text;
   };
@@ -27,8 +79,12 @@ actor {
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+      Runtime.trap("Unauthorized: Only users can view profiles");
     };
+    
+    // Track this user
+    knownUsers.add(caller, true);
+    
     userProfiles.get(caller);
   };
 
@@ -43,6 +99,10 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
+    
+    // Track this user
+    knownUsers.add(caller, true);
+    
     userProfiles.add(caller, profile);
   };
 
@@ -238,18 +298,18 @@ actor {
     };
   };
 
-  // Updated method to allow public access (no auth check)
+  // Public access for featured products
   public query ({ caller }) func getProductsPageFeaturedFirst(
     search : Text,
     categoryId : ?Nat,
     page : Nat,
     pageSize : Nat,
   ) : async PaginatedResponse {
+    // Public access - no auth check needed
     let filteredProducts = filterProducts(search, categoryId);
 
     let sortedProducts = filteredProducts.sort(
       func(a, b) {
-        // Featured products first
         Nat.compare(
           if (b.isFeatured) { 1 } else { 0 },
           if (a.isFeatured) { 1 } else { 0 },
@@ -353,6 +413,7 @@ actor {
   };
 
   public query ({ caller }) func getProduct(barcode : Text) : async Product {
+    // Public access - no auth check needed
     if (barcode.size() == 0) {
       Runtime.trap("Barcode is required");
     };
@@ -396,6 +457,7 @@ actor {
   };
 
   public query ({ caller }) func getProductPhoto(barcode : Text) : async [Nat8] {
+    // Public access - no auth check needed
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
       case (?product) {
@@ -408,10 +470,12 @@ actor {
   };
 
   public query ({ caller }) func getTotalProductCount() : async Nat {
+    // Public access - no auth check needed
     filterProducts("", null).size();
   };
 
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
+    // Public access - no auth check needed
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
     );
@@ -1186,4 +1250,3 @@ actor {
     };
   };
 };
-

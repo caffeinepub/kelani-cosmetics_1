@@ -4,6 +4,7 @@ import {
   Package,
   Tag,
   FolderTree,
+  Users,
   Store,
   Download,
   Upload,
@@ -37,6 +38,11 @@ const navItems = [
     title: 'Categorías',
     icon: FolderTree,
     path: '/admin/categories',
+  },
+  {
+    title: 'Usuarios Admin',
+    icon: Users,
+    path: '/admin/user-management',
   },
   {
     title: 'Datos de Tienda',

@@ -1,68 +1,97 @@
+import React from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { reportErrorWithToast } from '../utils/reportErrorWithToast';
 import type { ExportPayload } from '../backend';
 
-interface ExportStatistics {
-  totalCategories: number;
-  totalProducts: number;
-  featuredProducts: number;
-  onSaleProducts: number;
-}
+// Query Keys
+const QUERY_KEYS = {
+  exportData: ['export-data'] as const,
+  exportStatistics: ['export-data', 'statistics'] as const,
+};
+
+// ============================================================================
+// EXPORT QUERIES
+// ============================================================================
 
 /**
- * Hook to fetch live export statistics
+ * Fetch export statistics (counts)
  */
 export function useExportStatistics() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
 
-  return useQuery<ExportStatistics>({
-    queryKey: ['export-statistics'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
+
+  return useQuery<{
+    categories: number;
+    products: number;
+    featured: number;
+    onSale: number;
+  }>({
+    queryKey: QUERY_KEYS.exportStatistics,
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
 
       try {
-        const [categories, featuredProducts, activeSales] = await Promise.all([
-          actor.getAllCategories(),
-          actor.getFeaturedProducts(),
-          actor.getActiveSales(),
+        const [categories, totalProducts, featuredProducts, activeSales] = await Promise.all([
+          stableActor.getAllCategories(),
+          stableActor.getTotalProductCount(),
+          stableActor.getFeaturedProducts(),
+          stableActor.getActiveSales(),
         ]);
 
-        // Get total product count
-        const totalProducts = await actor.getTotalProductCount();
-
         return {
-          totalCategories: categories.length,
-          totalProducts: Number(totalProducts),
-          featuredProducts: featuredProducts.length,
-          onSaleProducts: activeSales.length,
+          categories: categories.length,
+          products: Number(totalProducts),
+          featured: featuredProducts.length,
+          onSale: activeSales.length,
         };
       } catch (error) {
-        console.error('Error fetching export statistics:', error);
+        reportErrorWithToast(error, 'Error al cargar las estadísticas', {
+          operation: 'exportStatistics',
+        });
         throw error;
       }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
 
+// ============================================================================
+// EXPORT MUTATIONS
+// ============================================================================
+
 /**
- * Hook to export all data
+ * Export all data
  */
 export function useExportData() {
   const { actor } = useActor();
 
-  return useMutation<ExportPayload, Error>({
-    mutationFn: async () => {
+  return useMutation({
+    mutationFn: async (): Promise<ExportPayload> => {
       if (!actor) throw new Error('Actor not available');
 
-      try {
-        const exportData = await actor.exportAllData();
-        return exportData;
-      } catch (error) {
-        console.error('Error exporting data:', error);
-        throw error;
-      }
+      return await actor.exportAllData();
+    },
+    onError: (error) => {
+      reportErrorWithToast(error, 'Error al exportar los datos', {
+        operation: 'exportAllData',
+      });
     },
   });
 }

@@ -1,120 +1,112 @@
 import { safeConvertToNumber } from './NumericConverter';
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Record<string, string>;
-}
-
+// StoreDetails validation type (without description field which doesn't exist in backend)
 export interface StoreDetailsFormData {
   name: string;
   email: string;
   phone: string;
   whatsapp: string;
   address: string;
-  description: string;
-  latitude: string | number;
-  longitude: string | number;
-  storeHours: {
-    monday: string;
-    tuesday: string;
-    wednesday: string;
-    thursday: string;
-    friday: string;
-    saturday: string;
-    sunday: string;
-  };
+  latitude: number;
+  longitude: number;
+  storeHours: Array<[string, string]>;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: Record<string, string>;
 }
 
 /**
- * Validates email format
+ * Validate email format
  */
 export function validateEmail(email: string): boolean {
-  if (!email || email.trim() === '') {
-    return false;
-  }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
+  return emailRegex.test(email);
 }
 
 /**
- * Validates phone number (basic validation)
+ * Validate phone number (basic validation)
  */
 export function validatePhone(phone: string): boolean {
-  if (!phone || phone.trim() === '') {
-    return false;
-  }
-  // Allow digits, spaces, +, -, (, )
-  const phoneRegex = /^[\d\s+\-()]+$/;
-  const cleaned = phone.trim();
-  return phoneRegex.test(cleaned) && cleaned.length >= 9;
+  // Allow digits, spaces, dashes, parentheses, and plus sign
+  const phoneRegex = /^[\d\s\-()+ ]+$/;
+  return phone.length >= 9 && phoneRegex.test(phone);
 }
 
 /**
- * Validates latitude (-90 to 90)
+ * Validate WhatsApp number (basic validation)
  */
-export function validateLatitude(lat: string | number): boolean {
-  const num = safeConvertToNumber(lat);
-  if (num === null) {
-    return false;
-  }
-  return num >= -90 && num <= 90;
+export function validateWhatsApp(whatsapp: string): boolean {
+  // Allow digits, spaces, dashes, parentheses, and plus sign
+  const whatsappRegex = /^[\d\s\-()+ ]+$/;
+  return whatsapp.length >= 9 && whatsappRegex.test(whatsapp);
 }
 
 /**
- * Validates longitude (-180 to 180)
+ * Validate latitude (-90 to 90)
  */
-export function validateLongitude(lng: string | number): boolean {
-  const num = safeConvertToNumber(lng);
-  if (num === null) {
-    return false;
-  }
-  return num >= -180 && num <= 180;
+export function validateLatitude(lat: number): boolean {
+  return lat >= -90 && lat <= 90;
 }
 
 /**
- * Validates all store details form fields
+ * Validate longitude (-180 to 180)
  */
-export function validateStoreDetails(data: StoreDetailsFormData): ValidationResult {
+export function validateLongitude(lng: number): boolean {
+  return lng >= -180 && lng <= 180;
+}
+
+/**
+ * Validate complete store details form
+ */
+export function validateStoreDetails(formData: StoreDetailsFormData): ValidationResult {
   const errors: Record<string, string> = {};
 
-  // Required field validations
-  if (!data.name || data.name.trim() === '') {
-    errors.name = 'El nombre de la tienda es obligatorio';
+  // Name validation
+  if (!formData.name || !formData.name.trim()) {
+    errors.name = 'El nombre de la tienda es requerido';
   }
 
-  if (!data.email || data.email.trim() === '') {
-    errors.email = 'El email es obligatorio';
-  } else if (!validateEmail(data.email)) {
-    errors.email = 'El formato del email no es válido';
+  // Email validation
+  if (!formData.email || !formData.email.trim()) {
+    errors.email = 'El correo electrónico es requerido';
+  } else if (!validateEmail(formData.email)) {
+    errors.email = 'El formato del correo electrónico no es válido';
   }
 
-  if (!data.phone || data.phone.trim() === '') {
-    errors.phone = 'El teléfono es obligatorio';
-  } else if (!validatePhone(data.phone)) {
-    errors.phone = 'El formato del número no es válido';
+  // Phone validation
+  if (!formData.phone || !formData.phone.trim()) {
+    errors.phone = 'El teléfono es requerido';
+  } else if (!validatePhone(formData.phone)) {
+    errors.phone = 'El formato del teléfono no es válido';
   }
 
-  if (!data.whatsapp || data.whatsapp.trim() === '') {
-    errors.whatsapp = 'El WhatsApp es obligatorio';
-  } else if (!validatePhone(data.whatsapp)) {
-    errors.whatsapp = 'El formato del número no es válido';
+  // WhatsApp validation
+  if (!formData.whatsapp || !formData.whatsapp.trim()) {
+    errors.whatsapp = 'El número de WhatsApp es requerido';
+  } else if (!validateWhatsApp(formData.whatsapp)) {
+    errors.whatsapp = 'El formato del número de WhatsApp no es válido';
   }
 
-  if (!data.address || data.address.trim() === '') {
-    errors.address = 'La dirección es obligatoria';
+  // Address validation
+  if (!formData.address || !formData.address.trim()) {
+    errors.address = 'La dirección es requerida';
   }
 
-  if (!data.description || data.description.trim() === '') {
-    errors.description = 'La descripción es obligatoria';
-  }
-
-  // Coordinate validations
-  if (!validateLatitude(data.latitude)) {
+  // Latitude validation
+  if (!validateLatitude(formData.latitude)) {
     errors.latitude = 'La latitud debe estar entre -90 y 90';
   }
 
-  if (!validateLongitude(data.longitude)) {
+  // Longitude validation
+  if (!validateLongitude(formData.longitude)) {
     errors.longitude = 'La longitud debe estar entre -180 y 180';
+  }
+
+  // Store hours validation
+  if (!formData.storeHours || formData.storeHours.length === 0) {
+    errors.storeHours = 'Los horarios de la tienda son requeridos';
   }
 
   return {

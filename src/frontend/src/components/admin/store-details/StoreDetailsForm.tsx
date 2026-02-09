@@ -1,7 +1,6 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import type { StoreDetails } from '../../../hooks/useStoreDetailsQueries';
 
 interface StoreDetailsFormProps {
@@ -11,6 +10,19 @@ interface StoreDetailsFormProps {
 }
 
 export default function StoreDetailsForm({ formData, onChange, errors }: StoreDetailsFormProps) {
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const daysInSpanish = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+  // Convert storeHours array to object for easier access
+  const storeHoursMap = new Map(formData.storeHours);
+
+  const handleStoreHourChange = (day: string, value: string) => {
+    const newStoreHours = formData.storeHours.map(([d, h]) => 
+      d === day ? [d, value] as [string, string] : [d, h] as [string, string]
+    );
+    onChange('storeHours', newStoreHours);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -56,13 +68,17 @@ export default function StoreDetailsForm({ formData, onChange, errors }: StoreDe
 
           {/* WhatsApp */}
           <div className="space-y-2">
-            <Label htmlFor="whatsapp">Número de WhatsApp *</Label>
+            <Label htmlFor="whatsapp">WhatsApp *</Label>
             <Input
               id="whatsapp"
               type="tel"
               value={formData.whatsapp}
               onChange={(e) => onChange('whatsapp', e.target.value)}
-              placeholder={formData.storeId === 1 ? "+34 600 111 111" : "+34 600 222 222"}
+              placeholder={
+                formData.storeId === 1
+                  ? 'Ej: +34 600 111 111'
+                  : 'Ej: +34 600 222 222'
+              }
             />
             {errors.whatsapp && <p className="text-sm text-destructive">{errors.whatsapp}</p>}
           </div>
@@ -70,90 +86,106 @@ export default function StoreDetailsForm({ formData, onChange, errors }: StoreDe
           {/* Address */}
           <div className="space-y-2">
             <Label htmlFor="address">Dirección *</Label>
-            <Textarea
+            <Input
               id="address"
               value={formData.address}
               onChange={(e) => onChange('address', e.target.value)}
               placeholder="Ej: Calle Principal 123, Madrid"
-              rows={3}
             />
             {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => onChange('description', e.target.value)}
-              placeholder="Descripción de la tienda"
-              rows={3}
-            />
-            {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
           </div>
         </div>
       </div>
 
-      {/* Coordinates */}
       <div>
-        <h3 className="text-lg font-semibold text-foreground mb-4">Coordenadas</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Redes Sociales (Opcional)</h3>
+        <div className="space-y-4">
+          {/* Facebook */}
           <div className="space-y-2">
-            <Label htmlFor="latitude">Latitud *</Label>
+            <Label htmlFor="facebook">Facebook</Label>
+            <Input
+              id="facebook"
+              value={formData.facebook ?? ''}
+              onChange={(e) => onChange('facebook', e.target.value || undefined)}
+              placeholder="Ej: /KelaniCosmetics"
+            />
+          </div>
+
+          {/* Instagram */}
+          <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input
+              id="instagram"
+              value={formData.instagram ?? ''}
+              onChange={(e) => onChange('instagram', e.target.value || undefined)}
+              placeholder="Ej: @kelanicosmetics"
+            />
+          </div>
+
+          {/* Website */}
+          <div className="space-y-2">
+            <Label htmlFor="website">Sitio Web</Label>
+            <Input
+              id="website"
+              type="url"
+              value={formData.website ?? ''}
+              onChange={(e) => onChange('website', e.target.value || undefined)}
+              placeholder="Ej: https://kelani.com"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-4">Coordenadas *</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {/* Latitude */}
+          <div className="space-y-2">
+            <Label htmlFor="latitude">Latitud</Label>
             <Input
               id="latitude"
               type="number"
-              step="any"
+              step="0.000001"
               value={formData.latitude}
-              onChange={(e) => onChange('latitude', parseFloat(e.target.value) || 0)}
-              placeholder="Ej: 40.4168"
+              onChange={(e) => onChange('latitude', e.target.value)}
+              placeholder="Ej: 40.416775"
             />
             {errors.latitude && <p className="text-sm text-destructive">{errors.latitude}</p>}
           </div>
+
+          {/* Longitude */}
           <div className="space-y-2">
-            <Label htmlFor="longitude">Longitud *</Label>
+            <Label htmlFor="longitude">Longitud</Label>
             <Input
               id="longitude"
               type="number"
-              step="any"
+              step="0.000001"
               value={formData.longitude}
-              onChange={(e) => onChange('longitude', parseFloat(e.target.value) || 0)}
-              placeholder="Ej: -3.7038"
+              onChange={(e) => onChange('longitude', e.target.value)}
+              placeholder="Ej: -3.703790"
             />
             {errors.longitude && <p className="text-sm text-destructive">{errors.longitude}</p>}
           </div>
         </div>
       </div>
 
-      {/* Store Hours */}
       <div>
-        <h3 className="text-lg font-semibold text-foreground mb-4">Horario de Atención</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4">Horarios de Atención *</h3>
         <div className="space-y-3">
-          {[
-            { key: 'monday', label: 'Lunes' },
-            { key: 'tuesday', label: 'Martes' },
-            { key: 'wednesday', label: 'Miércoles' },
-            { key: 'thursday', label: 'Jueves' },
-            { key: 'friday', label: 'Viernes' },
-            { key: 'saturday', label: 'Sábado' },
-            { key: 'sunday', label: 'Domingo' },
-          ].map(({ key, label }) => (
-            <div key={key} className="space-y-2">
-              <Label htmlFor={key}>{label}</Label>
+          {daysOfWeek.map((day, index) => (
+            <div key={day} className="grid grid-cols-[120px_1fr] gap-4 items-center">
+              <Label htmlFor={`hours-${day}`} className="text-sm">
+                {daysInSpanish[index]}
+              </Label>
               <Input
-                id={key}
-                value={formData.storeHours[key as keyof typeof formData.storeHours]}
-                onChange={(e) =>
-                  onChange('storeHours', {
-                    ...formData.storeHours,
-                    [key]: e.target.value,
-                  })
-                }
-                placeholder="Ej: 9:00 AM - 9:00 PM o Cerrado"
+                id={`hours-${day}`}
+                value={storeHoursMap.get(day) || ''}
+                onChange={(e) => handleStoreHourChange(day, e.target.value)}
+                placeholder="Ej: 9:00 AM - 9:00 PM"
               />
             </div>
           ))}
+          {errors.storeHours && <p className="text-sm text-destructive">{errors.storeHours}</p>}
         </div>
       </div>
     </div>

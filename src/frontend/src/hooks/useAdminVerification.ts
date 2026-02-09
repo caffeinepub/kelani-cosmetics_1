@@ -1,59 +1,69 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useAuthStore } from '../stores/authStore';
-import { useEffect } from 'react';
+import { useAuthStore, type AdminStatus } from '../stores/authStore';
 import { reportErrorWithToast } from '../utils/reportErrorWithToast';
 
-export function useAdminVerification() {
+interface AdminVerificationResult {
+  isVerifying: boolean;
+  adminStatus: AdminStatus;
+  isAdmin: boolean;
+}
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function useAdminVerification(): AdminVerificationResult {
   const { actor, isFetching: actorFetching } = useActor();
-  const {
-    isAuthenticated,
-    adminStatus,
-    needsAdminRecheck,
-    setAdminStatus,
-    setAdminCheckTimestamp,
-  } = useAuthStore();
+  const authStore = useAuthStore();
+  const { principal, adminStatus: cachedAdminStatus, adminCheckTimestamp, setAdminStatus, setAdminCheckTimestamp } = authStore;
 
-  const shouldVerify = isAuthenticated && needsAdminRecheck();
+  const isCacheValid = 
+    (cachedAdminStatus === 'admin' || cachedAdminStatus === 'non-admin') && 
+    adminCheckTimestamp !== null && 
+    Date.now() - adminCheckTimestamp < THIRTY_DAYS_MS;
 
-  const query = useQuery({
-    queryKey: ['adminVerification'],
+  const { data: isAdminFromBackend, isLoading } = useQuery<boolean>({
+    queryKey: ['adminVerification', principal],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
+      
       try {
-        const isAdmin = await actor.isCallerAdmin();
-        return isAdmin;
+        const result = await actor.isCallerAdmin();
+        const status: AdminStatus = result ? 'admin' : 'non-admin';
+        setAdminStatus(status);
+        setAdminCheckTimestamp(Date.now());
+        return result;
       } catch (error) {
         reportErrorWithToast(
           error,
-          'Failed to verify admin permissions',
-          {
-            operation: 'adminVerification',
-            component: 'useAdminVerification',
-          }
+          'Error al verificar permisos de administrador',
+          { operation: 'isCallerAdmin', component: 'useAdminVerification' }
         );
+        setAdminStatus('non-admin');
+        setAdminCheckTimestamp(Date.now());
         return false;
       }
     },
-    enabled: !!actor && !actorFetching && shouldVerify,
+    enabled: !!actor && !actorFetching && !!principal && !isCacheValid,
     retry: false,
-    staleTime: Infinity,
+    staleTime: THIRTY_DAYS_MS,
   });
 
-  useEffect(() => {
-    if (query.data !== undefined && !query.isLoading) {
-      const newStatus = query.data ? 'admin' : 'non-admin';
-      setAdminStatus(newStatus);
-      setAdminCheckTimestamp(Date.now());
-    }
-  }, [query.data, query.isLoading, setAdminStatus, setAdminCheckTimestamp]);
+  const isVerifying = actorFetching || (isLoading && !isCacheValid);
+  
+  let adminStatus: AdminStatus = 'unknown';
+  let isAdmin = false;
 
-  const isVerifying =
-    (shouldVerify && (actorFetching || query.isLoading)) ||
-    (isAuthenticated && adminStatus === 'unknown');
+  if (isCacheValid) {
+    adminStatus = cachedAdminStatus;
+    isAdmin = cachedAdminStatus === 'admin';
+  } else if (!isVerifying && isAdminFromBackend !== undefined) {
+    adminStatus = isAdminFromBackend ? 'admin' : 'non-admin';
+    isAdmin = isAdminFromBackend;
+  }
 
   return {
     isVerifying,
     adminStatus,
+    isAdmin,
   };
 }
