@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { X, Star } from 'lucide-react';
+import { X, Star, MessageCircle, Share2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,9 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useProductModalStore } from '../../../stores/productModalStore';
+import CopyToClipboardButton from './CopyToClipboardButton';
 import type { ProductWithSale, HomepageSearchResult } from '../../../backend';
 
 const DEFAULT_IMAGE_URL = 'https://i.imgur.com/pNccXMT.png';
@@ -17,7 +19,7 @@ function isProductWithSale(data: ProductWithSale | HomepageSearchResult): data i
 }
 
 export default function ProductDetailsModal() {
-  const { isOpen, productData, closeModal } = useProductModalStore();
+  const { isOpen, productData, storeDetails, closeModal } = useProductModalStore();
   const isClosingRef = useRef(false);
   const hasHistoryStateRef = useRef(false);
 
@@ -126,6 +128,18 @@ export default function ProductDetailsModal() {
     ? salePrice
     : price;
 
+  // WhatsApp handler
+  const handleWhatsAppContact = () => {
+    if (!storeDetails) return;
+    
+    const phoneNumber = storeDetails.whatsapp.replace(/\D/g, '');
+    const message = encodeURIComponent(
+      `Hola, estoy interesado en el producto: ${name} (Código: ${barcode})`
+    );
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -208,6 +222,30 @@ export default function ProductDetailsModal() {
                 <p className="text-muted-foreground">{description}</p>
               </div>
             )}
+
+            {/* Action Section */}
+            <div className="pt-6 border-t space-y-3">
+              <Button
+                onClick={handleWhatsAppContact}
+                disabled={!storeDetails}
+                className="w-full h-12 text-base font-semibold"
+                size="lg"
+              >
+                <MessageCircle className="h-5 w-5 mr-2" />
+                Contactar sobre este producto
+              </Button>
+
+              <CopyToClipboardButton
+                textToCopy={window.location.href}
+                variant="outline"
+                size="lg"
+                className="w-full h-12 text-base"
+                showLabel
+              >
+                <Share2 className="h-5 w-5 mr-2" />
+                Compartir producto
+              </CopyToClipboardButton>
+            </div>
           </div>
         </div>
       </DialogContent>

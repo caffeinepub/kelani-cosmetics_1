@@ -190,6 +190,11 @@ export const idlService = IDL.Service({
       [PaginatedResponse],
       ['query'],
     ),
+  'getProductsPageFeaturedFirst' : IDL.Func(
+      [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
+      [PaginatedResponse],
+      ['query'],
+    ),
   'getSaleItemsPage' : IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
       [SaleItemArray],
@@ -421,6 +426,11 @@ export const idlFactory = ({ IDL }) => {
     'getProduct' : IDL.Func([IDL.Text], [Product], ['query']),
     'getProductPhoto' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Nat8)], ['query']),
     'getProductsPage' : IDL.Func(
+        [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
+        [PaginatedResponse],
+        ['query'],
+      ),
+    'getProductsPageFeaturedFirst' : IDL.Func(
         [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
         [PaginatedResponse],
         ['query'],

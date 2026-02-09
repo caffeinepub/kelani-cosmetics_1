@@ -220,6 +220,16 @@ actor {
     search.chars().all(numericCheck);
   };
 
+  func safeSlice(array : [Product], start : Nat, end : Nat) : [Product] {
+    if (start >= array.size()) {
+      return [];
+    } else if (end > array.size()) {
+      array.sliceToArray(start, array.size());
+    } else {
+      array.sliceToArray(start, end);
+    };
+  };
+
   public query ({ caller }) func getProductsPage(search : Text, categoryId : ?Nat, page : Nat, pageSize : Nat) : async PaginatedResponse {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view products");
@@ -229,6 +239,38 @@ actor {
     let start = page * pageSize;
     let end = start + pageSize;
     let pageItems = safeSlice(filteredProducts, start, end);
+
+    {
+      items = pageItems;
+      totalCount;
+    };
+  };
+
+  public query ({ caller }) func getProductsPageFeaturedFirst(
+    search : Text,
+    categoryId : ?Nat,
+    page : Nat,
+    pageSize : Nat,
+  ) : async PaginatedResponse {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can view products");
+    };
+    let filteredProducts = filterProducts(search, categoryId);
+
+    let sortedProducts = filteredProducts.sort(
+      func(a, b) {
+        // Featured products first
+        Nat.compare(
+          if (b.isFeatured) { 1 } else { 0 },
+          if (a.isFeatured) { 1 } else { 0 },
+        );
+      }
+    );
+
+    let totalCount = sortedProducts.size();
+    let start = page * pageSize;
+    let end = start + pageSize;
+    let pageItems = safeSlice(sortedProducts, start, end);
 
     {
       items = pageItems;
@@ -514,16 +556,6 @@ actor {
   };
 
   func safeSliceSaleItem(array : [SaleItem], start : Nat, end : Nat) : [SaleItem] {
-    if (start >= array.size()) {
-      return [];
-    } else if (end > array.size()) {
-      array.sliceToArray(start, array.size());
-    } else {
-      array.sliceToArray(start, end);
-    };
-  };
-
-  func safeSlice(array : [Product], start : Nat, end : Nat) : [Product] {
     if (start >= array.size()) {
       return [];
     } else if (end > array.size()) {

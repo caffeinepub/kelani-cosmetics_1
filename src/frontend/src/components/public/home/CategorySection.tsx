@@ -1,18 +1,20 @@
 import React, { useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
-import type { CategorizedProductWithSale } from '../../../backend';
+import type { CategorizedProductWithSale, StoreDetails } from '../../../backend';
 import ProductCard from '../products/ProductCard';
 import { useProductModalStore } from '../../../stores/productModalStore';
 
 interface CategorySectionProps {
   category: CategorizedProductWithSale;
   isMobile: boolean;
+  storeDetails: StoreDetails | null;
 }
 
 const CategorySection = React.memo(function CategorySection({
   category,
   isMobile,
+  storeDetails,
 }: CategorySectionProps) {
   const openModal = useProductModalStore((state) => state.openModal);
 
@@ -23,9 +25,9 @@ const CategorySection = React.memo(function CategorySection({
 
   const handleProductClick = useCallback(
     (productWithSale: CategorizedProductWithSale['products'][0]) => {
-      openModal(productWithSale);
+      openModal(productWithSale, storeDetails);
     },
-    [openModal]
+    [openModal, storeDetails]
   );
 
   // Truncate category name on mobile (approx 22 characters)

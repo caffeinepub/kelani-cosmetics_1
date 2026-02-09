@@ -81,6 +81,8 @@ const ProductCard = React.memo(function ProductCard({
         <img
           src={imageSrc}
           alt={product.name}
+          loading="lazy"
+          decoding="async"
           className={`w-full h-full object-contain transition-transform duration-200 group-hover:scale-105 ${
             imageLoading ? 'blur-sm' : ''
           }`}

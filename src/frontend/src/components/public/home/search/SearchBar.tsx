@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import AutocompleteDropdown from './AutocompleteDropdown';
 import { useHomepageAutocomplete } from '../../../../hooks/useHomepageAutocomplete';
 import { useProductModalStore } from '../../../../stores/productModalStore';
+import { useBothStoreDetails } from '../../../../hooks/useBothStoreDetails';
 import type { HomepageSearchResult } from '../../../../backend';
 
 export default function SearchBar() {
@@ -12,6 +13,10 @@ export default function SearchBar() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const openModal = useProductModalStore((state) => state.openModal);
+
+  // Fetch store details for modal
+  const { data: storeDetailsArray } = useBothStoreDetails();
+  const storeDetails = storeDetailsArray?.[0] ?? null;
 
   const { results, isLoading, error } = useHomepageAutocomplete(query);
 
@@ -28,7 +33,7 @@ export default function SearchBar() {
     setIsOpen(false);
     setQuery('');
     setActiveIndex(-1);
-    openModal(result);
+    openModal(result, storeDetails);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

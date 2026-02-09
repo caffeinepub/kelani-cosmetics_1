@@ -238,6 +238,7 @@ export interface backendInterface {
     getProduct(barcode: string): Promise<Product>;
     getProductPhoto(barcode: string): Promise<Uint8Array>;
     getProductsPage(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
+    getProductsPageFeaturedFirst(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
     getSaleItemsPage(search: string, page: bigint, pageSize: bigint, includeInactive: boolean): Promise<SaleItemArray>;
     getStoreDetails(storeId: bigint): Promise<StoreDetails>;
     getTotalProductCount(): Promise<bigint>;
@@ -576,6 +577,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getProductsPage(arg0, to_candid_opt_n41(this._uploadFile, this._downloadFile, arg1), arg2, arg3);
+            return from_candid_PaginatedResponse_n42(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getProductsPageFeaturedFirst(arg0: string, arg1: bigint | null, arg2: bigint, arg3: bigint): Promise<PaginatedResponse> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getProductsPageFeaturedFirst(arg0, to_candid_opt_n41(this._uploadFile, this._downloadFile, arg1), arg2, arg3);
+                return from_candid_PaginatedResponse_n42(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getProductsPageFeaturedFirst(arg0, to_candid_opt_n41(this._uploadFile, this._downloadFile, arg1), arg2, arg3);
             return from_candid_PaginatedResponse_n42(this._uploadFile, this._downloadFile, result);
         }
     }

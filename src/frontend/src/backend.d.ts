@@ -155,6 +155,7 @@ export interface backendInterface {
     getProduct(barcode: string): Promise<Product>;
     getProductPhoto(barcode: string): Promise<Uint8Array>;
     getProductsPage(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
+    getProductsPageFeaturedFirst(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
     getSaleItemsPage(search: string, page: bigint, pageSize: bigint, includeInactive: boolean): Promise<SaleItemArray>;
     getStoreDetails(storeId: bigint): Promise<StoreDetails>;
     getTotalProductCount(): Promise<bigint>;

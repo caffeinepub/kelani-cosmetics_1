@@ -1,47 +1,50 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useHomepageCategoriesInfinite } from '../../../hooks/useHomepageCategoriesInfinite';
-import { throttle } from '../../../utils/throttle';
-import CategorySection from './CategorySection';
+import { useBothStoreDetails } from '../../../hooks/useBothStoreDetails';
 import { useIsMobile } from '../../../hooks/useMediaQuery';
+import CategorySection from './CategorySection';
+import { throttle } from '../../../utils/throttle';
+
+const PAGE_SIZE = 5;
 
 const HomepageCategoriesSection = React.memo(function HomepageCategoriesSection() {
   const isMobile = useIsMobile();
-  // Fixed page size of 5 categories per load for all devices
-  const pageSize = 5;
+  const { categories, isLoading, error, hasMore, loadMore } = useHomepageCategoriesInfinite(PAGE_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const { categories, isLoading, isFetchingMore, hasMore, error, loadMore } =
-    useHomepageCategoriesInfinite(pageSize);
+  // Fetch store details for modal
+  const { data: storeDetailsArray } = useBothStoreDetails();
+  const storeDetails = storeDetailsArray?.[0] ?? null;
 
-  // Scroll handler with throttling
   const handleScroll = useCallback(
     throttle(() => {
-      // Calculate distance to bottom
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = window.innerHeight;
-      const distanceToBottom = scrollHeight - (scrollTop + clientHeight);
+      if (isLoadingMore || !hasMore) return;
 
-      // Trigger load when within 500px of bottom
-      if (distanceToBottom <= 500 && hasMore && !isFetchingMore) {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      if (scrollTop + windowHeight >= documentHeight - 500) {
+        setIsLoadingMore(true);
         loadMore();
+        // Reset loading state after a short delay
+        setTimeout(() => setIsLoadingMore(false), 500);
       }
-    }, 200), // Throttle to 200ms
-    [hasMore, isFetchingMore, loadMore]
+    }, 300),
+    [hasMore, isLoadingMore, loadMore]
   );
 
-  // Attach scroll listener
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center py-24">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Cargando categorías...</p>
       </div>
     );
   }
@@ -63,27 +66,28 @@ const HomepageCategoriesSection = React.memo(function HomepageCategoriesSection(
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 pb-12">
       {categories.map((category) => (
         <CategorySection
-          key={Number(category.categoryId)}
+          key={category.categoryId}
           category={category}
           isMobile={isMobile}
+          storeDetails={storeDetails}
         />
       ))}
 
-      {/* Loading indicator when fetching more */}
-      {isFetchingMore && (
+      {isLoadingMore && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
           <span className="text-muted-foreground">Cargando más categorías...</span>
         </div>
       )}
 
-      {/* End of content message */}
-      {!hasMore && categories.length > 0 && (
+      {!hasMore && !isLoadingMore && categories.length > 0 && (
         <div className="text-center py-8">
-          <p className="text-muted-foreground text-sm">No hay más categorías para mostrar</p>
+          <p className="text-muted-foreground text-sm">
+            Has visto todas las categorías disponibles
+          </p>
         </div>
       )}
     </div>

@@ -170,6 +170,10 @@ export interface _SERVICE {
     [string, [] | [bigint], bigint, bigint],
     PaginatedResponse
   >,
+  'getProductsPageFeaturedFirst' : ActorMethod<
+    [string, [] | [bigint], bigint, bigint],
+    PaginatedResponse
+  >,
   'getSaleItemsPage' : ActorMethod<
     [string, bigint, bigint, boolean],
     SaleItemArray

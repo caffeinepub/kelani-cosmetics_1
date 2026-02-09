@@ -1,51 +1,113 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T23:10:33.825Z",
+  "generatedAt": "2026-02-09T00:09:51.309Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 3,
+    "total": 9,
+    "implemented": 8,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Adjust the home page hero banner background position ONLY on desktop (>=768px): apply `background-position-y: -170px` to the banner background image container, while preserving the current banner appearance on mobile (<768px). Use Tailwind responsive utilities / arbitrary properties if possible.",
+        "summary": "Replace the current static `frontend/src/pages/public/ContactoPage.tsx` with a fully featured `/contacto` page that uses the existing public header/footer via `PublicLayout`, and renders all content inside a centered max-width container (1200px) with a responsive two-store layout (side-by-side on desktop, stacked on mobile) and clear visual separation between the two stores.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/home/StoreBanner.tsx"
+          "frontend/src/pages/public/ContactoPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/home/StoreBanner.tsx"
+          "frontend/src/pages/public/ContactoPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Expand the homepage search box container width on desktop so it aligns with the page container (max 1200px) and matches the width/edges of the category headers and product grid containers below. Preserve current search box width behavior on mobile.",
+        "summary": "Implement contact-page data fetching using the stable actor pattern to prevent repeated calls caused by actor reference changes: stabilize the actor reference with `useState` + `useEffect`, and fetch both stores via a single backend call to `getBothStoreDetails()` (React Query `queryKey: ['both-store-details']`, `enabled` only when stable actor exists, `staleTime` 30 minutes, and `refetchOnWindowFocus: false`).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/home/search/SearchBar.tsx"
+          "frontend/src/hooks/useBothStoreDetails.ts",
+          "frontend/src/pages/public/ContactoPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/home/search/SearchBar.tsx"
+          "frontend/src/pages/public/ContactoPage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Update the mobile category header layout in the homepage category sections: (a) move the product count to appear below the category name on mobile, left-aligned, in a smaller secondary style; (b) truncate long category names on mobile to prevent wrapping (use an ellipsis, target ~20–25 characters); (c) reduce the \"Ver todos\" link font size on mobile while keeping the desktop size unchanged. Use Tailwind responsive utilities (e.g., `md:` / `max-md:`) for layout and typography changes.",
+        "summary": "Add an initial loading-state controller for the contact page using an explicit `isInitialLoading` state that shows immediately on first paint and is set to false only when the store-details fetch completes (success or error). During initial loading, show a centered spinner with the text \"Cargando información de contacto...\" using the same spinner styling pattern as the public category page (Loader2 icon, animate-spin, primary color).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/home/CategorySection.tsx"
+          "frontend/src/pages/public/ContactoPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/home/CategorySection.tsx"
+          "frontend/src/pages/public/ContactoPage.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Preserve the existing `:root` CSS custom properties block in `frontend/src/index.css` exactly as-is (names, values, ordering, and structure). If any additional global CSS is required for these layout changes, append it only below the existing `:root` variables block without editing that block.",
+        "summary": "After initial loading completes, implement robust error/empty/partial-data handling: (1) if the fetch errors, show \"Error al cargar la información de contacto\" and a retry button that retries the query using the same UX pattern as the public category page; (2) if no store details are returned, show an empty-state message; (3) if only one store is available, render the available store and show a clear message for the missing store; (4) only render a store card when its `isActive` field is true.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Render the page header exactly with: main title \"Contacto - Variety Discount Store\" and subtitle \"Visítanos en nuestras tiendas o contáctanos directamente\"; keep the interface copy on the page in Spanish as specified (section headings, button labels, loading/error text, and store labels \"Tienda 1\" and \"Tienda 2\").",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "For each active store, render a store information card that includes: store name (prominent), address (with a location icon and clickable directions link), phone (tel: link + formatted display), WhatsApp (wa.me link + formatted display), email (mailto: link), and social links shown only when present (Facebook, Instagram, Website), each with a recognizable icon and opening in a new tab when applicable.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx",
+          "frontend/src/utils/phoneFormat.ts",
+          "frontend/src/utils/googleMaps.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx",
+          "frontend/src/utils/phoneFormat.ts",
+          "frontend/src/utils/googleMaps.ts"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Implement an elegant store-hours section per store titled \"Horario de Apertura\" that parses the backend-provided `storeHours` tuple array and displays each day as a bold Spanish label (Monday→Lunes, Tuesday→Martes, Wednesday→Miércoles, Thursday→Jueves, Friday→Viernes, Saturday→Sábado, Sunday→Domingo) with the hours on a separate line below, with clean spacing and alignment.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Add a map section per store that (a) parses the `coordinates` JSON string in the format `{ \"lat\": number, \"lng\": number }`, (b) lazy-loads a responsive Google Maps embed (300px height, rounded corners) centered on those coordinates with interactive zoom/pan, and (c) renders a primary \"Obtener Direcciones\" button (with a navigation icon) below the map that opens `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}` in a new tab. If coordinates cannot be parsed/validated, hide the embed and button and show a clear fallback message.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx",
+          "frontend/src/utils/googleMaps.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx",
+          "frontend/src/utils/googleMaps.ts"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "Ensure styling changes do not remove, modify, or overwrite the existing `:root` CSS custom-properties block in `frontend/src/index.css`; any new global styles (if needed) must be appended below the existing variables block without changing variable names, values, or structure.",
         "status": "missing",
         "plannedFiles": [
           "frontend/src/index.css"
@@ -59,9 +121,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/public/home/CategorySection.tsx",
-    "frontend/src/components/public/home/StoreBanner.tsx",
-    "frontend/src/components/public/home/search/SearchBar.tsx",
+    "frontend/src/pages/public/ContactoPage.tsx",
+    "frontend/src/utils/googleMaps.ts",
+    "frontend/src/utils/phoneFormat.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

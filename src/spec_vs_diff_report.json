@@ -1,33 +1,72 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T23:10:33.821Z",
-  "summary": "REQ-1 appears implemented via a desktop-only Tailwind arbitrary property on the banner background. REQ-2 appears addressed by removing the desktop max-width constraint on the SearchBar container (mobile still constrained). REQ-3 is partially implemented (stacking count on mobile, smaller styles, smaller mobile link font), but the diff does not show CSS-based no-wrap truncation with ellipsis to prevent wrapping on narrow screens. An unrequested change limits the number of products shown on mobile to 4.",
+  "generatedAt": "2026-02-09T00:09:51.305Z",
+  "summary": "ContactoPage was heavily updated with stable-actor React Query fetching, initial loading spinner, basic error + retry, and active-store filtering. However, the diff is truncated, so key layout/rendering requirements (PublicLayout usage, two-store responsive cards, partial-data handling, hours, and maps behavior) cannot be fully verified. The implemented Google Maps embed URL uses an API key, which conflicts with the explicit non-goal/constraint to avoid API-key-based Google Maps embeds.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "On mobile (<768px), truncate long category names to a single line (no wrapping) with an ellipsis to prevent wrapping.",
-      "reason": "The diff truncates the string in JS (`substring(0, 22) + '...'`) but does not apply Tailwind/CSS no-wrap + ellipsis truncation utilities (e.g., `truncate` / `whitespace-nowrap` / `overflow-hidden`). Without those, the title can still wrap on narrow screens, violating the 'single line (no wrapping)' acceptance criterion.",
+      "id": "REQ-1",
+      "requirement": "Use PublicLayout and render all content inside a centered max-width (1200px) container with a responsive two-store layout and clear visual separation.",
+      "reason": "The ContactoPage diff is truncated right where the two-store layout begins, and there is no visible evidence of wrapping the page in PublicLayout or enforcing a 1200px container / responsive two-column layout with separation.",
       "evidence": [
-        "frontend/src/components/public/home/CategorySection.tsx"
+        "frontend/src/pages/public/ContactoPage.tsx (truncated at the two-store layout: `div className=\"grid grid-cols-1 md:g...`)"
       ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "After loading, handle partial-data: if only one store is available, render it and show a clear message that the other store is missing; do not render inactive stores.",
+      "reason": "The diff shows filtering `isActive` and an empty state when no active stores exist, but there is no visible evidence of the required messaging/UX when exactly one active store is available (partial-data state).",
+      "evidence": [
+        "frontend/src/pages/public/ContactoPage.tsx (shows `activeStores` filter + empty state, but truncated before store rendering)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Render per-store information card with name, address (clickable directions only when coordinates valid), phone (tel:), WhatsApp (wa.me), email (mailto:), and conditional social links (Facebook/Instagram/Website) with icons and new-tab behavior.",
+      "reason": "Imports and some utilities exist (icons, `formatWhatsAppApiNumber`), but the actual per-store card rendering is not visible due to truncation, so the presence/behavior of the required links and conditional rendering cannot be confirmed.",
+      "evidence": [
+        "frontend/src/pages/public/ContactoPage.tsx (truncated before store card content is shown)"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "Render store hours section titled \"Horario de Apertura\" translating backend English day names to Spanish with specified formatting.",
+      "reason": "`translateDayToSpanish` is imported, but the hours UI is not visible in the truncated ContactoPage diff, so the required section title, translation coverage, and day/hour layout cannot be verified.",
+      "evidence": [
+        "frontend/src/pages/public/ContactoPage.tsx (imports `translateDayToSpanish` but rendering is truncated)"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "Per-store map section: parse coordinates JSON; lazy-load responsive embed (~300px height, rounded corners) without API-key-based Google Maps embed; show \"Obtener Direcciones\" button using the specified directions URL; show fallback when invalid.",
+      "reason": "ContactoPage defines parsing and directions URL, but also defines an embed URL that uses `google.com/maps/embed/v1/place?key=...` (API key). Additionally, the actual iframe/button rendering, lazy-loading, 300px height, and fallback UI are not visible due to truncation.",
+      "evidence": [
+        "frontend/src/pages/public/ContactoPage.tsx (`getMapEmbedUrl` uses `.../embed/v1/place?key=...`)",
+        "frontend/src/pages/public/ContactoPage.tsx (truncated before map section rendering can be verified)"
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "requirement": "Do not modify the existing :root CSS variables block in frontend/src/index.css; only append new styles below it if needed.",
+      "reason": "No diff for `frontend/src/index.css` is included, so compliance cannot be verified from the provided changes.",
+      "evidence": []
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Limit products displayed on mobile to the first 4 items in each category section.",
-      "reason": "The BuildRequest does not ask to change how many products are shown per category on mobile; it only requests header layout/typography adjustments.",
+      "description": "API-key-based Google Maps Embed URL (`https://www.google.com/maps/embed/v1/place?key=...`) for the contact page map embed.",
+      "reason": "The BuildRequest explicitly lists as a non-goal/constraint: not introducing API-key-based Google Maps Embed APIs. The diff hardcodes an API key into the embed URL generator.",
       "evidence": [
-        "frontend/src/components/public/home/CategorySection.tsx"
+        "frontend/src/pages/public/ContactoPage.tsx (`getMapEmbedUrl` includes `embed/v1/place?key=...`)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/public/home/CategorySection.tsx",
-    "frontend/src/components/public/home/StoreBanner.tsx",
-    "frontend/src/components/public/home/search/SearchBar.tsx",
+    "frontend/src/pages/public/ContactoPage.tsx",
+    "frontend/src/utils/googleMaps.ts",
+    "frontend/src/utils/phoneFormat.ts",
     "project_state.json"
   ]
 }
