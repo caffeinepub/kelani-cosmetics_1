@@ -1,96 +1,144 @@
 {
   "kind": "build_request",
-  "title": "Admin category dropdown: limit height to 10 items with vertical scroll (Products filter + Product modal)",
-  "priority": "normal",
+  "title": "Integrate active sale pricing into public product data (strict date validation)",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add an opt-in way to style the dropdown menu container for SafeSelect so specific callers can apply a max-height and scrolling without changing default behavior of other selects.",
-      "target": "frontend",
+      "text": "Update the Motoko backend to return public product data with integrated active sale information (sale price, discount percentage, and on-sale flag) for these methods: `getProductsPageFeaturedFirst()`, `getHomepageCategories()`, and `getProduct()`. Sale fields must only be present/true when the sale is currently valid per strict time-window validation.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Fix category dropdowns in the admin products page by adding height limits and scroll functionality when there are many categories. This is a front end only change. This change should not impact any other pages/designs"
+          "Update three Motoko backend functions to return product data with integrated active sale price information",
+          "Three Backend Methods: getProductsPageFeaturedFirst(), getHomepageCategories(), getProduct()",
+          "Each product must include: Original price, Sale price (optional), Discount percentage, Boolean flag indicating if product is currently on sale"
         ]
       },
       "acceptanceCriteria": [
-        "SafeSelect supports passing a class name (or equivalent) specifically to the rendered SelectContent element (dropdown menu container).",
-        "If the new prop is not provided, SafeSelect renders exactly as before (no visual/layout changes to other dropdowns)."
+        "`getProductsPageFeaturedFirst()` returns products where each item includes the original product data plus computed sale fields (`salePrice?`, `discountPercentage?`, `isOnSale`).",
+        "`getHomepageCategories()` returns categories and associated products where each product includes the same sale fields.",
+        "`getProduct()` returns a single product response that includes the same sale fields (so the product details page and modal can display sale pricing).",
+        "For products with no active/valid sale, the response omits/returns null for `salePrice` and `discountPercentage`, and sets `isOnSale` to false.",
+        "No backend state is modified by these reads (all remain query-safe)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Apply the new SafeSelect dropdown content styling to the Admin Products page category filter dropdown so it displays at most 10 category items at once and becomes vertically scrollable when there are more than 10 categories.",
-      "target": "frontend",
+      "text": "Implement a shared, reusable Motoko helper used by all three public product methods that resolves the active sale for a given product barcode by scanning `saleItems` and applying strict validation: sale must have `isActive == true` and current time must be within the sale period using system time (nanoseconds since Unix epoch). Enforce boundary rules so expired and future sales never return sale data.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Admin Products Page: Category filter dropdown above products table",
-          "Maximum Display: Show maximum 10 category items in dropdown view",
-          "Scroll Functionality: Add vertical scrolling when category list exceeds 10 items"
+          "Shared Helper Function: Create reusable function to determine valid sale price for a product barcode",
+          "Verify sale is active (isActive field is true)",
+          "Current timestamp must be BETWEEN sale start and end dates (inclusive)",
+          "NEVER show sale price for expired sales",
+          "NEVER show sale price for future sales"
         ]
       },
       "acceptanceCriteria": [
-        "On the admin Products page, the category filter dropdown menu has a max height approximately equal to 10 option rows and shows a vertical scrollbar when options exceed that height.",
-        "Keyboard navigation (arrow keys, enter, escape) continues to work within the scrollable list.",
-        "The change is scoped to this dropdown only (no changes to other dropdowns/pages)."
+        "Helper returns `null`/empty when there is no matching sale item, the sale is inactive, `now < startDate`, or `now > endDate`.",
+        "Helper returns sale data only when `startDate <= now <= endDate` (inclusive) and `isActive == true`.",
+        "If multiple sale items match a product barcode, the helper deterministically selects one active-valid sale (documented in code, e.g., best discount or nearest end date) and never returns an expired/future sale.",
+        "Discount percentage is computed only when a valid sale applies and the product has a non-null original price; otherwise it is null/0 per existing conventions.",
+        "Date/time comparisons are performed on `Int` nanosecond timestamps using `Time.now()` (or an existing internal timestamp helper), with consistent comparisons across all three endpoints."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Apply the same max-height (10 items) + vertical scrolling behavior to the category selection dropdown inside the Add/Edit Product modal (ProductUpsertModal).",
-      "target": "frontend",
+      "text": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Add/Edit Product Modal: Category selection dropdown in form",
-          "Both dropdowns show all categories without height limits, causing UI overflow when there are many categories."
+          "MANDATORY UTILITIES USAGE: This implementation MUST use existing shared utilities where applicable: BigInt serialization for date handling, Numeric conversion utilities for price calculations, Consistent error handling patterns",
+          "Maintain existing function signatures where possible"
         ]
       },
       "acceptanceCriteria": [
-        "In the Add/Edit Product modal, the category dropdown menu has a max height approximately equal to 10 option rows and shows a vertical scrollbar when options exceed that height.",
-        "Dropdown remains usable on mobile (touch scrolling works; the dropdown stays positioned on-screen).",
-        "No other form controls or modal layout are impacted."
+        "Backend sale-period comparisons are implemented using the existing timestamp representation already used in `SaleItem.startDate/endDate` (nanosecond `Int`).",
+        "Frontend continues to parse and handle backend timestamps/prices without JSON BigInt loss, using the project’s existing BigInt-safe parsing utilities where applicable.",
+        "If any Candid type changes are required (e.g., product response type expands), the generated frontend backend typings continue to compile without `any` casts."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Create new, admin-specific CSS styles to implement the scrollable dropdown menu (max-height, overflow-y) and a clean scrollbar that matches the existing admin theme; ensure smooth touch scrolling with momentum and preserve accessibility. Append styles without modifying the existing :root CSS custom properties block in frontend/src/index.css.",
+      "text": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Do not impact other categories list. Create new css styling if needed",
-          "Touch scrolling with momentum physics",
-          "Do not remove, modify, or overwrite the :root CSS custom properties block in index.css. Always preserve the exact variable names, values, and structure, appending new CSS styles only below this block without changes."
+          "Strict Price Display Rules for All Public Interfaces",
+          "Product Details Modal ... Must display sale price when product has valid active sale ... Display discount percentage ... Show \"En Oferta\" badge or similar indicator",
+          "Product Details Page ... Display sale price ONLY if sale is currently active AND within date range",
+          "Integration Points: ... Search results product cards"
         ]
       },
       "acceptanceCriteria": [
-        "A new, uniquely-scoped CSS class (admin-only) is added for the dropdown content container to set max-height (10 items), overflow-y:auto, and touch momentum scrolling (-webkit-overflow-scrolling: touch).",
-        "Scrollbar styling is applied only to this new admin dropdown class (does not affect public side panel categories scrollbar styles or any other lists).",
-        "frontend/src/index.css :root blocks remain unchanged; new CSS is appended below the existing content."
+        "Home page and category page product cards display sale price + strikethrough original price + discount badge only when the product is flagged as on sale by the backend payload for that card.",
+        "Search results items show sale price + strikethrough original price only when the backend indicates the sale is active/valid; otherwise they show original price only.",
+        "Product details modal displays (when on sale): an \"On Sale\" indicator (English text), sale price, original price with strikethrough, and discount percentage; when not on sale it shows only the original price and no sale indicators.",
+        "Standalone product page displays (when on sale): sale price, original price with strikethrough, discount percentage, and an \"On Sale\" indicator (English text); when not on sale it shows only the original price.",
+        "No UI path shows sale price for a product where `isOnSale`/`saleIsActive` is false or sale fields are missing/null."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "getProduct() - Returns single product details for product page and modal",
+          "Product Details Page ... Display sale price ONLY if sale is currently active AND within date range"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`frontend/src/pages/public/ProductPage.tsx` renders sale-aware pricing based on the updated backend response type.",
+        "The React Query hook used by ProductPage (currently `useGetProduct` in `frontend/src/hooks/useProductQueries.ts`) is updated/extended to fetch and map sale-aware product data.",
+        "ProductPage UI remains functional for products with missing price (null/undefined), showing the existing fallback where appropriate."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Product Details Modal ... Display discount percentage ... Show \"En Oferta\" badge or similar indicator"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`frontend/src/components/public/product/ProductDetailsModal.tsx` shows a discount percentage only when sale is active/valid and the backend provides the value.",
+        "The modal shows an English on-sale badge/label (e.g., \"On Sale\") only when sale is active/valid; it is absent otherwise.",
+        "The modal never shows sale UI if `isOnSale`/`saleIsActive` is false or sale fields are null/undefined."
       ]
     }
   ],
   "constraints": [
-    "Frontend-only change (no backend changes).",
-    "Do not remove, modify, or overwrite the :root CSS custom properties block in frontend/src/index.css; only append new styles below it.",
-    "Do not edit files under frontend/src/components/ui (read-only shadcn sources); compose/extend behavior from application components instead.",
-    "Change must not impact other pages/designs; scope styling to admin category dropdowns only."
+    "Backend must remain single-actor; implement all Motoko logic in `backend/main.mo` (no extra backend services).",
+    "Do not modify immutable frontend paths listed in SYSTEM_CONTEXT (compose existing UI components instead of editing them).",
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; append new CSS only below it if needed.",
+    "Use English for any new/changed user-facing text introduced by this change request."
   ],
   "nonGoals": [
-    "Reworking the overall admin Products page layout or table UI.",
-    "Changing category fetching, sorting, or backend category APIs.",
-    "Adding new category management features.",
-    "Restyling dropdowns globally across the app."
+    "Do not implement new admin sale-management features (CRUD/UI) beyond what already exists.",
+    "Do not add third-party services, databases, or external caching layers.",
+    "Do not change authentication behavior (Internet Identity) or session keep-alive behavior."
   ],
   "imageRequirements": {
     "required": [],

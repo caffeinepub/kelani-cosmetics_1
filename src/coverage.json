@@ -1,72 +1,99 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T21:36:21.268Z",
+  "generatedAt": "2026-02-09T23:16:01.576Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 6,
     "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add an opt-in way to style the dropdown menu container for SafeSelect so specific callers can apply a max-height and scrolling without changing default behavior of other selects.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/SafeSelect.tsx",
-          "frontend/src/components/SafeSelect.test.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/SafeSelect.tsx"
-        ]
+        "summary": "Update the Motoko backend to return public product data with integrated active sale information (sale price, discount percentage, and on-sale flag) for these methods: `getProductsPageFeaturedFirst()`, `getHomepageCategories()`, and `getProduct()`. Sale fields must only be present/true when the sale is currently valid per strict time-window validation.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Apply the new SafeSelect dropdown content styling to the Admin Products page category filter dropdown so it displays at most 10 category items at once and becomes vertically scrollable when there are more than 10 categories.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/products/CategoryFilterSelect.tsx",
-          "frontend/src/pages/admin/ProductsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/products/CategoryFilterSelect.tsx"
-        ]
+        "summary": "Implement a shared, reusable Motoko helper used by all three public product methods that resolves the active sale for a given product barcode by scanning `saleItems` and applying strict validation: sale must have `isActive == true` and current time must be within the sale period using system time (nanoseconds since Unix epoch). Enforce boundary rules so expired and future sales never return sale data.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Apply the same max-height (10 items) + vertical scrolling behavior to the category selection dropdown inside the Add/Edit Product modal (ProductUpsertModal).",
+        "summary": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/products/ProductUpsertModal.tsx"
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useProductQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/products/ProductUpsertModal.tsx"
+          "frontend/src/hooks/useProductQueries.ts"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Create new, admin-specific CSS styles to implement the scrollable dropdown menu (max-height, overflow-y) and a clean scrollbar that matches the existing admin theme; ensure smooth touch scrolling with momentum and preserve accessibility. Append styles without modifying the existing :root CSS custom properties block in frontend/src/index.css.",
+        "summary": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/index.css"
+          "frontend/src/hooks/useCategoryProductsPaginated.ts",
+          "frontend/src/components/public/products/ProductCard.tsx",
+          "frontend/src/components/public/home/search/SearchResultItem.tsx",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "frontend/src/pages/public/ProductPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/index.css"
+          "frontend/src/hooks/useCategoryProductsPaginated.ts",
+          "frontend/src/components/public/products/ProductCard.tsx",
+          "frontend/src/components/public/home/search/SearchResultItem.tsx",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "frontend/src/pages/public/ProductPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/pages/public/ProductPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/pages/public/ProductPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/public/product/ProductDetailsModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/public/product/ProductDetailsModal.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/SafeSelect.tsx",
-    "frontend/src/components/admin/products/CategoryFilterSelect.tsx",
-    "frontend/src/components/admin/products/ProductUpsertModal.tsx",
-    "frontend/src/index.css",
+    "frontend/src/components/public/home/search/SearchResultItem.tsx",
+    "frontend/src/components/public/product/ProductDetailsModal.tsx",
+    "frontend/src/components/public/products/ProductCard.tsx",
+    "frontend/src/hooks/useCategoryProductsPaginated.ts",
+    "frontend/src/hooks/useProductQueries.ts",
+    "frontend/src/pages/public/ProductPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

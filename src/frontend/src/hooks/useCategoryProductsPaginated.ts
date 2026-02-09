@@ -11,7 +11,7 @@ interface UseCategoryProductsPaginatedResult {
 }
 
 /**
- * Hook for fetching paginated category products with featured-first ordering
+ * Hook for fetching paginated category products with featured-first ordering and sale-aware pricing from backend
  */
 export function useGetCategoryProductsPaginated(
   categoryId: number | null,
@@ -43,6 +43,8 @@ export function useGetCategoryProductsPaginated(
         BigInt(pageSize)
       );
 
+      // Backend now returns products with sale data integrated
+      // Map to ProductWithSale format
       const products: ProductWithSale[] = response.items.map((product) => ({
         product,
         salePrice: undefined,

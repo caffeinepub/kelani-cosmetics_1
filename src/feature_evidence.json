@@ -2,48 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-an-opt-in-way-to-style-the-dropdown-menu-container-for-safeselect-so-specific-callers-can-apply-a-max-height-and-scrolling-without-changing-default-behavior-of-other-selects",
-      "featureTitle": "Add an opt-in way to style the dropdown menu container for SafeSelect so specific callers can apply a max-height and scrolling without changing default behavior of other selects.",
+      "featureId": "feature-ensure-the-backend-uses-existing-shared-utilities-patterns-for-a-bigint-int-serialization-of-timestamps-and-b-numeric-conversion-price-calculation-consistency-and-maintains-existing-function-signatures-where-possible-or-updates-frontend-bindings-accordingly-when-signatures-must-change",
+      "featureTitle": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
       "files": [
-        "frontend/src/components/SafeSelect.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-apply-the-new-safeselect-dropdown-content-styling-to-the-admin-products-page-category-filter-dropdown-so-it-displays-at-most-10-category-items-at-once-and-becomes-vertically-scrollable-when-there-are-more-than-10-categories",
-      "featureTitle": "Apply the new SafeSelect dropdown content styling to the Admin Products page category filter dropdown so it displays at most 10 category items at once and becomes vertically scrollable when there are more than 10 categories.",
-      "files": [
-        "frontend/src/components/admin/products/CategoryFilterSelect.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-apply-the-same-max-height-10-items-vertical-scrolling-behavior-to-the-category-selection-dropdown-inside-the-add-edit-product-modal-productupsertmodal",
-      "featureTitle": "Apply the same max-height (10 items) + vertical scrolling behavior to the category selection dropdown inside the Add/Edit Product modal (ProductUpsertModal).",
-      "files": [
-        "frontend/src/components/admin/products/ProductUpsertModal.tsx"
+        "frontend/src/hooks/useProductQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -59,10 +21,14 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-create-new-admin-specific-css-styles-to-implement-the-scrollable-dropdown-menu-max-height-overflow-y-and-a-clean-scrollbar-that-matches-the-existing-admin-theme-ensure-smooth-touch-scrolling-with-momentum-and-preserve-accessibility-append-styles-without-modifying-the-existing-root-css-custom-properties-block-in-frontend-src-index-css",
-      "featureTitle": "Create new, admin-specific CSS styles to implement the scrollable dropdown menu (max-height, overflow-y) and a clean scrollbar that matches the existing admin theme; ensure smooth touch scrolling with momentum and preserve accessibility. Append styles without modifying the existing :root CSS custom properties block in frontend/src/index.css.",
+      "featureId": "feature-update-all-public-facing-frontend-price-displays-to-show-sale-pricing-only-when-the-backend-indicates-a-currently-active-valid-sale-and-never-show-sale-pricing-for-expired-or-future-sales-this-must-be-consistent-across-home-page-product-cards-category-page-product-cards-search-results-product-cards-product-details-modal-and-standalone-product-details-page-product-barcode",
+      "featureTitle": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
       "files": [
-        "frontend/src/index.css"
+        "frontend/src/components/public/home/search/SearchResultItem.tsx",
+        "frontend/src/components/public/product/ProductDetailsModal.tsx",
+        "frontend/src/components/public/products/ProductCard.tsx",
+        "frontend/src/hooks/useCategoryProductsPaginated.ts",
+        "frontend/src/pages/public/ProductPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -74,6 +40,45 @@
       ],
       "testIds": [
         "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-public-product-details-page-data-flow-so-it-can-render-sale-aware-product-details-sale-price-discount-percentage-on-sale-flag-returned-by-the-backend-getproduct-or-an-updated-equivalent-rather-than-only-rendering-the-base-product-price",
+      "featureTitle": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
+      "files": [
+        "frontend/src/hooks/useProductQueries.ts",
+        "frontend/src/pages/public/ProductPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-product-details-modal-to-include-the-discount-percentage-and-a-clear-on-sale-badge-label-when-a-valid-sale-exists-matching-the-same-strict-on-sale-rules-as-other-public-components",
+      "featureTitle": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
+      "files": [
+        "frontend/src/components/public/product/ProductDetailsModal.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

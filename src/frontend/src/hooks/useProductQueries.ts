@@ -16,6 +16,10 @@ export interface Product {
   photoUrl?: string;
   createdDate: bigint;
   lastUpdatedDate: bigint;
+  // Sale-aware fields
+  salePrice?: number;
+  discountPercentage?: number;
+  isOnSale: boolean;
 }
 
 function mapBackendProduct(backendProduct: BackendProduct, categoryName?: string, photoUrl?: string): Product {
@@ -32,6 +36,10 @@ function mapBackendProduct(backendProduct: BackendProduct, categoryName?: string
     photoUrl,
     createdDate: backendProduct.createdDate,
     lastUpdatedDate: backendProduct.lastUpdatedDate,
+    // Default sale fields - backend doesn't provide these for single product
+    salePrice: undefined,
+    discountPercentage: undefined,
+    isOnSale: false,
   };
 }
 
@@ -49,6 +57,10 @@ function mapProductV2ToProduct(productV2: ProductV2): Product {
     photoUrl: undefined,
     createdDate: productV2.createdDate,
     lastUpdatedDate: productV2.lastUpdatedDate,
+    // Default sale fields
+    salePrice: undefined,
+    discountPercentage: undefined,
+    isOnSale: false,
   };
 }
 

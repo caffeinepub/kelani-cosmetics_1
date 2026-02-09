@@ -9,7 +9,9 @@ import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
 import Iter "mo:core/Iter";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -20,7 +22,6 @@ actor {
     };
   };
 
-  // User Management ------------------------------------------
   public type UserRole = AccessControl.UserRole;
 
   public type AppUser = {
@@ -28,10 +29,8 @@ actor {
     role : UserRole;
   };
 
-  // Track all users who have interacted with the system
   let knownUsers = Map.empty<Principal, Bool>();
 
-  // Server-side list logic - returns all known users except caller
   public query ({ caller }) func listManagedUsersForAdmin() : async [AppUser] {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can list users");
@@ -48,26 +47,21 @@ actor {
     });
   };
 
-  // Promote user to admin - enforces admin check server-side
   public shared ({ caller }) func promoteToAdminForAdmin(userToPromote : Principal) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can promote users");
     };
 
-    // Track this user
     knownUsers.add(userToPromote, true);
 
-    // Perform the actual promotion using AccessControl
     AccessControl.assignRole(accessControlState, caller, userToPromote, #admin);
   };
 
-  // Demote admin to user
   public shared ({ caller }) func demoteToUserForAdmin(userToDemote : Principal) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can demote users");
     };
 
-    // Perform the actual demotion using AccessControl
     AccessControl.assignRole(accessControlState, caller, userToDemote, #user);
   };
 
@@ -82,7 +76,6 @@ actor {
       Runtime.trap("Unauthorized: Only users can view profiles");
     };
 
-    // Track this user
     knownUsers.add(caller, true);
 
     userProfiles.get(caller);
@@ -100,7 +93,6 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
 
-    // Track this user
     knownUsers.add(caller, true);
 
     userProfiles.add(caller, profile);
@@ -161,7 +153,6 @@ actor {
   public shared ({ caller }) func deleteCategory(categoryId : Nat) : async Bool {
     checkAdmin(caller);
 
-    // Check if any product references this category
     var categoryInUse = false;
     products.values().find(func(product) { product.categoryId == categoryId }).forEach(
       func(_) { categoryInUse := true }
@@ -181,7 +172,6 @@ actor {
   };
 
   public query ({ caller }) func getAllCategories() : async [Category] {
-    // Public access - categories are browsable by anyone including guests
     categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -190,7 +180,6 @@ actor {
   };
 
   public query ({ caller }) func getCategoryById(categoryId : Nat) : async ?Category {
-    // Public access - categories are browsable by anyone including guests
     categories.get(categoryId);
   };
 
@@ -700,7 +689,6 @@ actor {
   };
 
   public query ({ caller }) func getActiveSales() : async [SaleItem] {
-    // Public access - active sales browsable by guests for homepage
     let currentTime = getCurrentTimestamp();
     saleItems.values().toArray().filter(
       func(sale) {
@@ -814,7 +802,6 @@ actor {
   };
 
   public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
-    // Public access - store information browsable by guests for homepage
     [
       (1, switch (storeDetails.get(1)) {
         case (?details) { details };
@@ -939,8 +926,6 @@ actor {
   // Public access for homepage browsing
   //-----------------------------------------------------------------
   public query ({ caller }) func searchHomepageProducts(searchQuery : Text) : async [HomepageSearchResult] {
-    // Public access - homepage search browsable by guests
-
     let trimmedQuery = searchQuery.trim(#char ' ');
 
     if (trimmedQuery.size() == 0) {
@@ -1034,8 +1019,6 @@ actor {
   };
 
   public query ({ caller }) func getCategoryProductCounts() : async [(Nat, Nat)] {
-    // Public access - category counts browsable by guests for homepage
-
     categories.toArray().map(
       func((categoryId, _category)) {
         let productCount = products.entries().filter(
@@ -1049,8 +1032,6 @@ actor {
   };
 
   public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
-    // Public access - homepage categories browsable by guests
-
     let sortedCategories = categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -1076,7 +1057,6 @@ actor {
 
     let categorizedProducts = pagedCategories.map(
       func(category) {
-        // Get the first 5 products for the category, ordering featured before non-featured
         let allCategoryProducts = products.values().toArray().filter(
           func(product) {
             product.categoryId == category.categoryId;
@@ -1085,8 +1065,6 @@ actor {
 
         let sortedProducts = allCategoryProducts.sort(
           func(a, b) {
-            // Featured products first (isFeatured=true gets higher priority)
-            // Reverse comparison so true (1) comes before false (0)
             Nat.compare(
               if (b.isFeatured) { 1 } else { 0 },
               if (a.isFeatured) { 1 } else { 0 },
@@ -1100,7 +1078,6 @@ actor {
           sortedProducts;
         };
 
-        // Build ProductWithSale array
         let productsWithSale = limitedProducts.map(
           func(product) : ProductWithSale {
             var salePrice : ?Float = null;
@@ -1195,13 +1172,9 @@ actor {
       };
     };
 
-    // Validate categories only, no data is updated here.
     let importedCount = importData.categories.size();
     var maxId : Nat = lastCategoryId;
 
-    //---------------------------
-    // Product Validation Phase
-    //---------------------------
     let productValidationResult = validateProductImport(importData.products, importData.categories);
     if (not productValidationResult.isValid) {
       let totalCount = importData.products.size();
@@ -1217,9 +1190,6 @@ actor {
       };
     };
 
-    //-------------------------
-    // Update Categories Phase
-    //-------------------------
     for (category in importData.categories.values()) {
       if (category.categoryId > maxId) {
         maxId := category.categoryId;
@@ -1230,9 +1200,6 @@ actor {
 
     let productCount = importData.products.size();
 
-    //------------------------
-    // Update Products Phase
-    //------------------------
     for (product in importData.products.values()) {
       products.add(product.barcode, product);
     };

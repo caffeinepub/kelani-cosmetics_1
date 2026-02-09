@@ -23,7 +23,7 @@ export default function ProductPage() {
   const normalizedBarcode = barcode?.trim() || '';
   const isValidBarcode = normalizedBarcode.length > 0;
 
-  // Fetch product data
+  // Fetch product data with sale-aware fields
   const { data: product, isLoading, error, refetch } = useGetProduct(
     normalizedBarcode
   );
@@ -173,6 +173,9 @@ export default function ProductPage() {
     );
   }
 
+  // Sale-aware pricing - strict backend-driven logic
+  const showSalePrice = product.isOnSale && product.salePrice !== undefined && product.salePrice !== null;
+
   return (
     <div className="space-y-8 pb-12">
       {/* Back Link */}
@@ -221,10 +224,35 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* Price Display */}
+          {/* Price Display with Sale Support */}
           {product.price !== undefined && product.price !== null && (
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-foreground">{formatPrice(product.price)}</div>
+              {showSalePrice ? (
+                <>
+                  {/* On Sale Badge */}
+                  <div className="inline-block px-3 py-1 text-sm font-bold bg-primary text-primary-foreground rounded">
+                    On Sale
+                  </div>
+                  {/* Sale Price */}
+                  <div className="text-3xl font-bold text-primary">
+                    {formatPrice(product.salePrice!)}
+                  </div>
+                  {/* Original Price with Strikethrough */}
+                  <div className="text-xl text-muted-foreground line-through">
+                    {formatPrice(product.price)}
+                  </div>
+                  {/* Discount Percentage */}
+                  {product.discountPercentage !== undefined && product.discountPercentage !== null && (
+                    <div className="text-base font-semibold text-primary">
+                      Save {Math.round(product.discountPercentage)}%
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-3xl font-bold text-foreground">
+                  {formatPrice(product.price)}
+                </div>
+              )}
             </div>
           )}
 

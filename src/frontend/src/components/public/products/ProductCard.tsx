@@ -67,9 +67,9 @@ const ProductCard = React.memo(function ProductCard({
     }).format(price);
   };
 
-  const displayPrice = isOnSale && salePrice !== undefined && salePrice !== null
-    ? salePrice
-    : product.price;
+  // Only show sale price if backend indicates sale is active
+  const showSalePrice = isOnSale && salePrice !== undefined && salePrice !== null;
+  const displayPrice = showSalePrice ? salePrice : product.price;
 
   return (
     <div
@@ -89,7 +89,7 @@ const ProductCard = React.memo(function ProductCard({
         />
 
         {/* Stock Badge Overlay */}
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-4 left-2">
           {product.inStock ? (
             <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded">
               En Stock
@@ -110,8 +110,8 @@ const ProductCard = React.memo(function ProductCard({
           </div>
         )}
 
-        {/* Sale Badge */}
-        {isOnSale && discountPercentage !== undefined && discountPercentage !== null && (
+        {/* Sale Badge - only show when backend confirms active sale */}
+        {showSalePrice && discountPercentage !== undefined && discountPercentage !== null && (
           <div className="absolute bottom-2 right-2">
             <span className="px-2 py-1 text-xs font-bold bg-primary text-primary-foreground rounded">
               -{Math.round(discountPercentage)}%
@@ -127,9 +127,9 @@ const ProductCard = React.memo(function ProductCard({
           {product.name}
         </h3>
 
-        {/* Price Display */}
+        {/* Price Display - strict backend-driven sale logic */}
         <div className="space-y-1">
-          {isOnSale && salePrice !== undefined && salePrice !== null ? (
+          {showSalePrice ? (
             <>
               <div className="text-lg font-bold text-primary">
                 {formatPrice(salePrice)}

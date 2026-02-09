@@ -1,45 +1,48 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Admin UI frontend change: add max-height and scrolling to category dropdowns on the Admin Products page and Add/Edit Product modal (limit visible items to ~10) without impacting other pages; preserve existing :root CSS variables in index.css.",
+  "summary": "Integrate active sale pricing into public product data responses with strict sale period validation across backend (Motoko) and consistent frontend display rules.",
   "architectural_notes": [
-    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css; append any new CSS styles only below it.",
-    "Scope is frontend-only and must not affect other pages/designs; use new CSS styling if needed to avoid impacting other category lists."
+    "Create a shared, query-safe helper to fetch/validate sale data per product barcode from saleItems; only return sale info when isActive=true and start ≤ now ≤ end.",
+    "Use system time (nanoseconds since Unix epoch) with consistent BigInt serialization utilities for sale period comparisons.",
+    "Maintain existing signatures where possible for getProductsPageFeaturedFirst, getHomepageCategories, and getProduct while enhancing returned product structure to include optional salePrice, discountPercentage, and isOnSale.",
+    "Frontend must never display sale pricing for expired/future sales; modal and all public product cards/pages must consistently respect backend-provided sale validity.",
+    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css; append any new styles only below it."
   ],
   "known_issues": [
-    "Admin category dropdowns overflow when many categories exist because there is no height limit or scroll in dropdown menus (Admin Products filter and Add/Edit Product modal)."
+    "Public product data methods currently do not integrate active sale price/discount information or validate sale periods."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-an-opt-in-way-to-style-the-dropdown-menu-container-for-safeselect-so-specific-callers-can-apply-a-max-height-and-scrolling-without-changing-default-behavior-of-other-selects",
-      "title": "Add an opt-in way to style the dropdown menu container for SafeSelect so specific callers can apply a max-height and scrolling without changing default behavior of other selects.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-the-new-safeselect-dropdown-content-styling-to-the-admin-products-page-category-filter-dropdown-so-it-displays-at-most-10-category-items-at-once-and-becomes-vertically-scrollable-when-there-are-more-than-10-categories",
-      "title": "Apply the new SafeSelect dropdown content styling to the Admin Products page category filter dropdown so it displays at most 10 category items at once and becomes vertically scrollable when there are more than 10 categories.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-the-same-max-height-10-items-vertical-scrolling-behavior-to-the-category-selection-dropdown-inside-the-add-edit-product-modal-productupsertmodal",
-      "title": "Apply the same max-height (10 items) + vertical scrolling behavior to the category selection dropdown inside the Add/Edit Product modal (ProductUpsertModal).",
+      "id": "feature-ensure-the-backend-uses-existing-shared-utilities-patterns-for-a-bigint-int-serialization-of-timestamps-and-b-numeric-conversion-price-calculation-consistency-and-maintains-existing-function-signatures-where-possible-or-updates-frontend-bindings-accordingly-when-signatures-must-change",
+      "title": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-create-new-admin-specific-css-styles-to-implement-the-scrollable-dropdown-menu-max-height-overflow-y-and-a-clean-scrollbar-that-matches-the-existing-admin-theme-ensure-smooth-touch-scrolling-with-momentum-and-preserve-accessibility-append-styles-without-modifying-the-existing-root-css-custom-properties-block-in-frontend-src-index-css",
-      "title": "Create new, admin-specific CSS styles to implement the scrollable dropdown menu (max-height, overflow-y) and a clean scrollbar that matches the existing admin theme; ensure smooth touch scrolling with momentum and preserve accessibility. Append styles without modifying the existing :root CSS custom properties block in frontend/src/index.css.",
+      "id": "feature-update-all-public-facing-frontend-price-displays-to-show-sale-pricing-only-when-the-backend-indicates-a-currently-active-valid-sale-and-never-show-sale-pricing-for-expired-or-future-sales-this-must-be-consistent-across-home-page-product-cards-category-page-product-cards-search-results-product-cards-product-details-modal-and-standalone-product-details-page-product-barcode",
+      "title": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
       "reqIds": [
         "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-public-product-details-page-data-flow-so-it-can-render-sale-aware-product-details-sale-price-discount-percentage-on-sale-flag-returned-by-the-backend-getproduct-or-an-updated-equivalent-rather-than-only-rendering-the-base-product-price",
+      "title": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-product-details-modal-to-include-the-discount-percentage-and-a-clear-on-sale-badge-label-when-a-valid-sale-exists-matching-the-same-strict-on-sale-rules-as-other-public-components",
+      "title": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
@@ -47,12 +50,28 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add max-height (10 items) + vertical scroll to admin category dropdowns (Admin Products filter + Add/Edit Product modal), with accessible keyboard/screen reader support and mobile touch-friendly scrolling; do not modify :root CSS variables in index.css.",
+      "summary": "Update public product data endpoints to include active sale price, discount %, and on-sale flag with strict date-range validation via shared helper",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Update the Motoko backend to return public product data with integrated active sale information (sale price, discount percentage, and on-sale flag) for these methods: `getProductsPageFeaturedFirst()`, `getHomepageCategories()`, and `getProduct()`. Sale fields must only be present/true when the sale is currently valid per strict time-window validation.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Implement a shared, reusable Motoko helper used by all three public product methods that resolves the active sale for a given product barcode by scanning `saleItems` and applying strict validation: sale must have `isActive == true` and current time must be within the sale period using system time (nanoseconds since Unix epoch). Enforce boundary rules so expired and future sales never return sale data.",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Admin category dropdown: limit height to 10 items with vertical scroll (Products filter + Product modal)",
+  "projectName": "Integrate active sale pricing into public product data (strict date validation)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

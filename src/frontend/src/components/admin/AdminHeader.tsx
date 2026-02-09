@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { useAuthStore } from '../../stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -17,8 +18,57 @@ export default function AdminHeader({
   const { clear } = useInternetIdentity();
   const clearAuthStore = useAuthStore((state) => state.clear);
   const queryClient = useQueryClient();
+  const workerRef = useRef<Worker | null>(null);
+
+  // Initialize session keep-alive worker on mount
+  useEffect(() => {
+    // Check if Web Workers are supported
+    if (typeof Worker === 'undefined') {
+      console.warn('Web Workers are not supported in this browser. Session keep-alive will not function.');
+      return;
+    }
+
+    try {
+      // Create and start the worker - correct path relative to src directory
+      const worker = new Worker(new URL('../../session-worker.js', import.meta.url), {
+        type: 'module',
+      });
+
+      // Listen for keep-alive messages from worker
+      const handleWorkerMessage = (event: MessageEvent) => {
+        if (event.data.type === 'keep-alive') {
+          // Dispatch synthetic mousemove event to prevent session timeout
+          document.dispatchEvent(new Event('mousemove'));
+        }
+      };
+
+      worker.addEventListener('message', handleWorkerMessage);
+      workerRef.current = worker;
+
+      console.log('Session keep-alive worker started');
+
+      // Cleanup on unmount
+      return () => {
+        if (workerRef.current) {
+          workerRef.current.removeEventListener('message', handleWorkerMessage);
+          workerRef.current.terminate();
+          workerRef.current = null;
+          console.log('Session keep-alive worker terminated');
+        }
+      };
+    } catch (error) {
+      console.error('Failed to initialize session keep-alive worker:', error);
+    }
+  }, []);
 
   const handleLogout = async () => {
+    // Terminate worker before logout
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+      console.log('Session keep-alive worker terminated on logout');
+    }
+
     await clear();
     clearAuthStore();
     queryClient.clear();
