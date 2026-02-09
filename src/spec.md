@@ -1,14 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Integrate active sale pricing into public product data and ensure all public UI surfaces display sale pricing only when the sale is currently valid via strict time-window validation.
+**Goal:** Ensure backend product-fetching endpoints consistently include sale information, and update the frontend to display sale pricing when a sale is active.
 
 **Planned changes:**
-- Update Motoko backend public product query methods (`getProductsPageFeaturedFirst()`, `getHomepageCategories()`, `getProduct()`) to include computed sale fields per product: optional `salePrice`, optional `discountPercentage`, and `isOnSale` (true only for currently-valid sales).
-- Add a shared Motoko helper to resolve an active sale for a product barcode by scanning `saleItems` and validating `isActive == true` and `startDate <= now <= endDate` using `Time.now()` nanosecond timestamps (with deterministic selection when multiple matches exist).
-- Ensure timestamp/price handling uses existing shared utilities/patterns for BigInt/Int timestamp serialization and numeric/price conversions; keep existing function signatures where possible (or update frontend bindings/types if required).
-- Update frontend public price displays to use backend-provided sale fields consistently across home page cards, category page cards, search results cards, product details modal, and the standalone product details page.
-- Update the product details page data flow (React Query hook and `ProductPage.tsx`) to fetch and render sale-aware product details from `getProduct()` while preserving existing fallbacks for missing prices.
-- Update the product details modal to show discount percentage and an English on-sale badge/label only when `isOnSale` is true and sale fields are present.
+- Refactor Motoko backend functions `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` to always include `price` and also return `salePrice`, `discountPercentage`, and a boolean indicating whether the sale is active.
+- Add a shared Motoko helper used by all three functions to compute/attach sale fields using existing sale rules, without changing persisted product/sale data models.
+- Preserve existing pagination, total count semantics, sorting, and featured-first behavior while attaching sale info (prefer functional mapping / avoid repeated loops).
+- Update frontend data fetching/mapping for these three endpoints to use backend-provided sale fields and render sale price when active; otherwise render normal price (removing any hardcoded sale defaults for these responses).
 
-**User-visible outcome:** Public users see sale price, discount, and an “On Sale” indicator only for products with a currently active, in-date sale; expired or future sales never appear anywhere in the public UI.
+**User-visible outcome:** Product listings (homepage sections, category grids) and product detail pages show the sale price when a sale is active; otherwise they show the regular price.

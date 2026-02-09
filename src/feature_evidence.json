@@ -2,9 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-backend-uses-existing-shared-utilities-patterns-for-a-bigint-int-serialization-of-timestamps-and-b-numeric-conversion-price-calculation-consistency-and-maintains-existing-function-signatures-where-possible-or-updates-frontend-bindings-accordingly-when-signatures-must-change",
-      "featureTitle": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
+      "featureId": "feature-update-frontend-data-fetching-mapping-code-that-calls-getproductspagefeaturedfirst-gethomepagecategories-and-getproduct-so-it-uses-the-backend-provided-sale-fields-instead-of-defaulting-sale-fields-to-undefined-false-and-ensure-the-ui-displays-the-sale-price-when-present-otherwise-it-displays-the-normal-price",
+      "featureTitle": "Update frontend data fetching/mapping code that calls `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` so it uses the backend-provided sale fields (instead of defaulting sale fields to undefined/false), and ensure the UI displays the sale price when present; otherwise it displays the normal price.",
       "files": [
+        "frontend/src/hooks/useCategoryProductsPaginated.ts",
         "frontend/src/hooks/useProductQueries.ts"
       ],
       "components": [
@@ -16,69 +17,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-all-public-facing-frontend-price-displays-to-show-sale-pricing-only-when-the-backend-indicates-a-currently-active-valid-sale-and-never-show-sale-pricing-for-expired-or-future-sales-this-must-be-consistent-across-home-page-product-cards-category-page-product-cards-search-results-product-cards-product-details-modal-and-standalone-product-details-page-product-barcode",
-      "featureTitle": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
-      "files": [
-        "frontend/src/components/public/home/search/SearchResultItem.tsx",
-        "frontend/src/components/public/product/ProductDetailsModal.tsx",
-        "frontend/src/components/public/products/ProductCard.tsx",
-        "frontend/src/hooks/useCategoryProductsPaginated.ts",
-        "frontend/src/pages/public/ProductPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
         "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-public-product-details-page-data-flow-so-it-can-render-sale-aware-product-details-sale-price-discount-percentage-on-sale-flag-returned-by-the-backend-getproduct-or-an-updated-equivalent-rather-than-only-rendering-the-base-product-price",
-      "featureTitle": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
-      "files": [
-        "frontend/src/hooks/useProductQueries.ts",
-        "frontend/src/pages/public/ProductPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-product-details-modal-to-include-the-discount-percentage-and-a-clear-on-sale-badge-label-when-a-valid-sale-exists-matching-the-same-strict-on-sale-rules-as-other-public-components",
-      "featureTitle": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
-      "files": [
-        "frontend/src/components/public/product/ProductDetailsModal.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
       ],
       "confidence": "high"
     }

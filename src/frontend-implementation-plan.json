@@ -1,100 +1,27 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Sale-aware public pricing UI (frontend wiring to updated backend types)",
+  "title": "Update frontend product fetch mapping to use backend-provided sale fields and display sale pricing",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Update frontend bindings and mapping utilities to consume sale-aware public product payloads without BigInt/typing regressions.",
-      "acceptanceCriteria": [
-        "Frontend continues to parse and handle backend timestamps/prices without JSON BigInt loss, using the project’s existing BigInt-safe parsing utilities where applicable.",
-        "If any Candid type changes are required (e.g., product response type expands), the generated frontend backend typings continue to compile without `any` casts."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/backend.d.ts",
-          "operation": "modify",
-          "description": "Update the generated/public backend TypeScript typings to reflect expanded sale-aware return types for public product reads (notably `getProduct()` and `getProductsPageFeaturedFirst()`), ensuring optional sale fields and on-sale flags are represented and the project compiles without type casts."
-        },
-        {
-          "path": "frontend/src/hooks/useProductQueries.ts",
-          "operation": "modify",
-          "description": "Extend the product detail query mapping to support sale-aware product data returned by `getProduct()` (e.g., on-sale flag + optional sale fields), while preserving existing BigInt field handling and avoiding any lossy serialization or `any` usage."
-        }
-      ]
-    },
-    {
       "id": "REQ-4",
-      "summary": "Ensure all public price displays render sale pricing strictly based on backend-provided on-sale flags and fields across cards, search results, modal, and product page.",
+      "summary": "Use backend-provided sale fields from getProductsPageFeaturedFirst/getHomepageCategories/getProduct and render sale price when sale is active; otherwise render normal price.",
       "acceptanceCriteria": [
-        "Home page and category page product cards display sale price + strikethrough original price + discount badge only when the product is flagged as on sale by the backend payload for that card.",
-        "Search results items show sale price + strikethrough original price only when the backend indicates the sale is active/valid; otherwise they show original price only.",
-        "Product details modal displays (when on sale): an \"On Sale\" indicator (English text), sale price, original price with strikethrough, and discount percentage; when not on sale it shows only the original price and no sale indicators.",
-        "Standalone product page displays (when on sale): sale price, original price with strikethrough, discount percentage, and an \"On Sale\" indicator (English text); when not on sale it shows only the original price.",
-        "No UI path shows sale price for a product where `isOnSale`/`saleIsActive` is false or sale fields are missing/null."
+        "Category page / category product grids driven by `getProductsPageFeaturedFirst` render sale price when backend indicates the sale is active, otherwise render normal price.",
+        "Homepage category sections driven by `getHomepageCategories` render sale price when backend indicates the sale is active, otherwise render normal price.",
+        "Product detail views driven by `getProduct` render sale price when backend indicates the sale is active, otherwise render normal price.",
+        "Frontend no longer hardcodes sale defaults for these endpoints (e.g., does not set `salePrice: undefined`, `discountPercentage: undefined`, `isOnSale: false` when backend returns real values)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useCategoryProductsPaginated.ts",
           "operation": "modify",
-          "description": "Update the category products query to consume the backend’s sale-integrated payload (stop constructing placeholder `ProductWithSale` objects with `isOnSale: false`), so CategoryPage product cards reflect only backend-validated active sales."
+          "description": "Stop hardcoding sale defaults when mapping `getProductsPageFeaturedFirst` results; return the backend-provided `ProductWithSale` items directly so `salePrice`, `discountPercentage`, and `isOnSale` flow through to category product grids."
         },
-        {
-          "path": "frontend/src/components/public/products/ProductCard.tsx",
-          "operation": "modify",
-          "description": "Align product card sale rendering strictly to backend-provided `isOnSale` + optional sale fields (sale price / discount percentage), ensuring no fallback logic can display sale UI when those backend signals are missing/false."
-        },
-        {
-          "path": "frontend/src/components/public/home/search/SearchResultItem.tsx",
-          "operation": "modify",
-          "description": "Re-verify search result pricing uses only backend-provided `saleIsActive` and optional `salePrice`/`salePercentage` fields; ensure no UI path renders a sale price when the backend indicates inactive/invalid sale."
-        },
-        {
-          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
-          "operation": "modify",
-          "description": "Update the modal’s price block to follow the same strict backend-driven rules as cards/search, including adding an English \"On Sale\" indicator and showing discount percentage only when provided by the backend and the item is on sale."
-        },
-        {
-          "path": "frontend/src/pages/public/ProductPage.tsx",
-          "operation": "modify",
-          "description": "Update the standalone product page pricing section to render sale-aware pricing strictly from backend-provided sale fields/flags, including an English \"On Sale\" indicator and discount percentage only when valid and present."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Update ProductPage data flow and hook typing to render sale-aware product details from `getProduct()`.",
-      "acceptanceCriteria": [
-        "`frontend/src/pages/public/ProductPage.tsx` renders sale-aware pricing based on the updated backend response type.",
-        "The React Query hook used by ProductPage (currently `useGetProduct` in `frontend/src/hooks/useProductQueries.ts`) is updated/extended to fetch and map sale-aware product data.",
-        "ProductPage UI remains functional for products with missing price (null/undefined), showing the existing fallback where appropriate."
-      ],
-      "file_operations": [
         {
           "path": "frontend/src/hooks/useProductQueries.ts",
           "operation": "modify",
-          "description": "Update `useGetProduct` to return a sale-aware product detail type (including on-sale flag and optional sale fields) compatible with updated backend typings, while preserving existing null/undefined price behavior."
-        },
-        {
-          "path": "frontend/src/pages/public/ProductPage.tsx",
-          "operation": "modify",
-          "description": "Refactor ProductPage to consume the updated `useGetProduct` return type and conditionally render sale price/original price/discount percentage only when the backend indicates a valid active sale; keep existing fallbacks for missing prices."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Enhance the product details modal to show discount percentage and a clear English on-sale badge/label only when a valid sale exists.",
-      "acceptanceCriteria": [
-        "`frontend/src/components/public/product/ProductDetailsModal.tsx` shows a discount percentage only when sale is active/valid and the backend provides the value.",
-        "The modal shows an English on-sale badge/label (e.g., \"On Sale\") only when sale is active/valid; it is absent otherwise.",
-        "The modal never shows sale UI if `isOnSale`/`saleIsActive` is false or sale fields are null/undefined."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
-          "operation": "modify",
-          "description": "Add an English \"On Sale\" badge/label and discount percentage display gated strictly by backend-provided on-sale boolean + optional discount field, ensuring the modal cannot present sale UI for inactive/expired/future sales."
+          "description": "Fix `useGetProduct` to correctly consume the backend `getProduct` return type (`ProductWithSale`) and map sale fields (`salePrice`, `discountPercentage`, `isOnSale`) onto the UI `Product` model instead of defaulting sale fields."
         }
       ]
     }

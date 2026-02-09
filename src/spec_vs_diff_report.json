@@ -1,101 +1,69 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T23:16:01.572Z",
-  "summary": "Diff adds frontend sale-aware display logic in several public components, but does not provide clear evidence that the backend endpoints now return integrated active-sale fields with strict date validation, nor that the frontend data flow actually consumes those backend sale fields end-to-end. An extra backend Motoko module was added contrary to constraints, and new/changed user-facing strings appear in Spanish rather than English.",
+  "generatedAt": "2026-02-09T23:26:20.387Z",
+  "summary": "The diff shows some frontend fetching changes for `getProductsPageFeaturedFirst` (category pagination hook) and partial sale-field mapping for a `ProductWithSale` type, but it does not provide clear evidence that the three specified backend endpoints were refactored to attach sale info via a shared helper, nor that the frontend UI rendering for homepage/category/product detail displays sale price. Several unrelated features/files (migration wiring, admin user management routing/docs) appear added/modified without being requested.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Backend public product methods (`getProductsPageFeaturedFirst()`, `getHomepageCategories()`, `getProduct()`) return product data with integrated active sale fields (`salePrice?`, `discountPercentage?`, `isOnSale`) that are only present/true when the sale is currently valid.",
-      "reason": "The diff does not show changes to these methods’ return types/logic; the only backend snippet is unrelated (users/categories) and is truncated before any product/sale logic appears. Frontend hooks also assume sale fields are not provided for `getProduct()` and set sale fields to defaults.",
+      "requirement": "Refactor backend `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` to consistently include `salePrice`, `discountPercentage`, and an active-sale boolean, while always including `price`.",
+      "reason": "The `backend/main.mo` diff is truncated and does not show modifications to these three functions or their return types/fields. There is no diff evidence that `getHomepageCategories` or `getProduct` now return sale fields consistently.",
       "evidence": [
-        "backend/main.mo (truncated; shows auth/users/categories but no visible product/sale endpoint updates)",
-        "frontend/src/hooks/useProductQueries.ts (mapBackendProduct: \"Default sale fields - backend doesn't provide these for single product\")",
-        "frontend/src/hooks/useCategoryProductsPaginated.ts (maps response.items to ProductWithSale with sale fields forced to undefined/false)"
+        "backend/main.mo (truncated; no visible changes to target endpoints)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Implement a shared reusable Motoko helper used by all three public product methods to resolve active sales by barcode by scanning `saleItems` with strict validation using `Time.now()` and inclusive `startDate <= now <= endDate`, deterministically selecting among multiple matches.",
-      "reason": "No helper implementation or its usage across the three endpoints is visible in the provided backend diff snippet; cannot confirm strict boundary validation, deterministic selection, or consistent timestamp comparisons.",
+      "requirement": "Implement a single shared Motoko helper used by all three target functions to compute active sale status and attach sale fields without changing persisted data model.",
+      "reason": "No helper function for sale computation/attachment is shown in the truncated `backend/main.mo` content, and the added `backend/migration.mo` does not implement sale-attachment logic for query responses. There is no evidence all three endpoints share a single helper.",
       "evidence": [
-        "backend/main.mo (truncated; no visible helper for sale resolution / no visible scanning of saleItems)"
+        "backend/main.mo (truncated; no visible shared helper)",
+        "backend/migration.mo"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "Use existing project utilities/patterns for timestamp (BigInt/Int) serialization and numeric conversion/price calculation consistency; keep signatures where possible or update frontend bindings accordingly without `any` casts.",
-      "reason": "Frontend mapping code indicates the backend `getProduct()` response is still treated as the old `BackendProduct` without sale fields, and category pagination hook discards any backend sale fields. This suggests bindings/data flow were not updated to reflect any necessary candid changes.",
+      "requirement": "Preserve existing pagination/sorting behavior for `getProductsPageFeaturedFirst` and `getHomepageCategories` while adding sale info; use map/functional transformations and avoid repeated loops.",
+      "reason": "Because backend changes to `getProductsPageFeaturedFirst` / `getHomepageCategories` are not visible in the diff summary, there is no evidence that pagination/sorting behavior was preserved or that sale augmentation is implemented via shared mapping transformations.",
       "evidence": [
-        "frontend/src/hooks/useProductQueries.ts (useGetProduct calls actor.getProduct(barcode) and maps to Product without backend-provided sale fields)",
-        "frontend/src/hooks/useCategoryProductsPaginated.ts (forces sale fields to defaults rather than consuming backend sale data)"
+        "backend/main.mo (truncated; no visible implementation details for the two paginated endpoints)"
       ]
     },
     {
       "id": "REQ-4",
-      "requirement": "All public-facing price displays (home cards, category cards, search results, product modal, standalone product page) show sale pricing only when backend indicates a currently-active valid sale; otherwise show original price only.",
-      "reason": "Some components implement backend-driven sale display, but the category products hook explicitly discards sale fields (always `isOnSale: false`), preventing category page cards from ever showing sale pricing even if backend provides it. Also the standalone product page excerpt does not show any sale UI rendering (sale price, strikethrough original, discount %, 'On Sale' label).",
+      "requirement": "Update frontend data fetching/mapping for `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` to use backend sale fields (no hardcoded defaults), and ensure UI displays sale price when active else normal price.",
+      "reason": "The category products hook now returns backend `response.items` directly, but the product mapping code still hardcodes default sale fields for at least some flows (e.g., `mapBackendProduct` and `mapProductV2ToProduct`). The diff also does not show any UI component changes that render sale vs normal price, nor any changes for `getHomepageCategories` usage. The `useGetProduct` implementation is truncated and does not show using backend sale fields.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsPaginated.ts (sets salePrice/discountPercentage undefined and isOnSale false for all items)",
-        "frontend/src/pages/public/ProductPage.tsx (truncated; no visible sale UI such as 'On Sale' indicator / discount / strikethrough logic in shown portion)"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Update ProductPage data flow (useGetProduct hook and ProductPage) to fetch and render sale-aware product details returned by backend `getProduct()`.",
-      "reason": "`useGetProduct` still maps the backend response as a base product and explicitly sets sale fields to defaults, stating backend doesn’t provide sale fields for single product; this contradicts the requirement to consume sale-aware `getProduct()` data.",
-      "evidence": [
-        "frontend/src/hooks/useProductQueries.ts (mapBackendProduct: defaults sale fields; comment says backend doesn't provide these for single product)",
-        "frontend/src/hooks/useProductQueries.ts (useGetProduct returns mapBackendProduct(backendProduct))"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "Update ProductDetailsModal to include discount percentage and a clear English on-sale badge/label when a valid sale exists, and hide all sale UI when not on sale.",
-      "reason": "Modal code computes `discountPercentage` and `isOnSale`, but the provided truncated snippet does not show any actual rendering of an English 'On Sale' badge/label or discount percentage in the UI. Additionally, user-facing text shown is Spanish, conflicting with the 'English text' constraint.",
-      "evidence": [
-        "frontend/src/components/public/product/ProductDetailsModal.tsx (truncated; computes sale fields but no visible rendered 'On Sale' label/discount UI in shown section)",
-        "frontend/src/components/public/product/ProductDetailsModal.tsx (WhatsApp message text: \"Hola, estoy interesado...\")"
-      ]
-    },
-    {
-      "requirement": "Use English for any new/changed user-facing text introduced by this change request.",
-      "reason": "Modified components include Spanish user-facing strings (e.g., unavailable price, WhatsApp message), conflicting with the stated constraint.",
-      "evidence": [
-        "frontend/src/components/public/home/search/SearchResultItem.tsx (\"Precio no disponible\")",
-        "frontend/src/components/public/product/ProductDetailsModal.tsx (WhatsApp message: \"Hola, estoy interesado en el producto...\")",
-        "frontend/src/components/public/products/ProductCard.tsx (badges: \"En Stock\", \"Sin Stock\")"
+        "frontend/src/hooks/useCategoryProductsPaginated.ts",
+        "frontend/src/hooks/useProductQueries.ts (shows default sale fields in `mapBackendProduct` and `mapProductV2ToProduct`; truncated for `useGetProduct`)",
+        "backend/main.mo (truncated; no corroborating endpoint contract changes)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added an extra backend Motoko module (`backend/migration.mo`) and wired it into `backend/main.mo` via `with migration = Migration.run`.",
-      "reason": "BuildRequest constraints require implementing all Motoko logic in `backend/main.mo` with no extra backend services/modules; adding `backend/migration.mo` appears unrequested and conflicts with that constraint.",
+      "description": "Introduced/added migration module and wired actor migration (`with migration = Migration.run`) despite the request being limited to refactoring three backend functions without data model/storage schema changes.",
+      "reason": "The BuildRequest did not ask for a migration module/file or migration wiring; it explicitly constrained changes to refactoring the three specified functions and adding shared helper logic for sale info attachment.",
       "evidence": [
-        "backend/migration.mo (new file)",
-        "backend/main.mo (imports Migration \"migration\" and uses \"with migration = Migration.run\")"
+        "backend/migration.mo",
+        "backend/main.mo (contains `import Migration \"migration\";` and `(with migration = Migration.run)`)"
       ]
     },
     {
-      "description": "Category products pagination hook claims backend returns sale-integrated products but then discards sale fields and forces `isOnSale` to false for all items.",
-      "reason": "BuildRequest requires consuming backend-provided active sale data consistently across public UIs; this hook’s behavior is an unrequested/incorrect mapping layer rather than requested functionality.",
+      "description": "Admin user management routing/page documentation changes referenced in the modified `frontend-file-summaries.txt` (e.g., new /admin/user-management route, dashboard card).",
+      "reason": "The BuildRequest is about sale info in product fetches and UI display of sale price; it does not request admin user management features or routes.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsPaginated.ts (maps each product to ProductWithSale with salePrice/discountPercentage undefined and isOnSale false)"
+        "frontend-file-summaries.txt (mentions new /admin/user-management route and related admin UI elements)"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/public/home/search/SearchResultItem.tsx",
-    "frontend/src/components/public/product/ProductDetailsModal.tsx",
-    "frontend/src/components/public/products/ProductCard.tsx",
     "frontend/src/hooks/useCategoryProductsPaginated.ts",
     "frontend/src/hooks/useProductQueries.ts",
-    "frontend/src/pages/public/ProductPage.tsx",
     "project_state.json"
   ]
 }

@@ -1,147 +1,107 @@
 {
   "kind": "build_request",
-  "title": "Integrate active sale pricing into public product data (strict date validation)",
-  "priority": "high",
+  "title": "Refactor backend product fetches to consistently return sale info and update frontend to display sale price",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the Motoko backend to return public product data with integrated active sale information (sale price, discount percentage, and on-sale flag) for these methods: `getProductsPageFeaturedFirst()`, `getHomepageCategories()`, and `getProduct()`. Sale fields must only be present/true when the sale is currently valid per strict time-window validation.",
+      "text": "Refactor the Motoko backend so that `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` consistently return products including sale information: `salePrice`, `discountPercentage`, and a boolean indicating whether the sale is active, while always including the product `price`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Update three Motoko backend functions to return product data with integrated active sale price information",
-          "Three Backend Methods: getProductsPageFeaturedFirst(), getHomepageCategories(), getProduct()",
-          "Each product must include: Original price, Sale price (optional), Discount percentage, Boolean flag indicating if product is currently on sale"
+          "Refactor the Motoko backend so that the following functions:\n\t•\tgetProductsPageFeaturedFirst\n\t•\tgetHomepageCategories\n\t•\tgetProduct\nall return products with sale information (sale price, discount percentage, and whether the sale is active)."
         ]
       },
       "acceptanceCriteria": [
-        "`getProductsPageFeaturedFirst()` returns products where each item includes the original product data plus computed sale fields (`salePrice?`, `discountPercentage?`, `isOnSale`).",
-        "`getHomepageCategories()` returns categories and associated products where each product includes the same sale fields.",
-        "`getProduct()` returns a single product response that includes the same sale fields (so the product details page and modal can display sale pricing).",
-        "For products with no active/valid sale, the response omits/returns null for `salePrice` and `discountPercentage`, and sets `isOnSale` to false.",
-        "No backend state is modified by these reads (all remain query-safe)."
+        "`getProductsPageFeaturedFirst` returns items that include sale fields (`salePrice`, `discountPercentage`, and active-sale boolean) for each product.",
+        "`getHomepageCategories` returns products within each category that include sale fields (`salePrice`, `discountPercentage`, and active-sale boolean).",
+        "`getProduct` returns a single product response that includes sale fields (`salePrice`, `discountPercentage`, and active-sale boolean).",
+        "In all three responses, `price` is present regardless of sale status (preserving the existing product `price` field behavior)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement a shared, reusable Motoko helper used by all three public product methods that resolves the active sale for a given product barcode by scanning `saleItems` and applying strict validation: sale must have `isActive == true` and current time must be within the sale period using system time (nanoseconds since Unix epoch). Enforce boundary rules so expired and future sales never return sale data.",
+      "text": "Implement a single shared Motoko helper that determines whether a product currently has an active sale using the existing sale rules, and attaches sale fields to the returned product data without changing the underlying stored data model.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Shared Helper Function: Create reusable function to determine valid sale price for a product barcode",
-          "Verify sale is active (isActive field is true)",
-          "Current timestamp must be BETWEEN sale start and end dates (inclusive)",
-          "NEVER show sale price for expired sales",
-          "NEVER show sale price for future sales"
+          "Use a common helper function to calculate if a product has an active sale and attach the sale price and discount.\n\nSale logic should follow the existing rules:\n\t•\tIf a sale exists and is active, return salePrice and discountPercentage.\n\t•\tIf no sale exists, salePrice is null and discountPercentage is null.\n\t•\tprice should always be included.\n\nYou don’t need to change other functions or the data model—only refactor these three functions to consistently include sale info."
         ]
       },
       "acceptanceCriteria": [
-        "Helper returns `null`/empty when there is no matching sale item, the sale is inactive, `now < startDate`, or `now > endDate`.",
-        "Helper returns sale data only when `startDate <= now <= endDate` (inclusive) and `isActive == true`.",
-        "If multiple sale items match a product barcode, the helper deterministically selects one active-valid sale (documented in code, e.g., best discount or nearest end date) and never returns an expired/future sale.",
-        "Discount percentage is computed only when a valid sale applies and the product has a non-null original price; otherwise it is null/0 per existing conventions.",
-        "Date/time comparisons are performed on `Int` nanosecond timestamps using `Time.now()` (or an existing internal timestamp helper), with consistent comparisons across all three endpoints."
+        "A shared helper function is used by all three target functions to compute/attach sale info (no duplicated sale-computation logic across the three functions).",
+        "If a sale exists for the product and it is active per existing rules, the response includes non-null `salePrice` and `discountPercentage` and the active-sale boolean is true.",
+        "If no sale exists (or the sale is not active), `salePrice` is null and `discountPercentage` is null and the active-sale boolean is false.",
+        "No changes are made to persisted record shapes for products or sale items (no data model/storage schema changes)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
-      "target": "both",
+      "text": "Preserve the existing pagination and sorting behavior of `getProductsPageFeaturedFirst` and `getHomepageCategories` while adding sale info, and follow Motoko best practices by using `map`/functional transformations and avoiding repeated loops where possible.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "MANDATORY UTILITIES USAGE: This implementation MUST use existing shared utilities where applicable: BigInt serialization for date handling, Numeric conversion utilities for price calculations, Consistent error handling patterns",
-          "Maintain existing function signatures where possible"
+          "Keep Motoko best practices in mind: use map, avoid repeated loops, and maintain pagination and sorting logic."
         ]
       },
       "acceptanceCriteria": [
-        "Backend sale-period comparisons are implemented using the existing timestamp representation already used in `SaleItem.startDate/endDate` (nanosecond `Int`).",
-        "Frontend continues to parse and handle backend timestamps/prices without JSON BigInt loss, using the project’s existing BigInt-safe parsing utilities where applicable.",
-        "If any Candid type changes are required (e.g., product response type expands), the generated frontend backend typings continue to compile without `any` casts."
+        "`getProductsPageFeaturedFirst` still returns the same `totalCount` semantics and featured-first ordering as before, with pagination (`page`, `pageSize`) unchanged.",
+        "`getHomepageCategories` still preserves its existing pagination behavior for category loading and product ordering within categories, only adding sale info fields.",
+        "Implementation uses a shared transformation (e.g., mapping over products once per response structure) rather than re-filtering/re-sorting multiple times for sale augmentation."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
+      "text": "Update frontend data fetching/mapping code that calls `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` so it uses the backend-provided sale fields (instead of defaulting sale fields to undefined/false), and ensure the UI displays the sale price when present; otherwise it displays the normal price.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Strict Price Display Rules for All Public Interfaces",
-          "Product Details Modal ... Must display sale price when product has valid active sale ... Display discount percentage ... Show \"En Oferta\" badge or similar indicator",
-          "Product Details Page ... Display sale price ONLY if sale is currently active AND within date range",
-          "Integration Points: ... Search results product cards"
+          "Ensure that all front-end pages using these functions display the sale price when it exists; otherwise, display the normal price."
         ]
       },
       "acceptanceCriteria": [
-        "Home page and category page product cards display sale price + strikethrough original price + discount badge only when the product is flagged as on sale by the backend payload for that card.",
-        "Search results items show sale price + strikethrough original price only when the backend indicates the sale is active/valid; otherwise they show original price only.",
-        "Product details modal displays (when on sale): an \"On Sale\" indicator (English text), sale price, original price with strikethrough, and discount percentage; when not on sale it shows only the original price and no sale indicators.",
-        "Standalone product page displays (when on sale): sale price, original price with strikethrough, discount percentage, and an \"On Sale\" indicator (English text); when not on sale it shows only the original price.",
-        "No UI path shows sale price for a product where `isOnSale`/`saleIsActive` is false or sale fields are missing/null."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "getProduct() - Returns single product details for product page and modal",
-          "Product Details Page ... Display sale price ONLY if sale is currently active AND within date range"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`frontend/src/pages/public/ProductPage.tsx` renders sale-aware pricing based on the updated backend response type.",
-        "The React Query hook used by ProductPage (currently `useGetProduct` in `frontend/src/hooks/useProductQueries.ts`) is updated/extended to fetch and map sale-aware product data.",
-        "ProductPage UI remains functional for products with missing price (null/undefined), showing the existing fallback where appropriate."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Product Details Modal ... Display discount percentage ... Show \"En Oferta\" badge or similar indicator"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`frontend/src/components/public/product/ProductDetailsModal.tsx` shows a discount percentage only when sale is active/valid and the backend provides the value.",
-        "The modal shows an English on-sale badge/label (e.g., \"On Sale\") only when sale is active/valid; it is absent otherwise.",
-        "The modal never shows sale UI if `isOnSale`/`saleIsActive` is false or sale fields are null/undefined."
+        "Category page / category product grids driven by `getProductsPageFeaturedFirst` render sale price when backend indicates the sale is active, otherwise render normal price.",
+        "Homepage category sections driven by `getHomepageCategories` render sale price when backend indicates the sale is active, otherwise render normal price.",
+        "Product detail views driven by `getProduct` render sale price when backend indicates the sale is active, otherwise render normal price.",
+        "Frontend no longer hardcodes sale defaults for these endpoints (e.g., does not set `salePrice: undefined`, `discountPercentage: undefined`, `isOnSale: false` when backend returns real values)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain single-actor; implement all Motoko logic in `backend/main.mo` (no extra backend services).",
-    "Do not modify immutable frontend paths listed in SYSTEM_CONTEXT (compose existing UI components instead of editing them).",
-    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; append new CSS only below it if needed.",
-    "Use English for any new/changed user-facing text introduced by this change request."
+    "Backend must remain a single-actor Motoko architecture with logic in `backend/main.mo`.",
+    "Do not change the persisted data model; only refactor the three specified functions and add shared helper logic needed to attach sale info.",
+    "Do not modify frontend files under `frontend/src/components/ui` or any path listed in `frontend.immutablePaths`.",
+    "Use English for any user-facing text in this build request."
   ],
   "nonGoals": [
-    "Do not implement new admin sale-management features (CRUD/UI) beyond what already exists.",
-    "Do not add third-party services, databases, or external caching layers.",
-    "Do not change authentication behavior (Internet Identity) or session keep-alive behavior."
+    "Do not refactor or change behavior of other backend functions beyond what is required to keep types consistent for these three endpoints.",
+    "Do not introduce new backend services, external databases, or third-party integrations.",
+    "Do not redesign the sale admin workflow or sale item CRUD logic."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

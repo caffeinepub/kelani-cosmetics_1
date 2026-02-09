@@ -170,12 +170,12 @@ export interface backendInterface {
     getCategoryProductCounts(): Promise<Array<[bigint, bigint]>>;
     getFeaturedProducts(): Promise<Array<Product>>;
     getHomepageCategories(page: bigint, pageSize: bigint): Promise<HomepageCategoriesResult>;
-    getProduct(barcode: string): Promise<Product>;
+    getProduct(barcode: string): Promise<ProductWithSale>;
     getProductPhoto(barcode: string): Promise<Uint8Array>;
     getProductsPage(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
     getProductsPageFeaturedFirst(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<{
         totalCount: bigint;
-        items: Array<Product>;
+        items: Array<ProductWithSale>;
     }>;
     getSaleItemsPage(search: string, page: bigint, pageSize: bigint, includeInactive: boolean): Promise<SaleItemArray>;
     getStoreDetails(storeId: bigint): Promise<StoreDetails>;

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { Product as BackendProduct, PaginatedResponse, ProductV2 } from '../backend';
+import type { Product as BackendProduct, PaginatedResponse, ProductV2, ProductWithSale } from '../backend';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 
 export interface Product {
@@ -40,6 +40,27 @@ function mapBackendProduct(backendProduct: BackendProduct, categoryName?: string
     salePrice: undefined,
     discountPercentage: undefined,
     isOnSale: false,
+  };
+}
+
+function mapProductWithSaleToProduct(productWithSale: ProductWithSale): Product {
+  return {
+    barcode: productWithSale.product.barcode,
+    name: productWithSale.product.name,
+    categoryId: Number(productWithSale.product.categoryId),
+    categoryName: undefined,
+    description: productWithSale.product.description,
+    price: productWithSale.product.price,
+    inStock: productWithSale.product.inStock,
+    isFeatured: productWithSale.product.isFeatured,
+    photo: productWithSale.product.photo,
+    photoUrl: undefined,
+    createdDate: productWithSale.product.createdDate,
+    lastUpdatedDate: productWithSale.product.lastUpdatedDate,
+    // Map sale fields from backend
+    salePrice: productWithSale.salePrice,
+    discountPercentage: productWithSale.discountPercentage,
+    isOnSale: productWithSale.isOnSale,
   };
 }
 
@@ -102,8 +123,8 @@ export function useGetProduct(barcode: string) {
     queryKey: ['product', barcode],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      const backendProduct = await actor.getProduct(barcode);
-      return mapBackendProduct(backendProduct);
+      const productWithSale = await actor.getProduct(barcode);
+      return mapProductWithSaleToProduct(productWithSale);
     },
     enabled: !!actor && !actorFetching && !!barcode,
     staleTime: 5 * 60 * 1000,

@@ -179,7 +179,7 @@ export interface _SERVICE {
     [bigint, bigint],
     HomepageCategoriesResult
   >,
-  'getProduct' : ActorMethod<[string], Product>,
+  'getProduct' : ActorMethod<[string], ProductWithSale>,
   'getProductPhoto' : ActorMethod<[string], Uint8Array>,
   'getProductsPage' : ActorMethod<
     [string, [] | [bigint], bigint, bigint],
@@ -187,7 +187,7 @@ export interface _SERVICE {
   >,
   'getProductsPageFeaturedFirst' : ActorMethod<
     [string, [] | [bigint], bigint, bigint],
-    { 'totalCount' : bigint, 'items' : Array<Product> }
+    { 'totalCount' : bigint, 'items' : Array<ProductWithSale> }
   >,
   'getSaleItemsPage' : ActorMethod<
     [string, bigint, bigint, boolean],

@@ -22,6 +22,12 @@ actor {
     };
   };
 
+  func checkUser(caller : Principal) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can perform this action");
+    };
+  };
+
   public type UserRole = AccessControl.UserRole;
 
   public type AppUser = {
@@ -172,6 +178,8 @@ actor {
   };
 
   public query ({ caller }) func getAllCategories() : async [Category] {
+    checkUser(caller);
+
     categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -180,6 +188,8 @@ actor {
   };
 
   public query ({ caller }) func getCategoryById(categoryId : Nat) : async ?Category {
+    checkUser(caller);
+
     categories.get(categoryId);
   };
 
@@ -337,36 +347,6 @@ actor {
     };
   };
 
-  // Public access for featured products on homepage
-  public query ({ caller }) func getProductsPageFeaturedFirst(
-    search : Text,
-    categoryId : ?Nat,
-    page : Nat,
-    pageSize : Nat,
-  ) : async { items : [Product]; totalCount : Nat } {
-    // Public access - homepage browsing allowed for guests
-    let filteredProducts = filterProducts(search, categoryId);
-
-    let sortedProducts = filteredProducts.sort(
-      func(a, b) {
-        Nat.compare(
-          if (b.isFeatured) { 1 } else { 0 },
-          if (a.isFeatured) { 1 } else { 0 },
-        );
-      }
-    );
-
-    let totalCount = sortedProducts.size();
-    let start = page * pageSize;
-    let end = start + pageSize;
-    let pageItems = safeSliceProduct(sortedProducts, start, end);
-
-    {
-      items = pageItems;
-      totalCount;
-    };
-  };
-
   public shared ({ caller }) func createProduct(
     barcode : Text,
     name : Text,
@@ -451,17 +431,6 @@ actor {
     };
   };
 
-  public query ({ caller }) func getProduct(barcode : Text) : async Product {
-    // Public access - product details browsable by guests for homepage
-    if (barcode.size() == 0) {
-      Runtime.trap("Barcode is required");
-    };
-    switch (products.get(barcode)) {
-      case (null) { Runtime.trap("Product not found") };
-      case (?product) { product };
-    };
-  };
-
   public shared ({ caller }) func deleteProduct(barcode : Text, password : Text) : async () {
     checkAdmin(caller);
     if (password != "DeleteIsUnsafe") {
@@ -496,7 +465,8 @@ actor {
   };
 
   public query ({ caller }) func getProductPhoto(barcode : Text) : async [Nat8] {
-    // Public access - product photos browsable by guests for homepage
+    checkUser(caller);
+
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
       case (?product) {
@@ -509,12 +479,14 @@ actor {
   };
 
   public query ({ caller }) func getTotalProductCount() : async Nat {
-    // Public access - product count browsable by guests for homepage
+    checkUser(caller);
+
     filterProducts("", null).size();
   };
 
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
-    // Public access - featured products browsable by guests for homepage
+    checkUser(caller);
+
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
     );
@@ -689,6 +661,8 @@ actor {
   };
 
   public query ({ caller }) func getActiveSales() : async [SaleItem] {
+    checkUser(caller);
+
     let currentTime = getCurrentTimestamp();
     saleItems.values().toArray().filter(
       func(sale) {
@@ -802,6 +776,8 @@ actor {
   };
 
   public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
+    checkUser(caller);
+
     [
       (1, switch (storeDetails.get(1)) {
         case (?details) { details };
@@ -922,10 +898,43 @@ actor {
   };
 
   //-----------------------------------------------------------------
+  // Unified Product Search Helper with Sale Information
+  //-----------------------------------------------------------------
+  func getProductWithSaleInfo(product : Product) : ProductWithSale {
+    var salePrice : ?Float = null;
+    var discountPercentage : ?Float = null;
+    var isOnSale = false;
+
+    let currentTime = getCurrentTimestamp();
+    let allSales = saleItems.values().toArray();
+
+    for (sale in allSales.values()) {
+      if (
+        sale.productBarcode == product.barcode and
+        currentTime >= sale.startDate and
+        currentTime <= sale.endDate and
+        sale.isActive
+      ) {
+        salePrice := ?sale.salePrice;
+        discountPercentage := ?sale.discountPercentage;
+        isOnSale := true;
+      };
+    };
+
+    {
+      product;
+      salePrice;
+      discountPercentage;
+      isOnSale;
+    };
+  };
+
+  //-----------------------------------------------------------------
   // Smart Search Homepage Product Search with Autocomplete (Query)
-  // Public access for homepage browsing
   //-----------------------------------------------------------------
   public query ({ caller }) func searchHomepageProducts(searchQuery : Text) : async [HomepageSearchResult] {
+    checkUser(caller);
+
     let trimmedQuery = searchQuery.trim(#char ' ');
 
     if (trimmedQuery.size() == 0) {
@@ -1019,6 +1028,8 @@ actor {
   };
 
   public query ({ caller }) func getCategoryProductCounts() : async [(Nat, Nat)] {
+    checkUser(caller);
+
     categories.toArray().map(
       func((categoryId, _category)) {
         let productCount = products.entries().filter(
@@ -1032,6 +1043,8 @@ actor {
   };
 
   public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
+    checkUser(caller);
+
     let sortedCategories = categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -1078,36 +1091,7 @@ actor {
           sortedProducts;
         };
 
-        let productsWithSale = limitedProducts.map(
-          func(product) : ProductWithSale {
-            var salePrice : ?Float = null;
-            var discountPercentage : ?Float = null;
-            var isOnSale = false;
-
-            let currentTime = getCurrentTimestamp();
-            let allSales = saleItems.values().toArray();
-
-            for (sale in allSales.values()) {
-              if (
-                sale.productBarcode == product.barcode and
-                currentTime >= sale.startDate and
-                currentTime <= sale.endDate and
-                sale.isActive
-              ) {
-                salePrice := ?sale.salePrice;
-                discountPercentage := ?sale.discountPercentage;
-                isOnSale := true;
-              };
-            };
-
-            {
-              product;
-              salePrice;
-              discountPercentage;
-              isOnSale;
-            };
-          }
-        );
+        let productsWithSale = limitedProducts.map(getProductWithSaleInfo);
 
         {
           categoryId = category.categoryId;
@@ -1259,6 +1243,58 @@ actor {
     {
       isValid = true;
       errorMessages = [];
+    };
+  };
+
+  //---------------------------------------------------
+  // Enhanced Endpoints with Sale Information
+  //---------------------------------------------------
+  public query ({ caller }) func getProductsPageFeaturedFirst(
+    search : Text,
+    categoryId : ?Nat,
+    page : Nat,
+    pageSize : Nat,
+  ) : async { items : [ProductWithSale]; totalCount : Nat } {
+    checkUser(caller);
+
+    let filteredProducts = filterProducts(search, categoryId);
+
+    let sortedProducts = filteredProducts.sort(
+      func(a, b) {
+        Nat.compare(
+          if (b.isFeatured) { 1 } else { 0 },
+          if (a.isFeatured) { 1 } else { 0 },
+        );
+      }
+    );
+
+    let pagedProducts = if (sortedProducts.size() > 0) {
+      let startIndex = page * pageSize;
+      let endIndex = if ((startIndex + pageSize) > sortedProducts.size()) {
+        sortedProducts.size();
+      } else {
+        startIndex + pageSize;
+      };
+      if (startIndex >= sortedProducts.size()) {
+        [];
+      } else {
+        sortedProducts.sliceToArray(startIndex, endIndex);
+      };
+    } else {
+      [];
+    };
+
+    let items = pagedProducts.map(getProductWithSaleInfo);
+
+    { items; totalCount = filteredProducts.size() };
+  };
+
+  public query ({ caller }) func getProduct(barcode : Text) : async ProductWithSale {
+    checkUser(caller);
+
+    switch (products.get(barcode)) {
+      case (null) { Runtime.trap("Product not found") };
+      case (?product) { getProductWithSaleInfo(product) };
     };
   };
 };

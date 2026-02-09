@@ -1,48 +1,18 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Integrate active sale pricing into public product data responses with strict sale period validation across backend (Motoko) and consistent frontend display rules.",
+  "summary": "Refactor Motoko backend product-fetching functions to consistently include sale information and update frontend displays accordingly.",
   "architectural_notes": [
-    "Create a shared, query-safe helper to fetch/validate sale data per product barcode from saleItems; only return sale info when isActive=true and start ≤ now ≤ end.",
-    "Use system time (nanoseconds since Unix epoch) with consistent BigInt serialization utilities for sale period comparisons.",
-    "Maintain existing signatures where possible for getProductsPageFeaturedFirst, getHomepageCategories, and getProduct while enhancing returned product structure to include optional salePrice, discountPercentage, and isOnSale.",
-    "Frontend must never display sale pricing for expired/future sales; modal and all public product cards/pages must consistently respect backend-provided sale validity.",
-    "Do not remove/modify/overwrite the :root CSS custom properties block in index.css; append any new styles only below it."
+    "Introduce a shared Motoko helper to compute active sale status and attach salePrice/discountPercentage to product responses; avoid repeated loops and preserve existing pagination/sorting logic."
   ],
-  "known_issues": [
-    "Public product data methods currently do not integrate active sale price/discount information or validate sale periods."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-ensure-the-backend-uses-existing-shared-utilities-patterns-for-a-bigint-int-serialization-of-timestamps-and-b-numeric-conversion-price-calculation-consistency-and-maintains-existing-function-signatures-where-possible-or-updates-frontend-bindings-accordingly-when-signatures-must-change",
-      "title": "Ensure the backend uses existing shared utilities/patterns for (a) BigInt/Int serialization of timestamps and (b) numeric conversion/price calculation consistency, and maintains existing function signatures where possible (or updates frontend bindings accordingly when signatures must change).",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-all-public-facing-frontend-price-displays-to-show-sale-pricing-only-when-the-backend-indicates-a-currently-active-valid-sale-and-never-show-sale-pricing-for-expired-or-future-sales-this-must-be-consistent-across-home-page-product-cards-category-page-product-cards-search-results-product-cards-product-details-modal-and-standalone-product-details-page-product-barcode",
-      "title": "Update all public-facing frontend price displays to show sale pricing only when the backend indicates a currently-active valid sale, and never show sale pricing for expired or future sales. This must be consistent across: home page product cards, category page product cards, search results product cards, product details modal, and standalone product details page (`/product/$barcode`).",
+      "id": "feature-update-frontend-data-fetching-mapping-code-that-calls-getproductspagefeaturedfirst-gethomepagecategories-and-getproduct-so-it-uses-the-backend-provided-sale-fields-instead-of-defaulting-sale-fields-to-undefined-false-and-ensure-the-ui-displays-the-sale-price-when-present-otherwise-it-displays-the-normal-price",
+      "title": "Update frontend data fetching/mapping code that calls `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` so it uses the backend-provided sale fields (instead of defaulting sale fields to undefined/false), and ensure the UI displays the sale price when present; otherwise it displays the normal price.",
       "reqIds": [
         "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-public-product-details-page-data-flow-so-it-can-render-sale-aware-product-details-sale-price-discount-percentage-on-sale-flag-returned-by-the-backend-getproduct-or-an-updated-equivalent-rather-than-only-rendering-the-base-product-price",
-      "title": "Update the public product details page data flow so it can render sale-aware product details (sale price, discount percentage, on-sale flag) returned by the backend `getProduct()` (or an updated equivalent), rather than only rendering the base product price.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-product-details-modal-to-include-the-discount-percentage-and-a-clear-on-sale-badge-label-when-a-valid-sale-exists-matching-the-same-strict-on-sale-rules-as-other-public-components",
-      "title": "Update the product details modal to include the discount percentage and a clear on-sale badge/label when a valid sale exists, matching the same strict on-sale rules as other public components.",
-      "reqIds": [
-        "REQ-6"
       ],
       "version": 1
     }
@@ -50,13 +20,13 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update public product data endpoints to include active sale price, discount %, and on-sale flag with strict date-range validation via shared helper",
+      "summary": "Refactor Motoko backend: getProductsPageFeaturedFirst/getHomepageCategories/getProduct must return products with salePrice, discountPercentage, and sale active status using a shared helper; update frontend pages to display sale price when present while preserving pagination/sorting.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Update the Motoko backend to return public product data with integrated active sale information (sale price, discount percentage, and on-sale flag) for these methods: `getProductsPageFeaturedFirst()`, `getHomepageCategories()`, and `getProduct()`. Sale fields must only be present/true when the sale is currently valid per strict time-window validation.",
+      "summary": "Refactor the Motoko backend so that `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` consistently return products including sale information: `salePrice`, `discountPercentage`, and a boolean indicating whether the sale is active, while always including the product `price`.",
       "reqIds": [
         "REQ-1"
       ],
@@ -64,14 +34,22 @@
     },
     {
       "id": "AR-3",
-      "summary": "Implement a shared, reusable Motoko helper used by all three public product methods that resolves the active sale for a given product barcode by scanning `saleItems` and applying strict validation: sale must have `isActive == true` and current time must be within the sale period using system time (nanoseconds since Unix epoch). Enforce boundary rules so expired and future sales never return sale data.",
+      "summary": "Implement a single shared Motoko helper that determines whether a product currently has an active sale using the existing sale rules, and attaches sale fields to the returned product data without changing the underlying stored data model.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Preserve the existing pagination and sorting behavior of `getProductsPageFeaturedFirst` and `getHomepageCategories` while adding sale info, and follow Motoko best practices by using `map`/functional transformations and avoiding repeated loops where possible.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Integrate active sale pricing into public product data (strict date validation)",
+  "projectName": "Refactor backend product fetches to consistently return sale info and update frontend to display sale price",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -43,17 +43,9 @@ export function useGetCategoryProductsPaginated(
         BigInt(pageSize)
       );
 
-      // Backend now returns products with sale data integrated
-      // Map to ProductWithSale format
-      const products: ProductWithSale[] = response.items.map((product) => ({
-        product,
-        salePrice: undefined,
-        discountPercentage: undefined,
-        isOnSale: false,
-      }));
-
+      // Backend now returns ProductWithSale items with sale info already attached
       return {
-        products,
+        products: response.items,
         totalCount: Number(response.totalCount),
       };
     },

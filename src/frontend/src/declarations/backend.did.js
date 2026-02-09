@@ -201,7 +201,7 @@ export const idlService = IDL.Service({
       [HomepageCategoriesResult],
       ['query'],
     ),
-  'getProduct' : IDL.Func([IDL.Text], [Product], ['query']),
+  'getProduct' : IDL.Func([IDL.Text], [ProductWithSale], ['query']),
   'getProductPhoto' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Nat8)], ['query']),
   'getProductsPage' : IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
@@ -210,7 +210,12 @@ export const idlService = IDL.Service({
     ),
   'getProductsPageFeaturedFirst' : IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
-      [IDL.Record({ 'totalCount' : IDL.Nat, 'items' : IDL.Vec(Product) })],
+      [
+        IDL.Record({
+          'totalCount' : IDL.Nat,
+          'items' : IDL.Vec(ProductWithSale),
+        }),
+      ],
       ['query'],
     ),
   'getSaleItemsPage' : IDL.Func(
@@ -461,7 +466,7 @@ export const idlFactory = ({ IDL }) => {
         [HomepageCategoriesResult],
         ['query'],
       ),
-    'getProduct' : IDL.Func([IDL.Text], [Product], ['query']),
+    'getProduct' : IDL.Func([IDL.Text], [ProductWithSale], ['query']),
     'getProductPhoto' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Nat8)], ['query']),
     'getProductsPage' : IDL.Func(
         [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
@@ -470,7 +475,12 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getProductsPageFeaturedFirst' : IDL.Func(
         [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
-        [IDL.Record({ 'totalCount' : IDL.Nat, 'items' : IDL.Vec(Product) })],
+        [
+          IDL.Record({
+            'totalCount' : IDL.Nat,
+            'items' : IDL.Vec(ProductWithSale),
+          }),
+        ],
         ['query'],
       ),
     'getSaleItemsPage' : IDL.Func(
