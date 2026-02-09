@@ -27,7 +27,7 @@ export default function PublicLayout() {
       />
       
       <main className="flex-1 w-full">
-        <div className="mx-auto max-w-[1200px] px-4 py-8">
+        <div className="mx-auto max-w-[1200px] px-4 py-4">
           <Outlet />
         </div>
       </main>

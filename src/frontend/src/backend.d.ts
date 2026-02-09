@@ -7,8 +7,22 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface UserProfile {
+export interface SaleItem {
+    categoryId: bigint;
+    categoryName: string;
+    saleId: bigint;
+    endDate: bigint;
     name: string;
+    createdDate: bigint;
+    description?: string;
+    isActive: boolean;
+    barcode: string;
+    lastUpdatedDate: bigint;
+    salePrice: number;
+    price?: number;
+    discountPercentage: number;
+    productBarcode: string;
+    startDate: bigint;
 }
 export interface Category {
     categoryId: bigint;
@@ -34,14 +48,18 @@ export interface HomepageSearchResult {
     price?: number;
     saleIsActive: boolean;
 }
-export interface ExportPayload {
-    categories: Array<Category>;
-    itemCounts: {
-        categories: bigint;
-        products: bigint;
-    };
-    products: Array<ExportProduct>;
-    exportTimestamp: bigint;
+export interface ProductV2 {
+    categoryId: bigint;
+    categoryName: string;
+    inStock: boolean;
+    name: string;
+    createdDate: bigint;
+    description?: string;
+    isFeatured: boolean;
+    barcode: string;
+    lastUpdatedDate: bigint;
+    photo?: Uint8Array;
+    price?: number;
 }
 export interface StoreDetails {
     storeId: bigint;
@@ -61,13 +79,22 @@ export interface StoreDetails {
 }
 export interface PaginatedResponse {
     totalCount: bigint;
-    items: Array<Product>;
+    items: Array<ProductV2>;
 }
 export interface ImportResult {
     importedCategoryCount: bigint;
     importedProductCount: bigint;
     errorMessages: Array<string>;
     success: boolean;
+}
+export interface ExportPayload {
+    categories: Array<Category>;
+    itemCounts: {
+        categories: bigint;
+        products: bigint;
+    };
+    products: Array<ExportProduct>;
+    exportTimestamp: bigint;
 }
 export interface HomepageCategoriesResult {
     categories: Array<CategorizedProductWithSale>;
@@ -102,23 +129,6 @@ export interface ImportData {
     categories: Array<Category>;
     products: Array<Product>;
 }
-export interface SaleItem {
-    categoryId: bigint;
-    categoryName: string;
-    saleId: bigint;
-    endDate: bigint;
-    name: string;
-    createdDate: bigint;
-    description?: string;
-    isActive: boolean;
-    barcode: string;
-    lastUpdatedDate: bigint;
-    salePrice: number;
-    price?: number;
-    discountPercentage: number;
-    productBarcode: string;
-    startDate: bigint;
-}
 export interface Product {
     categoryId: bigint;
     inStock: boolean;
@@ -130,6 +140,9 @@ export interface Product {
     lastUpdatedDate: bigint;
     photo?: Uint8Array;
     price?: number;
+}
+export interface UserProfile {
+    name: string;
 }
 export enum UserRole {
     admin = "admin",
@@ -160,7 +173,10 @@ export interface backendInterface {
     getProduct(barcode: string): Promise<Product>;
     getProductPhoto(barcode: string): Promise<Uint8Array>;
     getProductsPage(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
-    getProductsPageFeaturedFirst(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<PaginatedResponse>;
+    getProductsPageFeaturedFirst(search: string, categoryId: bigint | null, page: bigint, pageSize: bigint): Promise<{
+        totalCount: bigint;
+        items: Array<Product>;
+    }>;
     getSaleItemsPage(search: string, page: bigint, pageSize: bigint, includeInactive: boolean): Promise<SaleItemArray>;
     getStoreDetails(storeId: bigint): Promise<StoreDetails>;
     getTotalProductCount(): Promise<bigint>;

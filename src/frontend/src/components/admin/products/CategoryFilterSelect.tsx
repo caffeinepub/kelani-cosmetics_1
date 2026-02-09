@@ -46,6 +46,7 @@ export default function CategoryFilterSelect({
       placeholder="All categories"
       className={className}
       sentinelValue={SENTINEL_VALUES.ALL}
+      contentClassName="admin-category-select-content"
     >
       <SelectScrollUpButton />
       <SelectGroup>

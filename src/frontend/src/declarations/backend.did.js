@@ -109,9 +109,22 @@ export const HomepageCategoriesResult = IDL.Record({
   'categories' : IDL.Vec(CategorizedProductWithSale),
   'totalCategories' : IDL.Nat,
 });
+export const ProductV2 = IDL.Record({
+  'categoryId' : IDL.Nat,
+  'categoryName' : IDL.Text,
+  'inStock' : IDL.Bool,
+  'name' : IDL.Text,
+  'createdDate' : IDL.Int,
+  'description' : IDL.Opt(IDL.Text),
+  'isFeatured' : IDL.Bool,
+  'barcode' : IDL.Text,
+  'lastUpdatedDate' : IDL.Int,
+  'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  'price' : IDL.Opt(IDL.Float64),
+});
 export const PaginatedResponse = IDL.Record({
   'totalCount' : IDL.Nat,
-  'items' : IDL.Vec(Product),
+  'items' : IDL.Vec(ProductV2),
 });
 export const SaleItemArray = IDL.Record({
   'totalCount' : IDL.Nat,
@@ -197,7 +210,7 @@ export const idlService = IDL.Service({
     ),
   'getProductsPageFeaturedFirst' : IDL.Func(
       [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
-      [PaginatedResponse],
+      [IDL.Record({ 'totalCount' : IDL.Nat, 'items' : IDL.Vec(Product) })],
       ['query'],
     ),
   'getSaleItemsPage' : IDL.Func(
@@ -356,9 +369,22 @@ export const idlFactory = ({ IDL }) => {
     'categories' : IDL.Vec(CategorizedProductWithSale),
     'totalCategories' : IDL.Nat,
   });
+  const ProductV2 = IDL.Record({
+    'categoryId' : IDL.Nat,
+    'categoryName' : IDL.Text,
+    'inStock' : IDL.Bool,
+    'name' : IDL.Text,
+    'createdDate' : IDL.Int,
+    'description' : IDL.Opt(IDL.Text),
+    'isFeatured' : IDL.Bool,
+    'barcode' : IDL.Text,
+    'lastUpdatedDate' : IDL.Int,
+    'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'price' : IDL.Opt(IDL.Float64),
+  });
   const PaginatedResponse = IDL.Record({
     'totalCount' : IDL.Nat,
-    'items' : IDL.Vec(Product),
+    'items' : IDL.Vec(ProductV2),
   });
   const SaleItemArray = IDL.Record({
     'totalCount' : IDL.Nat,
@@ -444,7 +470,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getProductsPageFeaturedFirst' : IDL.Func(
         [IDL.Text, IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
-        [PaginatedResponse],
+        [IDL.Record({ 'totalCount' : IDL.Nat, 'items' : IDL.Vec(Product) })],
         ['query'],
       ),
     'getSaleItemsPage' : IDL.Func(

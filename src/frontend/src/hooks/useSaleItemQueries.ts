@@ -4,10 +4,13 @@ import { useActor } from './useActor';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 import type { SaleItem as BackendSaleItem, SaleItemArray } from '../backend';
 import { numberToBigInt, bigIntToNumber } from '../utils/categoryNumeric';
-import { dateStringToTimestamp, timestampToDateString } from '../utils/adminDate';
-import type { SaleStatus } from '../pages/admin/OnSaleProductsPage';
+import { 
+  dateStringToNanosecondsBigInt, 
+  timestampToDateString,
+  getCurrentTimestampBigInt 
+} from '../utils/adminDate';
 
-// UI SaleItem type with number fields for easier manipulation
+// UI SaleItem type - keeping timestamps as bigint for safe comparison
 export interface SaleItem {
   saleId: number;
   productBarcode: string;
@@ -19,15 +22,16 @@ export interface SaleItem {
   discountPercentage: number;
   categoryId: number;
   categoryName: string;
-  startDate: number;
-  endDate: number;
+  startDate: bigint; // Changed to bigint for safe comparison
+  endDate: bigint;   // Changed to bigint for safe comparison
   isActive: boolean;
-  createdDate: number;
-  lastUpdatedDate: number;
+  createdDate: bigint;
+  lastUpdatedDate: bigint;
 }
 
 /**
- * Convert backend SaleItem (with bigint fields) to UI SaleItem (with number fields)
+ * Convert backend SaleItem (with bigint fields) to UI SaleItem
+ * Keeps timestamps as bigint to avoid unsafe number conversions
  */
 function backendSaleItemToUI(backendSaleItem: BackendSaleItem): SaleItem {
   return {
@@ -41,19 +45,20 @@ function backendSaleItemToUI(backendSaleItem: BackendSaleItem): SaleItem {
     discountPercentage: backendSaleItem.discountPercentage,
     categoryId: bigIntToNumber(backendSaleItem.categoryId),
     categoryName: backendSaleItem.categoryName,
-    startDate: bigIntToNumber(backendSaleItem.startDate),
-    endDate: bigIntToNumber(backendSaleItem.endDate),
+    startDate: backendSaleItem.startDate, // Keep as bigint
+    endDate: backendSaleItem.endDate,     // Keep as bigint
     isActive: backendSaleItem.isActive,
-    createdDate: bigIntToNumber(backendSaleItem.createdDate),
-    lastUpdatedDate: bigIntToNumber(backendSaleItem.lastUpdatedDate),
+    createdDate: backendSaleItem.createdDate,
+    lastUpdatedDate: backendSaleItem.lastUpdatedDate,
   };
 }
 
 /**
  * Determine sale status based on dates and active flag
+ * Uses BigInt-safe timestamp comparison
  */
 export function getSaleStatus(saleItem: SaleItem): 'active' | 'upcoming' | 'expired' {
-  const now = Date.now() * 1_000_000; // Convert to nanoseconds
+  const now = getCurrentTimestampBigInt();
   
   if (now < saleItem.startDate) {
     return 'upcoming';
@@ -64,31 +69,6 @@ export function getSaleStatus(saleItem: SaleItem): 'active' | 'upcoming' | 'expi
   } else {
     return 'expired'; // Inactive within date range treated as expired
   }
-}
-
-/**
- * Filter sale items by status on the client side
- */
-function filterByStatus(items: SaleItem[], status: SaleStatus): SaleItem[] {
-  if (status === 'all') return items;
-  
-  return items.filter(item => getSaleStatus(item) === status);
-}
-
-/**
- * Filter sale items by date range on the client side
- */
-function filterByDateRange(items: SaleItem[], startDate: string, endDate: string): SaleItem[] {
-  if (!startDate && !endDate) return items;
-  
-  const startTimestamp = startDate ? dateStringToTimestamp(startDate) : null;
-  const endTimestamp = endDate ? dateStringToTimestamp(endDate) : null;
-  
-  return items.filter(item => {
-    if (startTimestamp && item.startDate < startTimestamp) return false;
-    if (endTimestamp && item.endDate > endTimestamp) return false;
-    return true;
-  });
 }
 
 // Query Keys
@@ -102,16 +82,13 @@ const QUERY_KEYS = {
 // ============================================================================
 
 /**
- * Fetch paginated sale items with search and filters
+ * Fetch paginated sale items with search
  */
 export function useGetSaleItemsPage(
   search: string,
   page: number,
   pageSize: number,
-  includeInactive: boolean,
-  statusFilter: SaleStatus,
-  startDateFilter: string,
-  endDateFilter: string
+  includeInactive: boolean
 ) {
   const actorState = useActor();
   const rawActor = actorState.actor;
@@ -140,15 +117,11 @@ export function useGetSaleItemsPage(
           includeInactive
         );
 
-        let items = response.items.map(backendSaleItemToUI);
-        
-        // Apply client-side filters
-        items = filterByStatus(items, statusFilter);
-        items = filterByDateRange(items, startDateFilter, endDateFilter);
+        const items = response.items.map(backendSaleItemToUI);
 
         return {
           items,
-          totalCount: items.length,
+          totalCount: Number(response.totalCount),
         };
       } catch (error) {
         reportErrorWithToast(error, 'Error al cargar los productos en oferta', {
@@ -172,6 +145,7 @@ export function useGetSaleItemsPage(
 
 /**
  * Create new sale item
+ * Uses BigInt-safe date conversion
  */
 export function useCreateSaleItem() {
   const { actor } = useActor();
@@ -191,16 +165,22 @@ export function useCreateSaleItem() {
     }) => {
       if (!actor) throw new Error('Actor not available');
 
-      const startTimestamp = dateStringToTimestamp(startDate);
-      const endTimestamp = dateStringToTimestamp(endDate);
+      try {
+        // Convert dates to BigInt nanoseconds directly - no unsafe number conversion
+        const startTimestamp = dateStringToNanosecondsBigInt(startDate);
+        const endTimestamp = dateStringToNanosecondsBigInt(endDate);
 
-      const backendSaleItem = await actor.createSaleItem(
-        productBarcode,
-        salePrice,
-        numberToBigInt(startTimestamp),
-        numberToBigInt(endTimestamp)
-      );
-      return backendSaleItemToUI(backendSaleItem);
+        const backendSaleItem = await actor.createSaleItem(
+          productBarcode,
+          salePrice,
+          startTimestamp, // Pass bigint directly
+          endTimestamp    // Pass bigint directly
+        );
+        return backendSaleItemToUI(backendSaleItem);
+      } catch (error) {
+        console.error('Create sale item error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sale-items'] });
@@ -216,6 +196,7 @@ export function useCreateSaleItem() {
 
 /**
  * Update existing sale item
+ * Uses BigInt-safe date conversion
  */
 export function useUpdateSaleItem() {
   const { actor } = useActor();
@@ -235,16 +216,22 @@ export function useUpdateSaleItem() {
     }) => {
       if (!actor) throw new Error('Actor not available');
 
-      const startTimestamp = dateStringToTimestamp(startDate);
-      const endTimestamp = dateStringToTimestamp(endDate);
+      try {
+        // Convert dates to BigInt nanoseconds directly - no unsafe number conversion
+        const startTimestamp = dateStringToNanosecondsBigInt(startDate);
+        const endTimestamp = dateStringToNanosecondsBigInt(endDate);
 
-      const backendSaleItem = await actor.updateSaleItem(
-        numberToBigInt(saleId),
-        salePrice,
-        numberToBigInt(startTimestamp),
-        numberToBigInt(endTimestamp)
-      );
-      return backendSaleItemToUI(backendSaleItem);
+        const backendSaleItem = await actor.updateSaleItem(
+          numberToBigInt(saleId),
+          salePrice,
+          startTimestamp, // Pass bigint directly
+          endTimestamp    // Pass bigint directly
+        );
+        return backendSaleItemToUI(backendSaleItem);
+      } catch (error) {
+        console.error('Update sale item error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sale-items'] });

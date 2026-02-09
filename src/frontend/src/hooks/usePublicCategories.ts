@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Category } from './useQueries';
@@ -11,19 +11,20 @@ import type { Category as BackendCategory } from '../backend';
  */
 export function usePublicCategories(isOpen: boolean) {
   const { actor: rawActor, isFetching: actorFetching } = useActor();
-  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
 
   // Stabilize actor reference
-  useEffect(() => {
-    if (rawActor && !actorFetching) {
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
       setStableActor(rawActor);
     }
-  }, [rawActor, actorFetching]);
+  }, [rawActor, stableActor]);
 
   return useQuery<Category[]>({
-    queryKey: ['public-categories'],
-    queryFn: async () => {
+    queryKey: ['categories'],
+    queryFn: async ({ signal }) => {
       if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
 
       const backendCategories = await stableActor.getAllCategories();
       return backendCategories.map((cat: BackendCategory) => ({
@@ -34,8 +35,11 @@ export function usePublicCategories(isOpen: boolean) {
         lastUpdatedDate: bigIntToNumber(cat.lastUpdatedDate),
       }));
     },
-    enabled: !!stableActor && isOpen,
+    enabled: Boolean(stableActor) && !actorFetching && isOpen,
+    staleTime: 30 * 60 * 1000, // 30 minutes - longer for shared navigation data
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

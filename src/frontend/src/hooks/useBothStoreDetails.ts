@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { StoreDetails } from '../backend';
@@ -8,19 +8,20 @@ import type { StoreDetails } from '../backend';
  */
 export function useBothStoreDetails() {
   const { actor: rawActor, isFetching: actorFetching } = useActor();
-  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
 
   // Stabilize actor reference
-  useEffect(() => {
-    if (rawActor && !actorFetching) {
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
       setStableActor(rawActor);
     }
-  }, [rawActor, actorFetching]);
+  }, [rawActor, stableActor]);
 
   return useQuery<StoreDetails[]>({
-    queryKey: ['both-store-details'],
-    queryFn: async () => {
+    queryKey: ['store-details'],
+    queryFn: async ({ signal }) => {
       if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
 
       // Single backend call to fetch both stores
       const bothStores = await stableActor.getBothStoreDetails();
@@ -29,8 +30,11 @@ export function useBothStoreDetails() {
       // Backend guarantees Store 1 first, Store 2 second
       return bothStores.map(([_storeId, details]) => details);
     },
-    enabled: !!stableActor,
-    retry: 2,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 30 * 60 * 1000, // 30 minutes - longer for shared footer/contact data
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

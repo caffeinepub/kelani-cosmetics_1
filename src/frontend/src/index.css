@@ -302,3 +302,185 @@
     flex: 0 0 auto;
   }
 }
+
+/* Admin Mobile Optimization Styles */
+@media (max-width: 768px) {
+  /* Center modal on mobile viewport */
+  .admin-modal-mobile {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 95vw;
+    max-width: 95vw;
+    height: 90vh;
+    max-height: 90vh;
+    margin: 0;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Keep existing scrollable content area */
+  .admin-modal-content-mobile {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Keep existing fixed footer */
+  .admin-modal-footer-mobile {
+    position: sticky;
+    bottom: 0;
+    background: oklch(var(--background));
+    border-top: 1px solid oklch(var(--border));
+    padding: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-direction: row;
+    justify-content: stretch;
+  }
+
+  .admin-modal-footer-mobile > * {
+    flex: 1;
+  }
+
+  /* Prevent horizontal overflow on admin pages */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Safe text wrapping for long content */
+  .break-words {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .break-all {
+    word-break: break-all;
+  }
+}
+
+/* Text wrapping utilities for admin cards */
+.admin-card-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Ensure all admin content respects viewport width */
+@media (max-width: 768px) {
+  * {
+    min-width: 0;
+  }
+}
+
+/* Public Side Panel Categories Scrollbar Styling */
+.public-sidepanel-categories-scroll {
+  /* Enable smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent scroll chaining to parent/body */
+  overscroll-behavior: contain;
+}
+
+/* Firefox scrollbar styling */
+.public-sidepanel-categories-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(var(--muted)) oklch(var(--background));
+}
+
+/* WebKit (Chrome, Safari, Edge) scrollbar styling */
+.public-sidepanel-categories-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.public-sidepanel-categories-scroll::-webkit-scrollbar-track {
+  background: oklch(var(--background));
+  border-radius: 4px;
+}
+
+.public-sidepanel-categories-scroll::-webkit-scrollbar-thumb {
+  background: oklch(var(--muted));
+  border-radius: 4px;
+  border: 2px solid oklch(var(--background));
+}
+
+.public-sidepanel-categories-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--border));
+}
+
+/* Dark mode scrollbar adjustments */
+.dark .public-sidepanel-categories-scroll {
+  scrollbar-color: oklch(var(--border)) oklch(var(--card));
+}
+
+.dark .public-sidepanel-categories-scroll::-webkit-scrollbar-track {
+  background: oklch(var(--card));
+}
+
+.dark .public-sidepanel-categories-scroll::-webkit-scrollbar-thumb {
+  background: oklch(var(--border));
+  border-color: oklch(var(--card));
+}
+
+.dark .public-sidepanel-categories-scroll::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--muted));
+}
+
+/* Admin Category Dropdown Scrollbar Styling - Scoped to admin dropdowns only */
+.admin-category-select-content {
+  /* Max height for approximately 10 items (assuming ~40px per item including padding) */
+  max-height: 400px;
+  overflow-y: auto;
+  /* Enable smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent scroll chaining to parent/body */
+  overscroll-behavior: contain;
+}
+
+/* Firefox scrollbar styling for admin category dropdowns */
+.admin-category-select-content {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(var(--muted)) oklch(var(--popover));
+}
+
+/* WebKit (Chrome, Safari, Edge) scrollbar styling for admin category dropdowns */
+.admin-category-select-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-category-select-content::-webkit-scrollbar-track {
+  background: oklch(var(--popover));
+  border-radius: 4px;
+}
+
+.admin-category-select-content::-webkit-scrollbar-thumb {
+  background: oklch(var(--muted));
+  border-radius: 4px;
+  border: 2px solid oklch(var(--popover));
+}
+
+.admin-category-select-content::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--border));
+}
+
+/* Dark mode scrollbar adjustments for admin category dropdowns */
+.dark .admin-category-select-content {
+  scrollbar-color: oklch(var(--border)) oklch(var(--popover));
+}
+
+.dark .admin-category-select-content::-webkit-scrollbar-track {
+  background: oklch(var(--popover));
+}
+
+.dark .admin-category-select-content::-webkit-scrollbar-thumb {
+  background: oklch(var(--border));
+  border-color: oklch(var(--popover));
+}
+
+.dark .admin-category-select-content::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--muted));
+}

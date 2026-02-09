@@ -4,7 +4,9 @@ import { Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useGetProductsPage, type Product } from '../../hooks/useProductQueries';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import ProductsTable from '../../components/admin/products/ProductsTable';
+import ProductsCards from '../../components/admin/products/ProductsCards';
 import ProductsPagination from '../../components/admin/products/ProductsPagination';
 import CategoryFilterSelect from '../../components/admin/products/CategoryFilterSelect';
 import ProductUpsertModal from '../../components/admin/products/ProductUpsertModal';
@@ -16,6 +18,7 @@ const MIN_SEARCH_LENGTH = 2;
 
 export default function ProductsPage() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -92,10 +95,10 @@ export default function ProductsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">Products</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Productos</h2>
         <Button onClick={handleAddClick} size="icon" className="h-10 w-10">
           <Plus className="h-5 w-5" />
-          <span className="sr-only">Add product</span>
+          <span className="sr-only">Agregar producto</span>
         </Button>
       </div>
 
@@ -105,7 +108,7 @@ export default function ProductsPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by barcode, name, description"
+            placeholder="Buscar por código, nombre, descripción"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-9"
@@ -118,7 +121,7 @@ export default function ProductsPage() {
               onClick={handleClearSearch}
             >
               <X className="h-4 w-4" />
-              <span className="sr-only">Clear search</span>
+              <span className="sr-only">Limpiar búsqueda</span>
             </Button>
           )}
         </div>
@@ -130,13 +133,22 @@ export default function ProductsPage() {
         />
       </div>
 
-      {/* Products Table */}
-      <ProductsTable
-        products={products}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteClick}
-        isLoading={isLoading}
-      />
+      {/* Products Table or Cards */}
+      {isMobile ? (
+        <ProductsCards
+          products={products}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          isLoading={isLoading}
+        />
+      ) : (
+        <ProductsTable
+          products={products}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          isLoading={isLoading}
+        />
+      )}
 
       {/* Pagination */}
       {totalCount > 0 && (

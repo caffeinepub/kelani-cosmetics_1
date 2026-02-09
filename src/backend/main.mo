@@ -39,7 +39,7 @@ actor {
 
     let usersArray = knownUsers.keys().toArray();
     let filteredUsers = usersArray.filter(func(userPrincipal) { userPrincipal != caller });
-    
+
     filteredUsers.map(func(userPrincipal) : AppUser {
       {
         principal = userPrincipal;
@@ -53,10 +53,10 @@ actor {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can promote users");
     };
-    
+
     // Track this user
     knownUsers.add(userToPromote, true);
-    
+
     // Perform the actual promotion using AccessControl
     AccessControl.assignRole(accessControlState, caller, userToPromote, #admin);
   };
@@ -66,7 +66,7 @@ actor {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can demote users");
     };
-    
+
     // Perform the actual demotion using AccessControl
     AccessControl.assignRole(accessControlState, caller, userToDemote, #user);
   };
@@ -81,10 +81,10 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view profiles");
     };
-    
+
     // Track this user
     knownUsers.add(caller, true);
-    
+
     userProfiles.get(caller);
   };
 
@@ -99,10 +99,10 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
-    
+
     // Track this user
     knownUsers.add(caller, true);
-    
+
     userProfiles.add(caller, profile);
   };
 
@@ -161,6 +161,16 @@ actor {
   public shared ({ caller }) func deleteCategory(categoryId : Nat) : async Bool {
     checkAdmin(caller);
 
+    // Check if any product references this category
+    var categoryInUse = false;
+    products.values().find(func(product) { product.categoryId == categoryId }).forEach(
+      func(_) { categoryInUse := true }
+    );
+
+    if (categoryInUse) {
+      Runtime.trap("No se puede eliminar porque existen productos que hacen referencia a esta categoría.");
+    };
+
     switch (categories.get(categoryId)) {
       case (null) { Runtime.trap("Category not found") };
       case (?_) {
@@ -171,6 +181,7 @@ actor {
   };
 
   public query ({ caller }) func getAllCategories() : async [Category] {
+    // Public access - categories are browsable by anyone including guests
     categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -179,6 +190,7 @@ actor {
   };
 
   public query ({ caller }) func getCategoryById(categoryId : Nat) : async ?Category {
+    // Public access - categories are browsable by anyone including guests
     categories.get(categoryId);
   };
 
@@ -212,10 +224,24 @@ actor {
     lastUpdatedDate : Int;
   };
 
+  type ProductV2 = {
+    barcode : Text;
+    name : Text;
+    categoryId : Nat;
+    categoryName : Text;
+    description : ?Text;
+    price : ?Float;
+    inStock : Bool;
+    isFeatured : Bool;
+    photo : ?[Nat8];
+    createdDate : Int;
+    lastUpdatedDate : Int;
+  };
+
   let products = Map.empty<Text, Product>();
 
   public type PaginatedResponse = {
-    items : [Product];
+    items : [ProductV2];
     totalCount : Nat;
   };
 
@@ -272,7 +298,7 @@ actor {
     search.chars().all(numericCheck);
   };
 
-  func safeSlice(array : [Product], start : Nat, end : Nat) : [Product] {
+  func safeSlice(array : [ProductV2], start : Nat, end : Nat) : [ProductV2] {
     if (start >= array.size()) {
       return [];
     } else if (end > array.size()) {
@@ -286,11 +312,25 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view products");
     };
+
     let filteredProducts = filterProducts(search, categoryId);
-    let totalCount = filteredProducts.size();
+
+    let productV2Array = filteredProducts.map(
+      func(product) : ProductV2 {
+        {
+          product with
+          categoryName = switch (categories.get(product.categoryId)) {
+            case (null) { "Uncategorized" };
+            case (?category) { category.name };
+          };
+        };
+      }
+    );
+
+    let totalCount = productV2Array.size();
     let start = page * pageSize;
     let end = start + pageSize;
-    let pageItems = safeSlice(filteredProducts, start, end);
+    let pageItems = safeSlice(productV2Array, start, end);
 
     {
       items = pageItems;
@@ -298,14 +338,24 @@ actor {
     };
   };
 
-  // Public access for featured products
+  func safeSliceProduct(array : [Product], start : Nat, end : Nat) : [Product] {
+    if (start >= array.size()) {
+      return [];
+    } else if (end > array.size()) {
+      array.sliceToArray(start, array.size());
+    } else {
+      array.sliceToArray(start, end);
+    };
+  };
+
+  // Public access for featured products on homepage
   public query ({ caller }) func getProductsPageFeaturedFirst(
     search : Text,
     categoryId : ?Nat,
     page : Nat,
     pageSize : Nat,
-  ) : async PaginatedResponse {
-    // Public access - no auth check needed
+  ) : async { items : [Product]; totalCount : Nat } {
+    // Public access - homepage browsing allowed for guests
     let filteredProducts = filterProducts(search, categoryId);
 
     let sortedProducts = filteredProducts.sort(
@@ -320,7 +370,7 @@ actor {
     let totalCount = sortedProducts.size();
     let start = page * pageSize;
     let end = start + pageSize;
-    let pageItems = safeSlice(sortedProducts, start, end);
+    let pageItems = safeSliceProduct(sortedProducts, start, end);
 
     {
       items = pageItems;
@@ -413,7 +463,7 @@ actor {
   };
 
   public query ({ caller }) func getProduct(barcode : Text) : async Product {
-    // Public access - no auth check needed
+    // Public access - product details browsable by guests for homepage
     if (barcode.size() == 0) {
       Runtime.trap("Barcode is required");
     };
@@ -457,7 +507,7 @@ actor {
   };
 
   public query ({ caller }) func getProductPhoto(barcode : Text) : async [Nat8] {
-    // Public access - no auth check needed
+    // Public access - product photos browsable by guests for homepage
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
       case (?product) {
@@ -470,12 +520,12 @@ actor {
   };
 
   public query ({ caller }) func getTotalProductCount() : async Nat {
-    // Public access - no auth check needed
+    // Public access - product count browsable by guests for homepage
     filterProducts("", null).size();
   };
 
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
-    // Public access - no auth check needed
+    // Public access - featured products browsable by guests for homepage
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
     );
@@ -650,10 +700,7 @@ actor {
   };
 
   public query ({ caller }) func getActiveSales() : async [SaleItem] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view sales");
-    };
-
+    // Public access - active sales browsable by guests for homepage
     let currentTime = getCurrentTimestamp();
     saleItems.values().toArray().filter(
       func(sale) {
@@ -767,6 +814,7 @@ actor {
   };
 
   public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
+    // Public access - store information browsable by guests for homepage
     [
       (1, switch (storeDetails.get(1)) {
         case (?details) { details };
@@ -888,11 +936,10 @@ actor {
 
   //-----------------------------------------------------------------
   // Smart Search Homepage Product Search with Autocomplete (Query)
-  // Requires guest-level authentication (includes anonymous principals)
+  // Public access for homepage browsing
   //-----------------------------------------------------------------
   public query ({ caller }) func searchHomepageProducts(searchQuery : Text) : async [HomepageSearchResult] {
-    // Guest-level access allowed (includes anonymous principals)
-    // No explicit check needed as per instructions: "Any user including guests: No check needed"
+    // Public access - homepage search browsable by guests
 
     let trimmedQuery = searchQuery.trim(#char ' ');
 
@@ -987,8 +1034,7 @@ actor {
   };
 
   public query ({ caller }) func getCategoryProductCounts() : async [(Nat, Nat)] {
-    // Guest-level access allowed (includes anonymous principals)
-    // No explicit check needed as per instructions: "Any user including guests: No check needed"
+    // Public access - category counts browsable by guests for homepage
 
     categories.toArray().map(
       func((categoryId, _category)) {
@@ -1003,8 +1049,7 @@ actor {
   };
 
   public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
-    // Guest-level access allowed (includes anonymous principals)
-    // No explicit check needed as per instructions: "Any user including guests: No check needed"
+    // Public access - homepage categories browsable by guests
 
     let sortedCategories = categories.values().toArray().sort(
       func(a, b) {

@@ -16,31 +16,12 @@ import SaleItemStatusBadge from './SaleItemStatusBadge';
 import SaleItemDeactivateDialog from './SaleItemDeactivateDialog';
 import { timestampToDisplayDate } from '../../../utils/adminDate';
 import { formatPriceForDisplay } from '../../../utils/NumericConverter';
-import { useProductThumbnail } from './useProductThumbnail';
 
 interface SaleItemsTableProps {
   saleItems: SaleItem[];
   onEdit: (saleItem: SaleItem) => void;
   onDelete: (saleItem: SaleItem) => void;
   isLoading: boolean;
-}
-
-function ProductThumbnail({ barcode }: { barcode: string }) {
-  const { imageUrl, isLoading } = useProductThumbnail(barcode);
-
-  if (isLoading) {
-    return (
-      <div className="h-12 w-12 animate-pulse rounded-md bg-muted" />
-    );
-  }
-
-  return (
-    <img
-      src={imageUrl}
-      alt=""
-      className="h-12 w-12 rounded-md border object-cover"
-    />
-  );
 }
 
 export default function SaleItemsTable({
@@ -121,10 +102,7 @@ export default function SaleItemsTable({
               return (
                 <TableRow key={item.saleId} className="hover:bg-muted/50">
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <ProductThumbnail barcode={item.barcode} />
-                      <span className="font-medium">{item.name}</span>
-                    </div>
+                    <span className="font-medium">{item.name}</span>
                   </TableCell>
                   <TableCell>
                     {item.price ? formatPriceForDisplay(item.price) : 'N/A'}

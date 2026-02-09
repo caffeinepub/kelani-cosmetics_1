@@ -68,10 +68,23 @@ export interface ImportResult {
 }
 export interface PaginatedResponse {
   'totalCount' : bigint,
-  'items' : Array<Product>,
+  'items' : Array<ProductV2>,
 }
 export interface Product {
   'categoryId' : bigint,
+  'inStock' : boolean,
+  'name' : string,
+  'createdDate' : bigint,
+  'description' : [] | [string],
+  'isFeatured' : boolean,
+  'barcode' : string,
+  'lastUpdatedDate' : bigint,
+  'photo' : [] | [Uint8Array],
+  'price' : [] | [number],
+}
+export interface ProductV2 {
+  'categoryId' : bigint,
+  'categoryName' : string,
   'inStock' : boolean,
   'name' : string,
   'createdDate' : bigint,
@@ -174,7 +187,7 @@ export interface _SERVICE {
   >,
   'getProductsPageFeaturedFirst' : ActorMethod<
     [string, [] | [bigint], bigint, bigint],
-    PaginatedResponse
+    { 'totalCount' : bigint, 'items' : Array<Product> }
   >,
   'getSaleItemsPage' : ActorMethod<
     [string, bigint, bigint, boolean],

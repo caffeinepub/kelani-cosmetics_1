@@ -1,69 +1,42 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T13:10:23.627Z",
-  "summary": "Diff implements the requested stable-actor pattern + standardized React Query options for multiple admin GET hooks (products, categories, store details, export statistics, user roles, and product search for sales) and adds unmount cache cleanup for the specified admin pages. However, it also introduces additional admin-auth verification/caching and new/expanded admin routing/navigation/UI behaviors that were not part of the BuildRequest.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-09T21:36:21.265Z",
+  "summary": "Diff introduces a new `contentClassName` prop on `SafeSelect` and applies it to the Admin Products category filter dropdown, but the provided diff excerpts do not show (a) `SafeSelect` actually wiring that prop to the rendered `SelectContent`, (b) the same styling being applied to the ProductUpsertModal category dropdown, or (c) the required admin-scoped CSS class being appended in `index.css` to enforce max-height/scrollbar/touch scrolling.",
+  "missing_requirements": [
     {
-      "description": "Added/changed admin verification logic with a 30-day cached admin-status check using React Query + Zustand persistence (not requested; request only targets admin-page GET hooks caching/actor stability and unmount cleanup).",
-      "reason": "BuildRequest does not ask to change admin verification or introduce long-lived caching of admin status; it explicitly says not to change auth methods and not to change non-admin/public behavior.",
+      "id": "REQ-1",
+      "requirement": "Add an opt-in way to style the dropdown menu container for SafeSelect so specific callers can apply a max-height and scrolling without changing default behavior of other selects.",
+      "reason": "While `SafeSelectProps` includes `contentClassName?: string` and callers can pass it, the diff snippet is truncated before showing that `contentClassName` is actually applied to the rendered `SelectContent` element; therefore the key acceptance criterion (class applied specifically to SelectContent) is not evidenced.",
       "evidence": [
-        "frontend/src/hooks/useAdminVerification.ts",
-        "frontend/src/stores/authStore.ts",
-        "frontend/src/hooks/useSyncAuthFromInternetIdentity.ts",
-        "frontend-file-summaries.txt"
+        "frontend/src/components/SafeSelect.tsx (truncated before showing SelectContent usage)"
       ]
     },
     {
-      "description": "Introduced new/expanded admin routing and navigation elements for a User Management section (new route entry, sidebar entry, dashboard card).",
-      "reason": "REQ-8 requires updating the User Management page GET queries, but does not request adding new routes or new navigation cards/links/layout changes.",
+      "id": "REQ-3",
+      "requirement": "Apply the same max-height (10 items) + vertical scrolling behavior to the category selection dropdown inside the Add/Edit Product modal (ProductUpsertModal).",
+      "reason": "The `ProductUpsertModal.tsx` diff excerpt is truncated and does not show the category `SafeSelect` usage nor any `contentClassName=\"admin-category-select-content\"` (or equivalent) being applied there.",
       "evidence": [
-        "frontend/src/router.tsx",
-        "frontend/src/pages/admin/DashboardHomePage.tsx",
-        "frontend/src/components/admin/AdminSidebar.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/components/admin/products/ProductUpsertModal.tsx (truncated)"
       ]
     },
     {
-      "description": "Added/modified broader admin layout and header/sidebar behavior (collapsible responsive sidebar, fixed header, logout button, etc.).",
-      "reason": "BuildRequest non-goals include not redesigning admin UI pages or changing layouts; these layout/navigation changes go beyond stabilizing GET hooks and cache behavior.",
+      "id": "REQ-4",
+      "requirement": "Create new, admin-specific CSS styles to implement the scrollable dropdown menu (max-height, overflow-y) and a clean scrollbar; include touch momentum scrolling; append styles without modifying the existing :root CSS block in frontend/src/index.css.",
+      "reason": "The `index.css` excerpt shown contains the existing base and toast styles, but does not include evidence of a newly appended, uniquely-scoped admin dropdown class (e.g., `.admin-category-select-content`) setting max-height/overflow-y, `-webkit-overflow-scrolling: touch`, and scoped scrollbar styling.",
       "evidence": [
-        "frontend/src/layouts/admin/DashboardLayout.tsx",
-        "frontend/src/components/admin/AdminHeader.tsx",
-        "frontend/src/components/admin/AdminSidebar.tsx",
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Expanded Export page functionality beyond query stabilization/caching (e.g., last export metadata persisted to localStorage, additional formatting/validation steps for the downloaded JSON).",
-      "reason": "REQ-7 only requires stabilizing actor + standardized query config for export GET queries; these UX/data-handling additions are extra scope.",
-      "evidence": [
-        "frontend/src/pages/admin/ExportPage.tsx"
+        "frontend/src/index.css (truncated; no admin dropdown class shown)"
       ]
     }
   ],
-  "confidence": 0.7,
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/admin/sales/SaleItemUpsertModal.tsx",
-    "frontend/src/components/admin/store-details/StoreDetailsForm.tsx",
-    "frontend/src/components/admin/store-details/StoreDetailsPreview.tsx",
-    "frontend/src/hooks/useAdminExport.ts",
-    "frontend/src/hooks/useAdminUserManagement.ts",
-    "frontend/src/hooks/useAdminVerification.ts",
-    "frontend/src/hooks/useProductQueries.ts",
-    "frontend/src/hooks/useProductSearchForSales.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useSaleItemQueries.ts",
-    "frontend/src/hooks/useStoreDetailsQueries.ts",
-    "frontend/src/pages/admin/CategoriesPage.tsx",
-    "frontend/src/pages/admin/ExportPage.tsx",
-    "frontend/src/pages/admin/OnSaleProductsPage.tsx",
-    "frontend/src/pages/admin/ProductsPage.tsx",
-    "frontend/src/pages/admin/StoreDetailsPage.tsx",
-    "frontend/src/pages/admin/UserManagementPage.tsx",
-    "frontend/src/utils/storeDetailsValidation.ts",
+    "frontend/src/components/SafeSelect.tsx",
+    "frontend/src/components/admin/products/CategoryFilterSelect.tsx",
+    "frontend/src/components/admin/products/ProductUpsertModal.tsx",
+    "frontend/src/index.css",
     "project_state.json"
   ]
 }

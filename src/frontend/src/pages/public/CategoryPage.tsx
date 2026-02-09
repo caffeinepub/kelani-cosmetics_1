@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useActor } from '../../hooks/useActor';
 import { useGetCategoryById } from '../../hooks/useQueries';
+import { useGetCategoryProductsPaginated } from '../../hooks/useCategoryProductsPaginated';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
 import ProductGrid from '../../components/public/products/ProductGrid';
@@ -14,8 +15,7 @@ const PAGE_SIZE = 15;
 export default function CategoryPage() {
   const { id } = useParams({ from: '/public/category/$id' });
   const navigate = useNavigate();
-  const { actor: rawActor, isFetching: actorFetching } = useActor();
-  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
+  const queryClient = useQueryClient();
 
   // Fetch store details for modal
   const { data: storeDetailsArray } = useBothStoreDetails();
@@ -33,32 +33,26 @@ export default function CategoryPage() {
   } = useGetCategoryById(isValidId ? categoryId : null);
 
   // Product pagination state
-  const [products, setProducts] = useState<ProductWithSale[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [productError, setProductError] = useState<string | null>(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [allProducts, setAllProducts] = useState<ProductWithSale[]>([]);
+
+  // Fetch products for current page
+  const {
+    products: pageProducts,
+    totalCount,
+    isLoading: isLoadingProducts,
+    error: productError,
+  } = useGetCategoryProductsPaginated(isValidId ? categoryId : null, currentPage, PAGE_SIZE);
 
   // Scroll to top when category ID changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [categoryId]);
 
-  // Stabilize actor reference
-  useEffect(() => {
-    if (rawActor && !actorFetching) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, actorFetching]);
-
   // Reset state when category changes
   useEffect(() => {
-    setProducts([]);
+    setAllProducts([]);
     setCurrentPage(0);
-    setTotalCount(0);
-    setProductError(null);
-    setInitialLoadComplete(false);
   }, [categoryId]);
 
   // Redirect if invalid category ID
@@ -76,58 +70,24 @@ export default function CategoryPage() {
     }
   }, [categoryLoading, categoryError, navigate]);
 
-  // Load products for current page
+  // Accumulate products as pages load
   useEffect(() => {
-    if (!stableActor || !isValidId || categoryLoading || categoryError) {
-      return;
-    }
-
-    const loadProducts = async () => {
-      setIsLoadingProducts(true);
-      setProductError(null);
-
-      try {
-        const response = await stableActor.getProductsPageFeaturedFirst(
-          '',
-          BigInt(categoryId),
-          BigInt(currentPage),
-          BigInt(PAGE_SIZE)
+    if (pageProducts.length > 0) {
+      setAllProducts((prev) => {
+        if (currentPage === 0) {
+          return pageProducts;
+        }
+        const existingBarcodes = new Set(prev.map((p) => p.product.barcode));
+        const uniqueNewProducts = pageProducts.filter(
+          (p) => !existingBarcodes.has(p.product.barcode)
         );
-
-        const newProducts: ProductWithSale[] = response.items.map((product) => ({
-          product,
-          salePrice: undefined,
-          discountPercentage: undefined,
-          isOnSale: false,
-        }));
-
-        // Deduplicate by barcode when appending
-        setProducts((prev) => {
-          if (currentPage === 0) {
-            return newProducts;
-          }
-          const existingBarcodes = new Set(prev.map((p) => p.product.barcode));
-          const uniqueNewProducts = newProducts.filter(
-            (p) => !existingBarcodes.has(p.product.barcode)
-          );
-          return [...prev, ...uniqueNewProducts];
-        });
-
-        setTotalCount(Number(response.totalCount));
-        setInitialLoadComplete(true);
-      } catch (error) {
-        console.error('Error loading products:', error);
-        setProductError('Error al cargar los productos');
-      } finally {
-        setIsLoadingProducts(false);
-      }
-    };
-
-    loadProducts();
-  }, [stableActor, categoryId, currentPage, isValidId, categoryLoading, categoryError]);
+        return [...prev, ...uniqueNewProducts];
+      });
+    }
+  }, [pageProducts, currentPage]);
 
   // Calculate hasMore
-  const hasMore = products.length < totalCount;
+  const hasMore = allProducts.length < totalCount;
 
   // Load more handler
   const handleLoadMore = () => {
@@ -138,10 +98,8 @@ export default function CategoryPage() {
 
   // Retry handler
   const handleRetry = () => {
-    setProductError(null);
     setCurrentPage(0);
-    setProducts([]);
-    setInitialLoadComplete(false);
+    setAllProducts([]);
   };
 
   // Infinite scroll hook
@@ -149,13 +107,20 @@ export default function CategoryPage() {
     hasMore,
     isLoading: isLoadingProducts,
     onLoadMore: handleLoadMore,
-    enabled: initialLoadComplete && products.length > 0 && !productError,
+    enabled: allProducts.length > 0 && !productError,
     threshold: 500,
   });
 
+  // Clear cache on unmount
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ['category'], exact: false });
+      queryClient.removeQueries({ queryKey: ['category-products'], exact: false });
+    };
+  }, [queryClient]);
+
   // Show full-page spinner during initial load
-  const showInitialSpinner =
-    !stableActor || actorFetching || categoryLoading || (currentPage === 0 && isLoadingProducts);
+  const showInitialSpinner = categoryLoading || (currentPage === 0 && isLoadingProducts);
 
   if (showInitialSpinner) {
     return (
@@ -171,13 +136,12 @@ export default function CategoryPage() {
   }
 
   // Product count with proper pluralization
-  const productCountText =
-    totalCount === 1 ? '1 producto' : `${totalCount} productos`;
+  const productCountText = totalCount === 1 ? '1 producto' : `${totalCount} productos`;
 
   return (
     <div className="space-y-8 pb-12">
       {/* Category Header */}
-      <div className="py-8 space-y-4">
+      <div className="space-y-4">
         <button
           onClick={() => navigate({ to: '/' })}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -188,9 +152,7 @@ export default function CategoryPage() {
         </button>
 
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            {category.name}
-          </h1>
+          <h1 className="text-4xl font-bold text-foreground mb-2">{category.name}</h1>
           <p className="text-lg text-muted-foreground">{productCountText}</p>
         </div>
       </div>
@@ -198,7 +160,7 @@ export default function CategoryPage() {
       {/* Error State */}
       {productError && (
         <div className="text-center py-12 space-y-4">
-          <p className="text-destructive">{productError}</p>
+          <p className="text-destructive">Error al cargar los productos</p>
           <Button onClick={handleRetry} variant="outline">
             Reintentar
           </Button>
@@ -206,26 +168,22 @@ export default function CategoryPage() {
       )}
 
       {/* Empty State */}
-      {!productError && initialLoadComplete && products.length === 0 && (
+      {!productError && !isLoadingProducts && allProducts.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No hay productos en esta categoría
-          </p>
+          <p className="text-muted-foreground">No hay productos en esta categoría</p>
         </div>
       )}
 
       {/* Product Grid */}
-      {!productError && products.length > 0 && (
+      {!productError && allProducts.length > 0 && (
         <>
-          <ProductGrid products={products} storeDetails={storeDetails} />
+          <ProductGrid products={allProducts} storeDetails={storeDetails} />
 
           {/* Loading More Indicator */}
           {isLoadingProducts && currentPage > 0 && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-              <span className="text-muted-foreground">
-                Cargando más productos...
-              </span>
+              <span className="text-muted-foreground">Cargando más productos...</span>
             </div>
           )}
 

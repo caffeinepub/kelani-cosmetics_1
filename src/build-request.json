@@ -1,214 +1,96 @@
 {
   "kind": "build_request",
-  "title": "Admin pages: stabilize backend actor for all GET queries and standardize React Query caching + unmount cleanup",
+  "title": "Admin category dropdown: limit height to 10 items with vertical scroll (Products filter + Product modal)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update all admin-page GET data-fetching React Query hooks to use the stable-actor pattern (stabilize the actor reference via `useState` + `useEffect` and only run queries once the stable actor exists), to prevent duplicate API calls caused by actor reference changes.",
+      "text": "Add an opt-in way to style the dropdown menu container for SafeSelect so specific callers can apply a max-height and scrolling without changing default behavior of other selects.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "Implement stable actor pattern with proper cache configuration and cleanup for all admin pages' GET API calls. This is a front end only change",
-          "Use `useState` + `useEffect` to stabilize actor reference",
-          "Enable query only when stable actor is available"
+          "Fix category dropdowns in the admin products page by adding height limits and scroll functionality when there are many categories. This is a front end only change. This change should not impact any other pages/designs"
         ]
       },
       "acceptanceCriteria": [
-        "All admin GET hooks derive `rawActor` and `actorFetching` from `useActor()` and then create a `stableActor` state set once when `rawActor` becomes available.",
-        "Each admin GET hook’s `queryFn` uses `stableActor` (not `rawActor`) for backend calls and throws a clear error when `stableActor` is not available.",
-        "Each admin GET hook sets `enabled: Boolean(stableActor) && !actorFetching` so the query cannot fire before the actor is stable.",
-        "No admin GET hook triggers multiple backend calls solely due to actor reference changes (verified by observing network/agent calls when navigating to admin pages)."
+        "SafeSelect supports passing a class name (or equivalent) specifically to the rendered SelectContent element (dropdown menu container).",
+        "If the new prop is not provided, SafeSelect renders exactly as before (no visual/layout changes to other dropdowns)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Apply the standardized React Query cache configuration to every admin-page GET query (including products, categories, on-sale items, store details, export/statistics, and user management listings).",
+      "text": "Apply the new SafeSelect dropdown content styling to the Admin Products page category filter dropdown so it displays at most 10 category items at once and becomes vertically scrollable when there are more than 10 categories.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "Standard Configuration for All Admin GET Queries: staleTime: 5 * 60 * 1000 ... gcTime: 30 * 60 * 1000 ... refetchOnMount: false ... refetchOnWindowFocus: false ... retry: 1 ... enabled: Boolean(stableActor) && !actorFetching"
+          "Admin Products Page: Category filter dropdown above products table",
+          "Maximum Display: Show maximum 10 category items in dropdown view",
+          "Scroll Functionality: Add vertical scrolling when category list exceeds 10 items"
         ]
       },
       "acceptanceCriteria": [
-        "Every admin GET `useQuery` sets: `staleTime: 5 * 60 * 1000`, `gcTime: 30 * 60 * 1000`, `refetchOnMount: false`, `refetchOnWindowFocus: false`, and `retry: 1`.",
-        "Every admin GET `useQuery` uses `enabled: Boolean(stableActor) && !actorFetching` (with the stable actor from REQ-1).",
-        "Query keys remain consistent with existing patterns already in the codebase (e.g., existing `['products', ...]`, `['categories']`, etc.), so other parts of the app that invalidate/refetch still work.",
-        "Existing behavior, loading states, and error handling remain intact aside from reducing duplicate calls."
+        "On the admin Products page, the category filter dropdown menu has a max height approximately equal to 10 option rows and shows a vertical scrollbar when options exceed that height.",
+        "Keyboard navigation (arrow keys, enter, escape) continues to work within the scrollable list.",
+        "The change is scoped to this dropdown only (no changes to other dropdowns/pages)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Implement stable-actor + standardized query configuration specifically for the admin Products page GET queries (ensuring all product-related GET hooks used by the Products admin UI follow the same pattern and config).",
+      "text": "Apply the same max-height (10 items) + vertical scrolling behavior to the category selection dropdown inside the Add/Edit Product modal (ProductUpsertModal).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "Admin Products Page: `useGetProductsPage()` - Already implemented as example\n- All product-related query hooks in products page"
+          "Add/Edit Product Modal: Category selection dropdown in form",
+          "Both dropdowns show all categories without height limits, causing UI overflow when there are many categories."
         ]
       },
       "acceptanceCriteria": [
-        "`useGetProductsPage(...)` continues to work and uses the stable-actor pattern and the standardized cache configuration.",
-        "Any additional product-related GET hooks used by the admin products experience (e.g., single-product fetch used within admin flows, if applicable) also use the stable-actor pattern and standardized cache configuration.",
-        "No regressions in the ProductsPage UI: searching, filtering, pagination, and modals still function as before."
+        "In the Add/Edit Product modal, the category dropdown menu has a max height approximately equal to 10 option rows and shows a vertical scrollbar when options exceed that height.",
+        "Dropdown remains usable on mobile (touch scrolling works; the dropdown stays positioned on-screen).",
+        "No other form controls or modal layout are impacted."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Implement stable-actor + standardized query configuration for the admin Categories page GET queries (including `useGetAllCategories()` and any other category GET hooks used by the Categories admin UI).",
+      "text": "Create new, admin-specific CSS styles to implement the scrollable dropdown menu (max-height, overflow-y) and a clean scrollbar that matches the existing admin theme; ensure smooth touch scrolling with momentum and preserve accessibility. Append styles without modifying the existing :root CSS custom properties block in frontend/src/index.css.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "Admin Categories Page: `useGetCategoriesPage()` - Implement stable actor pattern\n- Any category data fetching hooks"
+          "Do not impact other categories list. Create new css styling if needed",
+          "Touch scrolling with momentum physics",
+          "Do not remove, modify, or overwrite the :root CSS custom properties block in index.css. Always preserve the exact variable names, values, and structure, appending new CSS styles only below this block without changes."
         ]
       },
       "acceptanceCriteria": [
-        "`useGetAllCategories()` uses a stable actor (via local `stableActor` state) and the standardized cache configuration.",
-        "Any other category GET query hooks used on admin categories screens (e.g., `useGetCategoryById(...)` if used) use the same stable-actor pattern + standardized cache configuration.",
-        "Spanish error messages used in category GET hooks remain Spanish (e.g., existing messages like “Error al cargar las categorías”)."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Implement stable-actor + standardized query configuration for the admin On-Sale Products page GET queries (sale items pagination/listing and any product-search GET hooks used for sale item creation/editing).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Admin On-Sale Products Page: `useGetOnSaleProductsPage()` - Implement stable actor pattern\n- Product search hooks for sale items"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The sale-items listing GET hook(s) (e.g., the paginated sale items query used by `OnSaleProductsPage`) use the stable-actor pattern and the standardized cache configuration.",
-        "Any product-search GET hook used for sale workflows (e.g., searching products to attach to a sale item) uses the stable-actor pattern and the standardized cache configuration.",
-        "Search, filters, and pagination on `OnSaleProductsPage` work unchanged, with reduced duplicate fetches."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Implement stable-actor + standardized query configuration for the admin Store Details page GET queries (store details fetch for each store).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Admin Store Details Page: `useGetStoreDetails()` - Implement stable actor pattern\n- Store data fetching hooks"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`useGetStoreDetails(storeId)` uses the stable-actor pattern and the standardized cache configuration.",
-        "Both store detail queries in `StoreDetailsPage` continue to load reliably and only run once per mount when the actor becomes available.",
-        "Existing Spanish error handling/toasts in the Store Details flow remain Spanish."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Implement stable-actor + standardized query configuration for the admin Export page GET queries (export statistics and any other export-related GET queries).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Admin Export Page: `useGetExportData()` - Implement stable actor pattern\n- Statistics and data counting hooks"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The export statistics GET query hook(s) (e.g., `useExportStatistics()`) use the stable-actor pattern and the standardized cache configuration.",
-        "Any export data GET query hook(s) that fetch backend data for export previewing/statistics also use the stable-actor pattern + standardized cache configuration.",
-        "The Export page renders statistics and export actions as before, without duplicate GET calls on mount due to actor changes."
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Implement stable-actor + standardized query configuration for the admin User Management page GET queries (e.g., listing users/roles).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Admin User Management Page: `useGetAllUserRoles()` - Implement stable actor pattern\n- User data fetching hooks"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The user listing/roles GET query hook(s) used by `UserManagementPage` use the stable-actor pattern and the standardized cache configuration.",
-        "The User Management page still enforces admin access as before and maintains existing Spanish messages and labels.",
-        "No duplicate GET calls occur on initial load due to actor reference changes."
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "text": "Add React Query cache cleanup on unmount for each admin page component by removing queries using the specified query-key prefixes (exact: false), so returning to the page results in a fresh load.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Query Cache Clearance on Page Unmount: Clear React Query cache when component unmounts",
-          "Products Page: removeQueries({ queryKey: ['products'], exact: false })",
-          "Categories Page: removeQueries({ queryKey: ['categories'], exact: false })",
-          "On-Sale Products Page: removeQueries({ queryKey: ['sale-items'], exact: false }); removeQueries({ queryKey: ['products', 'search'], exact: false })",
-          "Store Details Page: removeQueries({ queryKey: ['store-details'], exact: false })",
-          "Export Page: removeQueries({ queryKey: ['export-data'], exact: false })",
-          "User Management Page: removeQueries({ queryKey: ['user-roles'], exact: false })"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`ProductsPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['products'], exact: false })`.",
-        "`CategoriesPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['categories'], exact: false })`.",
-        "`OnSaleProductsPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['sale-items'], exact: false })` and `queryClient.removeQueries({ queryKey: ['products', 'search'], exact: false })`.",
-        "`StoreDetailsPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['store-details'], exact: false })`.",
-        "`ExportPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['export-data'], exact: false })`.",
-        "`UserManagementPage` removes cached queries on unmount with `queryClient.removeQueries({ queryKey: ['user-roles'], exact: false })`.",
-        "After navigating away from an admin page and returning, the page performs a new GET fetch rather than using stale cached data from the prior visit."
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "text": "Preserve existing Spanish UI and error messages while implementing the stable-actor pattern, standardized React Query config, and unmount cache cleanup (do not translate or replace Spanish strings already present in the UI/toasts).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Maintain Spanish error messages",
-          "Maintain Spanish interface and error messages"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All existing Spanish UI labels, placeholders, and toasts remain Spanish (no unintended text changes).",
-        "Any newly introduced internal errors (e.g., 'Actor not available') remain developer-facing only and do not replace existing Spanish user-facing errors.",
-        "Existing error-handling utilities (e.g., toast reporting) continue to be used as before."
+        "A new, uniquely-scoped CSS class (admin-only) is added for the dropdown content container to set max-height (10 items), overflow-y:auto, and touch momentum scrolling (-webkit-overflow-scrolling: touch).",
+        "Scrollbar styling is applied only to this new admin dropdown class (does not affect public side panel categories scrollbar styles or any other lists).",
+        "frontend/src/index.css :root blocks remain unchanged; new CSS is appended below the existing content."
       ]
     }
   ],
   "constraints": [
-    "Frontend-only change (no backend/Motoko changes).",
-    "Do not edit any files under the immutable frontend paths listed in SYSTEM_CONTEXT (compose existing components/hooks instead).",
-    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; if any CSS changes are necessary, append them only below the existing block without changing its names/values/structure."
+    "Frontend-only change (no backend changes).",
+    "Do not remove, modify, or overwrite the :root CSS custom properties block in frontend/src/index.css; only append new styles below it.",
+    "Do not edit files under frontend/src/components/ui (read-only shadcn sources); compose/extend behavior from application components instead.",
+    "Change must not impact other pages/designs; scope styling to admin category dropdowns only."
   ],
   "nonGoals": [
-    "Do not redesign admin UI pages or change their layouts.",
-    "Do not change React Query behavior for non-admin (public) pages.",
-    "Do not add new authentication methods; continue using existing Internet Identity flow.",
-    "Do not change backend APIs, canister interfaces, or data schemas."
+    "Reworking the overall admin Products page layout or table UI.",
+    "Changing category fetching, sorting, or backend category APIs.",
+    "Adding new category management features.",
+    "Restyling dropdowns globally across the app."
   ],
   "imageRequirements": {
     "required": [],

@@ -31,6 +31,7 @@ import {
   useUpdateProduct,
   type Product,
 } from '../../../hooks/useProductQueries';
+import { useIsMobile } from '../../../hooks/useMediaQuery';
 import { safeConvertToNumber } from '../../../utils/NumericConverter';
 import {
   validateImageFile,
@@ -64,6 +65,7 @@ export default function ProductUpsertModal({
   const { data: categories = [] } = useGetAllCategories();
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
+  const isMobile = useIsMobile();
 
   const [formData, setFormData] = useState<FormData>({
     barcode: '',
@@ -126,7 +128,7 @@ export default function ProductUpsertModal({
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(fieldId);
-      reportSuccessWithToast('Copied to clipboard');
+      reportSuccessWithToast('Copiado al portapapeles');
       setTimeout(() => setCopiedField(null), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
@@ -139,7 +141,7 @@ export default function ProductUpsertModal({
 
     const validation = validateImageFile(file);
     if (!validation.valid) {
-      reportErrorWithToast(new Error(validation.error), validation.error ?? 'Invalid file', {
+      reportErrorWithToast(new Error(validation.error), validation.error ?? 'Archivo inválido', {
         operation: 'validateImageFile',
       });
       return;
@@ -156,7 +158,7 @@ export default function ProductUpsertModal({
       const url = createBlobUrl(webpBytes);
       setPhotoPreviewUrl(url);
     } catch (error) {
-      reportErrorWithToast(error, 'Failed to process image', {
+      reportErrorWithToast(error, 'Error al procesar la imagen', {
         operation: 'convertToWebP',
       });
     }
@@ -174,22 +176,22 @@ export default function ProductUpsertModal({
     const errors: Partial<Record<keyof FormData, string>> = {};
 
     if (!formData.barcode.trim()) {
-      errors.barcode = 'Barcode is required';
+      errors.barcode = 'El código de barras es requerido';
     }
 
     if (!formData.name.trim()) {
-      errors.name = 'Name is required';
+      errors.name = 'El nombre es requerido';
     }
 
     const categoryIdConverted = convertSentinelToNull(formData.categoryId);
     if (!categoryIdConverted) {
-      errors.categoryId = 'Category is required';
+      errors.categoryId = 'La categoría es requerida';
     }
 
     if (formData.price.trim()) {
       const priceNum = safeConvertToNumber(formData.price);
       if (priceNum === null || priceNum < 0) {
-        errors.price = 'Price must be a valid positive number';
+        errors.price = 'El precio debe ser un número válido positivo';
       }
     }
 
@@ -247,22 +249,22 @@ export default function ProductUpsertModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] sm:max-w-[600px]">
+      <DialogContent className={isMobile ? "admin-modal-mobile" : "max-h-[90vh] sm:max-w-[600px]"}>
         <DialogHeader>
-          <DialogTitle>{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
+          <DialogTitle>{editingProduct ? 'Editar Producto' : 'Agregar Producto'}</DialogTitle>
           <DialogDescription>
             {editingProduct
-              ? 'Update the product details below.'
-              : 'Fill in the details to create a new product.'}
+              ? 'Actualiza los detalles del producto.'
+              : 'Completa los detalles para crear un nuevo producto.'}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
+        <ScrollArea className={isMobile ? "admin-modal-content-mobile" : "max-h-[60vh] pr-4"}>
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Barcode */}
             <div className="space-y-2">
               <Label htmlFor="barcode">
-                Barcode <span className="text-destructive">*</span>
+                Código de Barras <span className="text-destructive">*</span>
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -272,24 +274,24 @@ export default function ProductUpsertModal({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, barcode: e.target.value }))
                   }
-                  placeholder="e.g., 1234567890"
+                  placeholder="ej: 1234567890"
                   disabled={!!editingProduct}
-                  className={formErrors.barcode ? 'border-destructive' : ''}
+                  className={`${formErrors.barcode ? 'border-destructive' : ''} ${isMobile ? 'min-h-[48px]' : ''}`}
                 />
                 {formData.barcode && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 shrink-0"
                     onClick={() => handleCopy(formData.barcode, 'barcode')}
+                    className={isMobile ? "min-h-[48px] min-w-[48px]" : ""}
                   >
                     {copiedField === 'barcode' ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-success" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
-                    <span className="sr-only">Copy barcode</span>
+                    <span className="sr-only">Copiar código</span>
                   </Button>
                 )}
               </div>
@@ -301,54 +303,56 @@ export default function ProductUpsertModal({
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">
-                Name <span className="text-destructive">*</span>
+                Nombre <span className="text-destructive">*</span>
               </Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="name"
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Lipstick Red"
-                  className={formErrors.name ? 'border-destructive' : ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="ej: Lápiz Labial Rojo"
+                  className={`${formErrors.name ? 'border-destructive' : ''} ${isMobile ? 'min-h-[48px]' : ''}`}
                 />
                 {formData.name && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 shrink-0"
                     onClick={() => handleCopy(formData.name, 'name')}
+                    className={isMobile ? "min-h-[48px] min-w-[48px]" : ""}
                   >
                     {copiedField === 'name' ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-success" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
-                    <span className="sr-only">Copy name</span>
+                    <span className="sr-only">Copiar nombre</span>
                   </Button>
                 )}
               </div>
-              {formErrors.name && <p className="text-sm text-destructive">{formErrors.name}</p>}
+              {formErrors.name && (
+                <p className="text-sm text-destructive">{formErrors.name}</p>
+              )}
             </div>
 
             {/* Category */}
             <div className="space-y-2">
               <Label htmlFor="category">
-                Category <span className="text-destructive">*</span>
+                Categoría <span className="text-destructive">*</span>
               </Label>
               <SafeSelect
                 value={safeCategoryId}
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, categoryId: value }))
                 }
-                sentinelValue={SENTINEL_VALUES.NONE}
-                className={formErrors.categoryId ? 'border-destructive' : ''}
+                contentClassName="admin-category-select-content"
               >
                 <SelectScrollUpButton />
                 <SelectGroup>
-                  <SelectLabel>Select a category</SelectLabel>
-                  <SelectItem value={SENTINEL_VALUES.NONE}>-- Select category --</SelectItem>
+                  <SelectLabel>Categorías</SelectLabel>
                   {categories.map((category) => (
                     <SelectItem key={category.categoryId} value={category.categoryId.toString()}>
                       {category.name}
@@ -362,109 +366,88 @@ export default function ProductUpsertModal({
               )}
             </div>
 
-            {/* Price */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Price (optional)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-                placeholder="e.g., 19.99"
-                className={formErrors.price ? 'border-destructive' : ''}
-              />
-              {formErrors.price && <p className="text-sm text-destructive">{formErrors.price}</p>}
-            </div>
-
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <div className="flex items-start gap-2">
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  placeholder="Product description..."
-                  rows={3}
-                  className="resize-none"
-                />
-                {formData.description && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 shrink-0"
-                    onClick={() => handleCopy(formData.description, 'description')}
-                  >
-                    {copiedField === 'description' ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Copy description</span>
-                  </Button>
-                )}
-              </div>
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="Descripción del producto (opcional)"
+                rows={3}
+                className={isMobile ? 'min-h-[96px]' : ''}
+              />
+            </div>
+
+            {/* Price */}
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio</Label>
+              <Input
+                id="price"
+                type="text"
+                inputMode="decimal"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, price: e.target.value }))
+                }
+                placeholder="ej: 19.99"
+                className={`${formErrors.price ? 'border-destructive' : ''} ${isMobile ? 'min-h-[48px]' : ''}`}
+              />
+              {formErrors.price && (
+                <p className="text-sm text-destructive">{formErrors.price}</p>
+              )}
             </div>
 
             {/* Photo Upload */}
             <div className="space-y-2">
-              <Label htmlFor="photo">Photo (optional)</Label>
+              <Label htmlFor="photo">Foto del Producto</Label>
               {photoPreviewUrl ? (
-                <div className="flex items-center gap-4">
+                <div className="relative">
                   <img
                     src={photoPreviewUrl}
                     alt="Preview"
-                    className="h-24 w-24 rounded-lg border object-cover"
+                    className="w-full h-48 object-cover rounded-md border"
                   />
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemovePhoto}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Remove
-                    </Button>
-                    <label htmlFor="photo">
-                      <Button type="button" variant="outline" size="sm" asChild>
-                        <span>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Replace
-                        </span>
-                      </Button>
-                    </label>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={handleRemovePhoto}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Eliminar foto</span>
+                  </Button>
                 </div>
               ) : (
-                <label
-                  htmlFor="photo"
-                  className="flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary"
-                >
-                  <div className="text-center">
-                    <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Click to upload (JPG, PNG, WebP)
-                    </p>
-                    <p className="text-xs text-muted-foreground">Max 10MB</p>
-                  </div>
-                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handlePhotoSelect}
+                    className={isMobile ? 'min-h-[48px]' : ''}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => document.getElementById('photo')?.click()}
+                    className={isMobile ? "min-h-[48px] min-w-[48px]" : ""}
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span className="sr-only">Subir foto</span>
+                  </Button>
+                </div>
               )}
-              <input
-                id="photo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handlePhotoSelect}
-                className="hidden"
-              />
+              <p className="text-xs text-muted-foreground">
+                JPG, PNG o WebP. Máximo 10MB.
+              </p>
             </div>
 
-            {/* In Stock */}
+            {/* In Stock Checkbox */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="inStock"
@@ -473,12 +456,15 @@ export default function ProductUpsertModal({
                   setFormData((prev) => ({ ...prev, inStock: checked === true }))
                 }
               />
-              <Label htmlFor="inStock" className="cursor-pointer">
-                In Stock
+              <Label
+                htmlFor="inStock"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                En Stock
               </Label>
             </div>
 
-            {/* Featured */}
+            {/* Featured Checkbox */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isFeatured"
@@ -487,24 +473,33 @@ export default function ProductUpsertModal({
                   setFormData((prev) => ({ ...prev, isFeatured: checked === true }))
                 }
               />
-              <Label htmlFor="isFeatured" className="cursor-pointer">
-                Featured Product
+              <Label
+                htmlFor="isFeatured"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Destacado
               </Label>
             </div>
           </form>
         </ScrollArea>
 
-        <DialogFooter>
+        <DialogFooter className={isMobile ? "admin-modal-footer-mobile" : ""}>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
+            className={isMobile ? "flex-1" : ""}
           >
-            Cancel
+            Cancelar
           </Button>
-          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : editingProduct ? 'Update' : 'Create'}
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={isMobile ? "flex-1" : ""}
+          >
+            {isSubmitting ? 'Guardando...' : editingProduct ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogFooter>
       </DialogContent>

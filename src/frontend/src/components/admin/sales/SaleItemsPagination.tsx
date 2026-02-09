@@ -63,14 +63,14 @@ export default function SaleItemsPagination({
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 px-2">
+    <div className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row">
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Filas por página:</span>
         <Select
           value={pageSize.toString()}
           onValueChange={(value) => onPageSizeChange(Number(value))}
         >
-          <SelectTrigger className="h-8 w-20">
+          <SelectTrigger className="h-9 w-20 min-h-[44px] sm:min-h-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -81,16 +81,16 @@ export default function SaleItemsPagination({
         </Select>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col items-center gap-2 sm:flex-row">
         <span className="text-sm text-muted-foreground">
           {totalCount > 0 ? `${startItem}-${endItem} de ${totalCount}` : '0 de 0'}
         </span>
 
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-center gap-1">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8"
+            className="h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 0}
           >
@@ -104,7 +104,7 @@ export default function SaleItemsPagination({
                 key={index}
                 variant={page === currentPage ? 'default' : 'outline'}
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
                 onClick={() => onPageChange(page)}
               >
                 {page + 1}
@@ -119,7 +119,7 @@ export default function SaleItemsPagination({
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8"
+            className="h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages - 1}
           >

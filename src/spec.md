@@ -1,13 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Prevent duplicate admin-page GET requests by stabilizing the backend actor reference in React Query hooks, standardizing cache behavior, and clearing relevant caches on page unmount.
+**Goal:** Make the admin category dropdowns (Products page filter + Add/Edit Product modal) show a maximum of ~10 items at once with vertical scrolling, without affecting any other dropdowns.
 
 **Planned changes:**
-- Update all admin-page GET React Query hooks to use a stable-actor pattern (`useState` + `useEffect`) and only run queries once the stable actor is available.
-- Apply a standardized React Query configuration to every admin GET query (staleTime, gcTime, refetch behaviors, retry, and enabled gating) while keeping existing query-key patterns.
-- Ensure the admin Products, Categories, On-Sale Products, Store Details, Export, and User Management GET hooks all follow the same stable-actor + standardized cache configuration approach.
-- Add per-admin-page unmount cleanup that removes cached queries by the specified query-key prefixes (exact: false) so revisiting pages triggers a fresh load.
-- Preserve all existing Spanish UI labels and user-facing error/toast messages while implementing these changes.
+- Extend the app-level `SafeSelect` wrapper with an optional prop to apply a CSS class (or equivalent) specifically to the rendered dropdown content container, leaving default behavior unchanged when not provided.
+- Add a new admin-scoped CSS class for scrollable dropdown content (max-height ~10 option rows, `overflow-y: auto`, touch momentum scrolling, admin-only scrollbar styling) by appending styles to `frontend/src/index.css` without modifying the existing `:root` block.
+- Apply the new dropdown content class only to:
+  - Admin Products page category filter dropdown
+  - Add/Edit Product modal (`ProductUpsertModal`) category dropdown
 
-**User-visible outcome:** Admin pages load more reliably with fewer duplicate GET calls, consistent caching behavior, and fresh data reloads when returning to an admin page after navigating away—without changing the UI or Spanish messaging.
+**User-visible outcome:** In admin, category dropdowns no longer overflow when many categories exist; they show about 10 options and can be scrolled (mouse/touch) while keeping keyboard navigation working, with no changes to other pages’ dropdowns.

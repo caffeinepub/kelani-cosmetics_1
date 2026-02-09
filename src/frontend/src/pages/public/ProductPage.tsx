@@ -1,54 +1,32 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Star, Share2 } from 'lucide-react';
-import { useActor } from '../../hooks/useActor';
+import { useGetProduct } from '../../hooks/useProductQueries';
 import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
 import { Button } from '../../components/ui/button';
 import CopyToClipboardButton from '../../components/public/product/CopyToClipboardButton';
-import type { Product } from '../../backend';
 
 const DEFAULT_IMAGE_URL = 'https://i.imgur.com/pNccXMT.png';
 
 export default function ProductPage() {
   const { barcode } = useParams({ from: '/public/product/$barcode' });
   const navigate = useNavigate();
-  const { actor: rawActor, isFetching: actorFetching } = useActor();
-  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
+  const queryClient = useQueryClient();
   const [imageSrc, setImageSrc] = useState<string>(DEFAULT_IMAGE_URL);
   const [imageError, setImageError] = useState(false);
 
   // Fetch store details for WhatsApp contact
   const { data: storeDetails } = useBothStoreDetails();
 
-  // Stabilize actor reference
-  useEffect(() => {
-    if (rawActor && !actorFetching && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, actorFetching, stableActor]);
-
   // Validate and normalize barcode
   const normalizedBarcode = barcode?.trim() || '';
   const isValidBarcode = normalizedBarcode.length > 0;
 
   // Fetch product data
-  const {
-    data: product,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<Product>({
-    queryKey: ['product', normalizedBarcode],
-    queryFn: async () => {
-      if (!stableActor) throw new Error('Actor not available');
-      return stableActor.getProduct(normalizedBarcode);
-    },
-    enabled: !!stableActor && isValidBarcode,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+  const { data: product, isLoading, error, refetch } = useGetProduct(
+    normalizedBarcode
+  );
 
   // Handle product image
   useEffect(() => {
@@ -78,7 +56,7 @@ export default function ProductPage() {
   useEffect(() => {
     if (product) {
       document.title = `${product.name} - Kelani Cosmetics`;
-      
+
       // Update or create meta description
       let metaDescription = document.querySelector('meta[name="description"]');
       if (!metaDescription) {
@@ -86,11 +64,11 @@ export default function ProductPage() {
         metaDescription.setAttribute('name', 'description');
         document.head.appendChild(metaDescription);
       }
-      
-      const description = product.description 
+
+      const description = product.description
         ? product.description.replace(/<[^>]*>/g, '').substring(0, 160)
         : `${product.name} - Disponible en Kelani Cosmetics`;
-      
+
       metaDescription.setAttribute('content', description);
     }
 
@@ -98,6 +76,13 @@ export default function ProductPage() {
       document.title = 'Kelani Cosmetics';
     };
   }, [product]);
+
+  // Clear cache on unmount
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ['product'], exact: false });
+    };
+  }, [queryClient]);
 
   // Format price in Spanish EUR format
   const formatPrice = (price: number) => {
@@ -116,7 +101,7 @@ export default function ProductPage() {
     const message = encodeURIComponent(
       `Hola, estoy interesado en el producto:\n${product.name}\nCódigo de barras: ${product.barcode}`
     );
-    
+
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
   };
 
@@ -135,9 +120,7 @@ export default function ProductPage() {
   };
 
   // Loading state
-  const showLoading = !stableActor || actorFetching || isLoading;
-
-  if (showLoading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -193,7 +176,7 @@ export default function ProductPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Back Link */}
-      <div className="py-4">
+      <div>
         <button
           onClick={() => navigate({ to: '/' })}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -222,10 +205,8 @@ export default function ProductPage() {
         <div className="md:col-span-2 space-y-6">
           {/* Product Header */}
           <div className="space-y-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              {product.name}
-            </h1>
-            
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">{product.name}</h1>
+
             {/* Stock Status Badge */}
             <div>
               {product.inStock ? (
@@ -243,9 +224,7 @@ export default function ProductPage() {
           {/* Price Display */}
           {product.price !== undefined && product.price !== null && (
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-foreground">
-                {formatPrice(product.price)}
-              </div>
+              <div className="text-3xl font-bold text-foreground">{formatPrice(product.price)}</div>
             </div>
           )}
 
@@ -259,9 +238,7 @@ export default function ProductPage() {
 
           {/* Barcode Display */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              Código de barras
-            </p>
+            <p className="text-sm font-medium text-muted-foreground">Código de barras</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 px-3 py-2 bg-muted rounded text-sm font-mono">
                 {product.barcode}
@@ -273,9 +250,7 @@ export default function ProductPage() {
           {/* Description */}
           {product.description && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Descripción
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Descripción</p>
               <div
                 className="text-foreground prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: product.description }}
@@ -294,14 +269,9 @@ export default function ProductPage() {
               Contactar sobre este producto
             </Button>
 
-            <Button
-              onClick={handleShareUrl}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={handleShareUrl} variant="outline" className="w-full" size="lg">
               <Share2 className="h-4 w-4 mr-2" />
-              Compartir producto
+              Compartir enlace
             </Button>
           </div>
         </div>

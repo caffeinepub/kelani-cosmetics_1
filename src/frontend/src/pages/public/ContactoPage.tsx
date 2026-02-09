@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, MapPin, Phone, Mail, Navigation, MessageCircle, Map as MapIcon } from 'lucide-react';
 import { SiFacebook, SiInstagram } from 'react-icons/si';
 import { Globe } from 'lucide-react';
-import { useActor } from '../../hooks/useActor';
-import { useQuery } from '@tanstack/react-query';
+import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
 import { Button } from '../../components/ui/button';
 import { translateDayToSpanish } from '../../utils/storeHoursFormat';
 import { formatWhatsAppApiNumber } from '../../utils/phoneFormat';
 import { isConsentAccepted, setConsent } from '../../utils/cookieUtils';
-import type { StoreDetails } from '../../backend';
 
 interface ParsedCoordinates {
   lat: number;
@@ -41,9 +40,7 @@ function getMapEmbedUrl(coords: ParsedCoordinates): string {
 }
 
 export default function ContactoPage() {
-  const { actor: rawActor, isFetching: actorFetching } = useActor();
-  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showMaps, setShowMaps] = useState(false);
 
   // Scroll to top on mount
@@ -56,51 +53,30 @@ export default function ContactoPage() {
     const checkConsent = () => {
       setShowMaps(isConsentAccepted());
     };
-    
+
     checkConsent();
-    
+
     // Listen for consent changes
     const handleConsentChange = () => {
       checkConsent();
     };
-    
+
     window.addEventListener('cookie-consent-changed', handleConsentChange);
-    
+
     return () => {
       window.removeEventListener('cookie-consent-changed', handleConsentChange);
     };
   }, []);
 
-  // Stabilize actor reference
-  useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
+  // Fetch store details using shared hook
+  const { data: storeDetailsData, isLoading, error, refetch } = useBothStoreDetails();
 
-  const {
-    data: storeDetailsData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<StoreDetails[]>({
-    queryKey: ['both-store-details'],
-    queryFn: async () => {
-      if (!stableActor) throw new Error('Actor not available');
-      const bothStores = await stableActor.getBothStoreDetails();
-      return bothStores.map(([_storeId, details]) => details);
-    },
-    enabled: !!stableActor,
-    staleTime: 1000 * 60 * 30, // 30 minutes
-    refetchOnWindowFocus: false,
-  });
-
-  // Set initial loading to false when query settles
+  // Clear cache on unmount
   useEffect(() => {
-    if (!isLoading && (storeDetailsData !== undefined || error)) {
-      setIsInitialLoading(false);
-    }
-  }, [isLoading, storeDetailsData, error]);
+    return () => {
+      queryClient.removeQueries({ queryKey: ['store-details'], exact: false });
+    };
+  }, [queryClient]);
 
   const handleEnableMaps = () => {
     setConsent('accepted');
@@ -108,7 +84,7 @@ export default function ContactoPage() {
   };
 
   // Show loading spinner during initial load
-  if (isInitialLoading || (!stableActor && actorFetching)) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -141,7 +117,7 @@ export default function ContactoPage() {
   return (
     <div className="space-y-12 pb-12">
       {/* Page Header */}
-      <div className="py-8">
+      <div>
         <h1 className="text-4xl font-bold text-foreground mb-2">Contacto</h1>
         <p className="text-lg text-muted-foreground">
           Visítanos en cualquiera de nuestras dos tiendas
@@ -224,13 +200,8 @@ export default function ContactoPage() {
                 <h3 className="font-semibold text-foreground mb-3">Horario</h3>
                 <div className="space-y-2">
                   {store.storeHours.map(([day, hours]) => (
-                    <div
-                      key={day}
-                      className="flex justify-between text-sm"
-                    >
-                      <span className="text-muted-foreground">
-                        {translateDayToSpanish(day)}
-                      </span>
+                    <div key={day} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{translateDayToSpanish(day)}</span>
                       <span className="text-foreground font-medium">{hours}</span>
                     </div>
                   ))}
@@ -283,7 +254,7 @@ export default function ContactoPage() {
               {mapEmbedUrl && (
                 <div className="pt-4 border-t border-border space-y-3">
                   <h3 className="font-semibold text-foreground">Ubicación</h3>
-                  
+
                   {showMaps ? (
                     <>
                       <div className="relative w-full h-64 bg-muted rounded-lg overflow-hidden">
@@ -299,16 +270,8 @@ export default function ContactoPage() {
                         />
                       </div>
                       {directionsUrl && (
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="w-full"
-                        >
-                          <a
-                            href={directionsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
+                        <Button asChild variant="outline" className="w-full">
+                          <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
                             <Navigation className="h-4 w-4 mr-2" />
                             Cómo llegar
                           </a>
@@ -327,24 +290,12 @@ export default function ContactoPage() {
                         </p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                        <Button
-                          onClick={handleEnableMaps}
-                          size="sm"
-                          variant="default"
-                        >
+                        <Button onClick={handleEnableMaps} size="sm" variant="default">
                           Aceptar cookies
                         </Button>
                         {directionsUrl && (
-                          <Button
-                            asChild
-                            size="sm"
-                            variant="outline"
-                          >
-                            <a
-                              href={directionsUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
+                          <Button asChild size="sm" variant="outline">
+                            <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
                               <Navigation className="h-4 w-4 mr-2" />
                               Ver en Google Maps
                             </a>

@@ -3,6 +3,7 @@
  * 
  * Wrapper component for Select that prevents empty string value errors using sentinel values.
  * Sentinel values: "all" (filter all), "none" (unselected), "no-change" (bulk operations).
+ * Supports optional contentClassName prop for styling the dropdown menu container.
  */
 
 import React from 'react';
@@ -97,6 +98,7 @@ export interface SafeSelectProps {
   children: React.ReactNode;
   placeholder?: string;
   className?: string;
+  contentClassName?: string;
 }
 
 /**
@@ -113,6 +115,7 @@ export function SafeSelect({
   children,
   placeholder,
   className,
+  contentClassName,
 }: SafeSelectProps) {
   // Validate that value is not empty string
   React.useEffect(() => {
@@ -159,7 +162,7 @@ export function SafeSelect({
       <SelectTrigger className={className}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={contentClassName}>
         {children}
       </SelectContent>
     </Select>

@@ -30,7 +30,7 @@ function backendCategoryToUI(backendCat: BackendCategory): Category {
 // Query Keys
 const QUERY_KEYS = {
   categories: ['categories'] as const,
-  category: (id: number) => ['categories', 'single', id] as const,
+  category: (id: number) => ['category', id] as const,
 };
 
 // ============================================================================
@@ -199,6 +199,20 @@ export function useUpdateCategory() {
 }
 
 /**
+ * Extract Spanish error message from backend trap
+ */
+function extractBackendErrorMessage(error: unknown): string | null {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = String(error.message);
+    // Check if the message contains the specific Spanish error about products
+    if (message.includes('No se puede eliminar') || message.includes('productos asociados')) {
+      return message;
+    }
+  }
+  return null;
+}
+
+/**
  * Delete category
  */
 export function useDeleteCategory() {
@@ -216,11 +230,24 @@ export function useDeleteCategory() {
       reportSuccessWithToast('Categoría eliminada exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(
-        error,
-        'Error al eliminar la categoría',
-        { operation: 'deleteCategory' }
-      );
+      // Try to extract the backend's Spanish error message
+      const backendMessage = extractBackendErrorMessage(error);
+      
+      if (backendMessage) {
+        // Display the exact backend error message
+        reportErrorWithToast(
+          error,
+          backendMessage,
+          { operation: 'deleteCategory' }
+        );
+      } else {
+        // Fallback to generic error
+        reportErrorWithToast(
+          error,
+          'Error al eliminar la categoría',
+          { operation: 'deleteCategory' }
+        );
+      }
     },
   });
 }

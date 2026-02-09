@@ -89,7 +89,7 @@ export default function PrivacyPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Back Link */}
-      <div className="pt-6">
+      <div>
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -100,7 +100,7 @@ export default function PrivacyPage() {
       </div>
 
       {/* Page Header */}
-      <div className="space-y-3 pt-4">
+      <div className="space-y-3">
         <h1 className="text-4xl font-bold text-foreground">
           Política de Privacidad
         </h1>
@@ -161,281 +161,205 @@ export default function PrivacyPage() {
             <li>Fuente de referencia (cómo llegaste a nuestro sitio)</li>
             <li>Información de cookies y tecnologías similares</li>
           </ul>
-
-          <h3 className="text-xl font-semibold text-foreground mt-6">
-            2.3 Integración de Google Maps
-          </h3>
-          <p className="text-foreground leading-relaxed">
-            Utilizamos Google Maps para mostrar la ubicación de nuestras tiendas y proporcionar direcciones. Cuando interactúas con los mapas integrados, Google puede recopilar información según su propia política de privacidad.
-          </p>
-
-          <h3 className="text-xl font-semibold text-foreground mt-6">
-            2.4 Finalidad de la Recopilación
-          </h3>
-          <p className="text-foreground leading-relaxed">
-            Recopilamos esta información para:
-          </p>
-          <ul className="list-disc pl-6 space-y-2 text-foreground">
-            <li>Proporcionar y mejorar nuestros servicios</li>
-            <li>Responder a tus consultas y solicitudes</li>
-            <li>Personalizar tu experiencia en nuestro sitio web</li>
-            <li>Analizar el uso del sitio y optimizar su rendimiento</li>
-            <li>Cumplir con obligaciones legales y regulatorias</li>
-          </ul>
         </section>
 
-        {/* Cookie Policy Section */}
+        {/* Cookies Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            3. Política de Cookies
+            3. Uso de Cookies
           </h2>
+          <p className="text-foreground leading-relaxed">
+            Utilizamos cookies y tecnologías similares para mejorar tu experiencia en nuestro sitio web. Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas nuestro sitio.
+          </p>
           <h3 className="text-xl font-semibold text-foreground">
-            3.1 ¿Qué son las Cookies?
+            3.1 Tipos de Cookies que Utilizamos
           </h3>
-          <p className="text-foreground leading-relaxed">
-            Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas nuestro sitio web. Nos ayudan a mejorar tu experiencia al recordar tus preferencias y analizar cómo utilizas nuestro sitio.
-          </p>
-
-          <h3 className="text-xl font-semibold text-foreground mt-6">
-            3.2 Tipos de Cookies que Utilizamos
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-lg font-semibold text-foreground">
-                Cookies Esenciales/Funcionales
-              </h4>
-              <p className="text-foreground leading-relaxed">
-                Estas cookies son necesarias para el funcionamiento básico del sitio web. Permiten la navegación y el uso de funciones esenciales como el acceso a áreas seguras. El sitio web no puede funcionar correctamente sin estas cookies.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-foreground">
-                Cookies de Análisis
-              </h4>
-              <p className="text-foreground leading-relaxed">
-                Utilizamos herramientas como Google Analytics para recopilar información sobre cómo los visitantes utilizan nuestro sitio. Esto nos ayuda a mejorar la funcionalidad y el contenido del sitio. Estas cookies recopilan información de forma anónima.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-foreground">
-                Cookies de Terceros
-              </h4>
-              <p className="text-foreground leading-relaxed">
-                Nuestro sitio web integra servicios de terceros como Google Maps, que pueden establecer sus propias cookies. Estos terceros tienen sus propias políticas de privacidad que rigen el uso de estas cookies.
-              </p>
-            </div>
-          </div>
-
-          <h3 className="text-xl font-semibold text-foreground mt-6">
-            3.3 Gestión de Cookies
-          </h3>
-          <p className="text-foreground leading-relaxed">
-            Puedes controlar y gestionar las cookies a través de la configuración de tu navegador. La mayoría de los navegadores te permiten:
-          </p>
           <ul className="list-disc pl-6 space-y-2 text-foreground">
-            <li>Ver qué cookies están almacenadas y eliminarlas individualmente</li>
-            <li>Bloquear cookies de terceros</li>
-            <li>Bloquear todas las cookies de todos los sitios</li>
-            <li>Eliminar todas las cookies al cerrar el navegador</li>
+            <li><strong>Cookies Esenciales:</strong> Necesarias para el funcionamiento básico del sitio</li>
+            <li><strong>Cookies de Rendimiento:</strong> Nos ayudan a entender cómo los visitantes interactúan con nuestro sitio</li>
+            <li><strong>Cookies de Funcionalidad:</strong> Permiten recordar tus preferencias</li>
+            <li><strong>Cookies de Terceros:</strong> Utilizadas para servicios como Google Maps y análisis</li>
           </ul>
-          <p className="text-foreground leading-relaxed mt-4">
-            Ten en cuenta que si bloqueas o eliminas las cookies, es posible que algunas funciones del sitio web no funcionen correctamente.
+          <p className="text-foreground leading-relaxed">
+            Puedes gestionar tus preferencias de cookies en cualquier momento a través del banner de consentimiento que aparece en tu primera visita.
           </p>
         </section>
 
         {/* Data Usage Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            4. Uso de Datos
+            4. Cómo Utilizamos tu Información
           </h2>
           <p className="text-foreground leading-relaxed">
             Utilizamos la información recopilada para los siguientes propósitos:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-foreground">
-            <li>
-              <strong>Proporcionar y mejorar servicios:</strong> Para operar nuestro sitio web, procesar tus solicitudes y mejorar continuamente nuestros productos y servicios.
-            </li>
-            <li>
-              <strong>Comunicación con clientes:</strong> Para responder a tus consultas, enviarte información sobre productos y servicios, y proporcionarte asistencia al cliente.
-            </li>
-            <li>
-              <strong>Análisis y optimización:</strong> Para analizar el uso del sitio web, identificar tendencias, y optimizar el rendimiento y la experiencia del usuario.
-            </li>
-            <li>
-              <strong>Funcionalidad de Google Maps:</strong> Para mostrar la ubicación de nuestras tiendas y proporcionar direcciones precisas a nuestros clientes.
-            </li>
-            <li>
-              <strong>Cumplimiento legal:</strong> Para cumplir con obligaciones legales, resolver disputas y hacer cumplir nuestros acuerdos.
-            </li>
+            <li>Proporcionar y mantener nuestros servicios</li>
+            <li>Responder a tus consultas y solicitudes</li>
+            <li>Mejorar nuestro sitio web y experiencia de usuario</li>
+            <li>Enviar comunicaciones relacionadas con nuestros productos y servicios</li>
+            <li>Cumplir con obligaciones legales y regulatorias</li>
+            <li>Prevenir fraudes y garantizar la seguridad</li>
           </ul>
         </section>
 
         {/* Data Sharing Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            5. Compartición de Datos
+            5. Compartir Información
           </h2>
-          <h3 className="text-xl font-semibold text-foreground">
-            5.1 Servicios de Terceros
-          </h3>
           <p className="text-foreground leading-relaxed">
-            Compartimos información con proveedores de servicios de terceros que nos ayudan a operar nuestro sitio web y proporcionar nuestros servicios, incluyendo:
+            No vendemos tu información personal a terceros. Podemos compartir tu información en las siguientes circunstancias:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-foreground">
-            <li>
-              <strong>Google Maps:</strong> Para servicios de mapas y geolocalización
-            </li>
-            <li>
-              <strong>Google Analytics:</strong> Para análisis web y estadísticas de uso
-            </li>
-            <li>
-              <strong>Proveedores de hosting:</strong> Para alojar nuestro sitio web y almacenar datos
-            </li>
+            <li><strong>Proveedores de Servicios:</strong> Con empresas que nos ayudan a operar nuestro sitio web (hosting, análisis, etc.)</li>
+            <li><strong>Requisitos Legales:</strong> Cuando sea necesario para cumplir con la ley o proteger nuestros derechos</li>
+            <li><strong>Transferencias Comerciales:</strong> En caso de fusión, adquisición o venta de activos</li>
           </ul>
-          <p className="text-foreground leading-relaxed mt-4">
-            Estos proveedores tienen acceso a tu información personal solo en la medida necesaria para realizar sus funciones y están obligados a no divulgarla ni utilizarla para otros fines.
-          </p>
-
-          <h3 className="text-xl font-semibold text-foreground mt-6">
-            5.2 Requisitos Legales
-          </h3>
           <p className="text-foreground leading-relaxed">
-            Podemos divulgar tu información personal si estamos obligados a hacerlo por ley o en respuesta a solicitudes válidas de autoridades públicas (por ejemplo, un tribunal o una agencia gubernamental).
-          </p>
-
-          <h3 className="text-xl font-semibold text-foreground mt-6">
-            5.3 Transferencias Empresariales
-          </h3>
-          <p className="text-foreground leading-relaxed">
-            En caso de fusión, adquisición o venta de activos, tu información personal puede ser transferida. Te notificaremos antes de que tu información personal sea transferida y quede sujeta a una política de privacidad diferente.
+            Todos los terceros con los que compartimos información están obligados a proteger tus datos de acuerdo con esta política y las leyes aplicables.
           </p>
         </section>
 
-        {/* User Rights Section (GDPR) */}
+        {/* User Rights Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            6. Tus Derechos (GDPR)
+            6. Tus Derechos
           </h2>
           <p className="text-foreground leading-relaxed">
-            Bajo el Reglamento General de Protección de Datos (GDPR), tienes los siguientes derechos:
+            Bajo el GDPR y otras leyes de protección de datos, tienes los siguientes derechos:
           </p>
-          <ul className="list-disc pl-6 space-y-3 text-foreground">
-            <li>
-              <strong>Derecho de acceso:</strong> Puedes solicitar una copia de los datos personales que tenemos sobre ti.
-            </li>
-            <li>
-              <strong>Derecho de rectificación:</strong> Puedes solicitar que corrijamos cualquier información inexacta o incompleta.
-            </li>
-            <li>
-              <strong>Derecho de supresión:</strong> Puedes solicitar que eliminemos tus datos personales en determinadas circunstancias.
-            </li>
-            <li>
-              <strong>Derecho a la limitación del tratamiento:</strong> Puedes solicitar que limitemos el procesamiento de tus datos personales en determinadas circunstancias.
-            </li>
-            <li>
-              <strong>Derecho a la portabilidad de datos:</strong> Puedes solicitar recibir tus datos personales en un formato estructurado, de uso común y legible por máquina.
-            </li>
-            <li>
-              <strong>Derecho de oposición:</strong> Puedes oponerte al procesamiento de tus datos personales en determinadas circunstancias.
-            </li>
+          <ul className="list-disc pl-6 space-y-2 text-foreground">
+            <li><strong>Derecho de Acceso:</strong> Solicitar una copia de tus datos personales</li>
+            <li><strong>Derecho de Rectificación:</strong> Corregir información inexacta o incompleta</li>
+            <li><strong>Derecho de Supresión:</strong> Solicitar la eliminación de tus datos</li>
+            <li><strong>Derecho de Limitación:</strong> Restringir el procesamiento de tus datos</li>
+            <li><strong>Derecho de Portabilidad:</strong> Recibir tus datos en un formato estructurado</li>
+            <li><strong>Derecho de Oposición:</strong> Oponerte al procesamiento de tus datos</li>
+            <li><strong>Derecho a Retirar el Consentimiento:</strong> En cualquier momento</li>
           </ul>
-          <p className="text-foreground leading-relaxed mt-4">
-            Para ejercer cualquiera de estos derechos, por favor contáctanos utilizando la información de contacto proporcionada al final de esta política.
+          <p className="text-foreground leading-relaxed">
+            Para ejercer cualquiera de estos derechos, contáctanos a través de la información proporcionada al final de esta política.
           </p>
         </section>
 
         {/* Data Security Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            7. Seguridad de Datos
+            7. Seguridad de los Datos
           </h2>
           <p className="text-foreground leading-relaxed">
-            Tomamos la seguridad de tu información personal muy en serio. Implementamos medidas técnicas y organizativas apropiadas para proteger tus datos contra el acceso no autorizado, la alteración, divulgación o destrucción, incluyendo:
+            Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger tu información personal contra acceso no autorizado, alteración, divulgación o destrucción. Estas medidas incluyen:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-foreground">
             <li>Cifrado de datos en tránsito y en reposo</li>
-            <li>Controles de acceso estrictos y autenticación</li>
-            <li>Monitoreo regular de seguridad y auditorías</li>
-            <li>Capacitación del personal en prácticas de seguridad de datos</li>
+            <li>Controles de acceso estrictos</li>
+            <li>Auditorías de seguridad regulares</li>
+            <li>Capacitación del personal en protección de datos</li>
           </ul>
-          <p className="text-foreground leading-relaxed mt-4">
-            <strong>Retención de datos:</strong> Conservamos tu información personal solo durante el tiempo necesario para cumplir con los propósitos descritos en esta política, a menos que la ley requiera o permita un período de retención más largo.
+          <p className="text-foreground leading-relaxed">
+            Sin embargo, ningún método de transmisión por Internet o almacenamiento electrónico es 100% seguro. Aunque nos esforzamos por proteger tu información, no podemos garantizar su seguridad absoluta.
           </p>
         </section>
 
-        {/* International Data Transfers */}
+        {/* Data Retention Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            8. Transferencias Internacionales de Datos
+            8. Retención de Datos
           </h2>
           <p className="text-foreground leading-relaxed">
-            Tu información puede ser transferida y almacenada en servidores ubicados fuera de tu país de residencia, donde las leyes de protección de datos pueden ser diferentes. Al utilizar nuestro sitio web, consientes estas transferencias.
+            Conservamos tu información personal solo durante el tiempo necesario para cumplir con los propósitos descritos en esta política, a menos que la ley requiera o permita un período de retención más largo.
           </p>
           <p className="text-foreground leading-relaxed">
-            Cuando transferimos datos personales fuera del Espacio Económico Europeo (EEE), nos aseguramos de que se implementen salvaguardias adecuadas, como cláusulas contractuales estándar aprobadas por la Comisión Europea.
+            Los criterios utilizados para determinar nuestros períodos de retención incluyen:
           </p>
+          <ul className="list-disc pl-6 space-y-2 text-foreground">
+            <li>El tiempo que mantienes una relación con nosotros</li>
+            <li>Si existe una obligación legal a la que estamos sujetos</li>
+            <li>Si la retención es aconsejable en función de nuestra posición legal</li>
+          </ul>
         </section>
 
-        {/* Children's Privacy */}
+        {/* Children's Privacy Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
             9. Privacidad de Menores
           </h2>
           <p className="text-foreground leading-relaxed">
-            Nuestro sitio web no está dirigido a menores de 16 años. No recopilamos intencionalmente información personal de menores de 16 años. Si descubrimos que hemos recopilado información personal de un menor de 16 años sin el consentimiento parental verificable, tomaremos medidas para eliminar esa información de nuestros servidores.
-          </p>
-          <p className="text-foreground leading-relaxed">
-            Si eres padre o tutor y crees que tu hijo nos ha proporcionado información personal, por favor contáctanos para que podamos tomar las medidas necesarias.
+            Nuestros servicios no están dirigidos a menores de 16 años. No recopilamos intencionalmente información personal de menores de 16 años. Si descubrimos que hemos recopilado información de un menor sin el consentimiento parental verificable, tomaremos medidas para eliminar esa información de nuestros servidores.
           </p>
         </section>
 
-        {/* Policy Changes */}
+        {/* International Transfers Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            10. Cambios en la Política de Privacidad
+            10. Transferencias Internacionales
           </h2>
           <p className="text-foreground leading-relaxed">
-            Podemos actualizar esta Política de Privacidad periódicamente para reflejar cambios en nuestras prácticas o por razones operativas, legales o regulatorias. Te notificaremos sobre cualquier cambio material publicando la nueva política en esta página y actualizando la fecha de "Última actualización" en la parte superior.
+            Tu información puede ser transferida y mantenida en servidores ubicados fuera de tu país de residencia, donde las leyes de protección de datos pueden diferir. Al usar nuestros servicios, consientes estas transferencias.
           </p>
           <p className="text-foreground leading-relaxed">
-            Te recomendamos que revises esta política periódicamente para estar informado sobre cómo protegemos tu información. El uso continuado de nuestro sitio web después de la publicación de cambios constituye tu aceptación de dichos cambios.
+            Cuando transferimos datos fuera del Espacio Económico Europeo (EEE), implementamos salvaguardas apropiadas, como cláusulas contractuales estándar aprobadas por la Comisión Europea.
           </p>
         </section>
 
-        {/* Contact Information */}
+        {/* Changes to Policy Section */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-foreground">
-            11. Información de Contacto
+            11. Cambios a esta Política
           </h2>
           <p className="text-foreground leading-relaxed">
-            Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o el tratamiento de tus datos personales, por favor contáctanos:
+            Podemos actualizar esta Política de Privacidad periódicamente para reflejar cambios en nuestras prácticas o por razones operativas, legales o regulatorias. Te notificaremos sobre cualquier cambio material publicando la nueva política en esta página y actualizando la fecha de "Última actualización".
           </p>
-          <div className="bg-muted/30 p-6 rounded-lg space-y-3 mt-4">
+          <p className="text-foreground leading-relaxed">
+            Te recomendamos revisar esta política periódicamente para estar informado sobre cómo protegemos tu información.
+          </p>
+        </section>
+
+        {/* Contact Section */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-foreground">
+            12. Contacto
+          </h2>
+          <p className="text-foreground leading-relaxed">
+            Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos:
+          </p>
+          <div className="bg-muted p-6 rounded-lg space-y-3">
             <p className="text-foreground">
               <strong>Kelani Cosmetics</strong>
             </p>
             <p className="text-foreground">
-              <strong>Tienda 1:</strong><br />
-              1460 Merritt Blvd, Dundalk, MD 21222<br />
-              Teléfono: (410) 288-6792<br />
-              WhatsApp: +34 600 111 111
+              Email: <a href="mailto:variety.discount.store@example.com" className="text-primary hover:underline">variety.discount.store@example.com</a>
             </p>
             <p className="text-foreground">
-              <strong>Tienda 2:</strong><br />
-              5850 Hollins Ferry Road, Baltimore, MD 21227<br />
-              Teléfono: (443) 234-0005<br />
-              WhatsApp: +34 600 222 222
+              Teléfono: <a href="tel:+14102886792" className="text-primary hover:underline">(410) 288-6792</a>
             </p>
             <p className="text-foreground">
-              <strong>Email:</strong> variety.discount.store@example.com
-            </p>
-            <p className="text-muted-foreground text-sm mt-4">
-              [POR DEFINIR: Delegado de Protección de Datos (DPO) si aplica según GDPR]
+              Dirección: 1460 Merritt Blvd, Dundalk, MD 21222
             </p>
           </div>
-          <p className="text-foreground leading-relaxed mt-4">
-            Nos esforzamos por responder a todas las solicitudes legítimas dentro de un mes. Ocasionalmente, puede tomarnos más de un mes si tu solicitud es particularmente compleja o si has realizado varias solicitudes.
+          <p className="text-foreground leading-relaxed">
+            También puedes visitar nuestra <Link to="/contacto" className="text-primary hover:underline">página de contacto</Link> para más opciones de comunicación.
           </p>
+        </section>
+
+        {/* GDPR Compliance Section */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-foreground">
+            13. Cumplimiento del GDPR
+          </h2>
+          <p className="text-foreground leading-relaxed">
+            Kelani Cosmetics cumple con el Reglamento General de Protección de Datos (GDPR) de la Unión Europea. Si resides en el EEE, tienes derechos adicionales bajo el GDPR, incluyendo el derecho a presentar una queja ante tu autoridad de protección de datos local.
+          </p>
+          <p className="text-foreground leading-relaxed">
+            Nuestra base legal para procesar tu información personal incluye:
+          </p>
+          <ul className="list-disc pl-6 space-y-2 text-foreground">
+            <li>Tu consentimiento</li>
+            <li>Ejecución de un contrato</li>
+            <li>Cumplimiento de obligaciones legales</li>
+            <li>Intereses legítimos (cuando no prevalezcan tus derechos fundamentales)</li>
+          </ul>
         </section>
       </div>
     </div>

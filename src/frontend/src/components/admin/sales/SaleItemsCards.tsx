@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -9,7 +9,6 @@ import SaleItemStatusBadge from './SaleItemStatusBadge';
 import SaleItemDeactivateDialog from './SaleItemDeactivateDialog';
 import { timestampToDisplayDate } from '../../../utils/adminDate';
 import { formatPriceForDisplay } from '../../../utils/NumericConverter';
-import { useProductThumbnail } from './useProductThumbnail';
 
 interface SaleItemsCardsProps {
   saleItems: SaleItem[];
@@ -18,23 +17,95 @@ interface SaleItemsCardsProps {
   isLoading: boolean;
 }
 
-function ProductThumbnail({ barcode }: { barcode: string }) {
-  const { imageUrl, isLoading } = useProductThumbnail(barcode);
-
-  if (isLoading) {
-    return (
-      <div className="h-20 w-20 animate-pulse rounded-md bg-muted" />
-    );
-  }
-
+const SaleItemCard = memo(({
+  item,
+  isPending,
+  onToggleActive,
+  onEdit,
+  onDelete
+}: {
+  item: SaleItem;
+  isPending: boolean;
+  onToggleActive: (item: SaleItem) => void;
+  onEdit: (item: SaleItem) => void;
+  onDelete: (item: SaleItem) => void;
+}) => {
   return (
-    <img
-      src={imageUrl}
-      alt=""
-      className="h-20 w-20 rounded-md border object-cover"
-    />
+    <Card>
+      <CardContent className="p-4">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="break-words text-base font-semibold leading-tight">{item.name}</h3>
+            <SaleItemStatusBadge saleItem={item} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-muted-foreground">Original:</span>{' '}
+              <span className="line-through">
+                {item.price ? formatPriceForDisplay(item.price) : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Oferta:</span>{' '}
+              <span className="font-semibold text-primary">
+                {formatPriceForDisplay(item.salePrice)}
+              </span>
+            </div>
+            <div className="col-span-2">
+              <span className="text-muted-foreground">Descuento:</span>{' '}
+              <span className="font-medium text-green-600">
+                {item.discountPercentage.toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            <div>Inicio: {timestampToDisplayDate(item.startDate)}</div>
+            <div>Fin: {timestampToDisplayDate(item.endDate)}</div>
+          </div>
+
+          <div className="flex items-center justify-between border-t pt-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Activo:</span>
+              <Switch
+                checked={item.isActive}
+                onCheckedChange={() => onToggleActive(item)}
+                disabled={isPending}
+                className="min-h-[44px]"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(item)}
+              disabled={isPending}
+              className="min-h-[44px] w-full sm:flex-1"
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(item)}
+              disabled={isPending}
+              className="min-h-[44px] w-full text-destructive hover:text-destructive sm:flex-1"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Eliminar
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
-}
+});
+
+SaleItemCard.displayName = 'SaleItemCard';
 
 export default function SaleItemsCards({
   saleItems,
@@ -91,82 +162,16 @@ export default function SaleItemsCards({
   return (
     <>
       <div className="space-y-4">
-        {saleItems.map((item) => {
-          const isPending = pendingSaleId === item.saleId;
-
-          return (
-            <Card key={item.saleId}>
-              <CardContent className="p-4">
-                <div className="flex gap-4">
-                  <ProductThumbnail barcode={item.barcode} />
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold">{item.name}</h3>
-                      <SaleItemStatusBadge saleItem={item} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Original:</span>{' '}
-                        <span className="line-through">
-                          {item.price ? formatPriceForDisplay(item.price) : 'N/A'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Oferta:</span>{' '}
-                        <span className="font-semibold text-primary">
-                          {formatPriceForDisplay(item.salePrice)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Descuento:</span>{' '}
-                        <span className="font-medium text-green-600">
-                          {item.discountPercentage.toFixed(0)}%
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      <div>Inicio: {timestampToDisplayDate(item.startDate)}</div>
-                      <div>Fin: {timestampToDisplayDate(item.endDate)}</div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Activo:</span>
-                        <Switch
-                          checked={item.isActive}
-                          onCheckedChange={() => handleToggleActive(item)}
-                          disabled={isPending}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEdit(item)}
-                          disabled={isPending}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onDelete(item)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {saleItems.map((item) => (
+          <SaleItemCard
+            key={item.saleId}
+            item={item}
+            isPending={pendingSaleId === item.saleId}
+            onToggleActive={handleToggleActive}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ))}
       </div>
 
       <SaleItemDeactivateDialog

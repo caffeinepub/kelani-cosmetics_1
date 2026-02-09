@@ -9,6 +9,7 @@ import {
   useReorderCategories,
   type Category,
 } from '../../hooks/useQueries';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import CategoriesCards from '../../components/admin/categories/CategoriesCards';
 
 interface CategoryFormData {
   name: string;
@@ -47,6 +49,7 @@ interface CategoryFormData {
 
 export default function CategoriesPage() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -224,92 +227,104 @@ export default function CategoriesPage() {
         />
       </div>
 
-      {/* Categories Table */}
-      <div className="rounded-lg border border-border bg-card">
-        {isLoading ? (
-          <div className="p-12 text-center">
-            <p className="text-muted-foreground">Cargando categorías...</p>
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-muted-foreground">
-              {searchQuery ? 'No se encontraron categorías' : 'No hay categorías creadas'}
-            </p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">ID</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="w-32">Orden</TableHead>
-                <TableHead className="w-32 text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCategories.map((category, index) => (
-                <TableRow key={category.categoryId}>
-                  <TableCell className="font-mono text-sm">{category.categoryId}</TableCell>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">{category.order}</span>
-                      <div className="ml-2 flex flex-col gap-0.5">
+      {/* Categories Table or Cards */}
+      {isMobile ? (
+        <CategoriesCards
+          categories={filteredCategories}
+          onEdit={handleEditClick}
+          onDelete={setDeleteConfirmCategory}
+          onMoveUp={handleMoveUp}
+          onMoveDown={handleMoveDown}
+          isLoading={isLoading}
+          isSubmitting={isSubmitting}
+        />
+      ) : (
+        <div className="rounded-lg border border-border bg-card">
+          {isLoading ? (
+            <div className="p-12 text-center">
+              <p className="text-muted-foreground">Cargando categorías...</p>
+            </div>
+          ) : filteredCategories.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="text-muted-foreground">
+                {searchQuery ? 'No se encontraron categorías' : 'No hay categorías creadas'}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">ID</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead className="w-32">Orden</TableHead>
+                  <TableHead className="w-32 text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCategories.map((category, index) => (
+                  <TableRow key={category.categoryId}>
+                    <TableCell className="font-mono text-sm">{category.categoryId}</TableCell>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">{category.order}</span>
+                        <div className="ml-2 flex flex-col gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            onClick={() => handleMoveUp(category)}
+                            disabled={index === 0 || isSubmitting}
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                            <span className="sr-only">Mover arriba</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            onClick={() => handleMoveDown(category)}
+                            disabled={index === filteredCategories.length - 1 || isSubmitting}
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                            <span className="sr-only">Mover abajo</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5"
-                          onClick={() => handleMoveUp(category)}
-                          disabled={index === 0 || isSubmitting}
+                          className="h-8 w-8"
+                          onClick={() => handleEditClick(category)}
                         >
-                          <ChevronUp className="h-3 w-3" />
-                          <span className="sr-only">Mover arriba</span>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5"
-                          onClick={() => handleMoveDown(category)}
-                          disabled={index === filteredCategories.length - 1 || isSubmitting}
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteConfirmCategory(category)}
                         >
-                          <ChevronDown className="h-3 w-3" />
-                          <span className="sr-only">Mover abajo</span>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Eliminar</span>
                         </Button>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleEditClick(category)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteConfirmCategory(category)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Eliminar</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-h-[90vh] sm:max-w-[500px]">
+        <DialogContent className={isMobile ? "admin-modal-mobile" : "max-h-[90vh] sm:max-w-[500px]"}>
           <DialogHeader>
             <DialogTitle>
               {editingCategory ? 'Editar Categoría' : 'Agregar Categoría'}
@@ -321,7 +336,7 @@ export default function CategoriesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <ScrollArea className={isMobile ? "admin-modal-content-mobile" : "max-h-[60vh] pr-4"}>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">
@@ -358,28 +373,27 @@ export default function CategoriesPage() {
                 {formErrors.order && (
                   <p className="text-sm text-destructive">{formErrors.order}</p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Número que determina el orden de visualización (menor = primero)
-                </p>
               </div>
             </form>
           </ScrollArea>
 
-          <DialogFooter>
+          <DialogFooter className={isMobile ? "admin-modal-footer-mobile" : ""}>
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsModalOpen(false)}
               disabled={isSubmitting}
+              className={isMobile ? "min-h-[48px]" : ""}
             >
               Cancelar
             </Button>
-            <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting
-                ? 'Guardando...'
-                : editingCategory
-                  ? 'Actualizar'
-                  : 'Crear'}
+            <Button 
+              type="submit" 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              className={isMobile ? "min-h-[48px]" : ""}
+            >
+              {isSubmitting ? 'Guardando...' : editingCategory ? 'Actualizar' : 'Crear'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -394,21 +408,13 @@ export default function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente la categoría{' '}
-              <strong>{deleteConfirmCategory?.name}</strong>.
+              Esta acción no se puede deshacer. Se eliminará permanentemente la categoría "
+              {deleteConfirmCategory?.name}".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
-            </AlertDialogAction>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
