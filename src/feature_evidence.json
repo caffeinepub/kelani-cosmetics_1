@@ -1,25 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-update-frontend-data-fetching-mapping-code-that-calls-getproductspagefeaturedfirst-gethomepagecategories-and-getproduct-so-it-uses-the-backend-provided-sale-fields-instead-of-defaulting-sale-fields-to-undefined-false-and-ensure-the-ui-displays-the-sale-price-when-present-otherwise-it-displays-the-normal-price",
-      "featureTitle": "Update frontend data fetching/mapping code that calls `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` so it uses the backend-provided sale fields (instead of defaulting sale fields to undefined/false), and ensure the UI displays the sale price when present; otherwise it displays the normal price.",
-      "files": [
-        "frontend/src/hooks/useCategoryProductsPaginated.ts",
-        "frontend/src/hooks/useProductQueries.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }

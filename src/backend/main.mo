@@ -9,9 +9,9 @@ import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
 import Iter "mo:core/Iter";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -19,12 +19,6 @@ actor {
   func checkAdmin(caller : Principal) {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-  };
-
-  func checkUser(caller : Principal) {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can perform this action");
     };
   };
 
@@ -177,9 +171,9 @@ actor {
     };
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getAllCategories() : async [Category] {
-    checkUser(caller);
-
     categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -188,8 +182,6 @@ actor {
   };
 
   public query ({ caller }) func getCategoryById(categoryId : Nat) : async ?Category {
-    checkUser(caller);
-
     categories.get(categoryId);
   };
 
@@ -308,10 +300,6 @@ actor {
   };
 
   public query ({ caller }) func getProductsPage(search : Text, categoryId : ?Nat, page : Nat, pageSize : Nat) : async PaginatedResponse {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view products");
-    };
-
     let filteredProducts = filterProducts(search, categoryId);
 
     let productV2Array = filteredProducts.map(
@@ -464,9 +452,9 @@ actor {
     };
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getProductPhoto(barcode : Text) : async [Nat8] {
-    checkUser(caller);
-
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
       case (?product) {
@@ -478,15 +466,15 @@ actor {
     };
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getTotalProductCount() : async Nat {
-    checkUser(caller);
-
     filterProducts("", null).size();
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
-    checkUser(caller);
-
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
     );
@@ -660,9 +648,9 @@ actor {
     };
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getActiveSales() : async [SaleItem] {
-    checkUser(caller);
-
     let currentTime = getCurrentTimestamp();
     saleItems.values().toArray().filter(
       func(sale) {
@@ -775,9 +763,9 @@ actor {
     };
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
-    checkUser(caller);
-
     [
       (1, switch (storeDetails.get(1)) {
         case (?details) { details };
@@ -932,9 +920,9 @@ actor {
   //-----------------------------------------------------------------
   // Smart Search Homepage Product Search with Autocomplete (Query)
   //-----------------------------------------------------------------
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func searchHomepageProducts(searchQuery : Text) : async [HomepageSearchResult] {
-    checkUser(caller);
-
     let trimmedQuery = searchQuery.trim(#char ' ');
 
     if (trimmedQuery.size() == 0) {
@@ -1027,9 +1015,9 @@ actor {
     [];
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getCategoryProductCounts() : async [(Nat, Nat)] {
-    checkUser(caller);
-
     categories.toArray().map(
       func((categoryId, _category)) {
         let productCount = products.entries().filter(
@@ -1042,9 +1030,9 @@ actor {
     );
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
-    checkUser(caller);
-
     let sortedCategories = categories.values().toArray().sort(
       func(a, b) {
         Nat.compare(a.order, b.order);
@@ -1249,14 +1237,14 @@ actor {
   //---------------------------------------------------
   // Enhanced Endpoints with Sale Information
   //---------------------------------------------------
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getProductsPageFeaturedFirst(
     search : Text,
     categoryId : ?Nat,
     page : Nat,
     pageSize : Nat,
   ) : async { items : [ProductWithSale]; totalCount : Nat } {
-    checkUser(caller);
-
     let filteredProducts = filterProducts(search, categoryId);
 
     let sortedProducts = filteredProducts.sort(
@@ -1289,9 +1277,9 @@ actor {
     { items; totalCount = filteredProducts.size() };
   };
 
+  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
+  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getProduct(barcode : Text) : async ProductWithSale {
-    checkUser(caller);
-
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
       case (?product) { getProductWithSaleInfo(product) };

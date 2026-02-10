@@ -1,107 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Refactor backend product fetches to consistently return sale info and update frontend to display sale price",
+  "title": "Make specified backend read endpoints permanently public (remove checkUser calls)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Refactor the Motoko backend so that `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` consistently return products including sale information: `salePrice`, `discountPercentage`, and a boolean indicating whether the sale is active, while always including the product `price`.",
+      "text": "In `backend/main.mo`, remove all invocations of `checkUser(caller)` from the actor codebase so that the affected endpoints no longer require any authenticated-user permission check. This includes, at minimum, removing the `checkUser(caller);` statement from the following query functions: `getAllCategories` (currently calls `checkUser`), `getCategoryById` (currently calls `checkUser`), `getProductPhoto` (currently calls `checkUser`), `getTotalProductCount` (currently calls `checkUser`), `getFeaturedProducts` (currently calls `checkUser`), and `getActiveSales` (currently calls `checkUser`). Also remove `checkUser(caller)` calls from any other functions present in the file (even if not listed here) so that there are zero call sites remaining.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-1"
         ],
         "quotes": [
-          "Refactor the Motoko backend so that the following functions:\n\t•\tgetProductsPageFeaturedFirst\n\t•\tgetHomepageCategories\n\t•\tgetProduct\nall return products with sale information (sale price, discount percentage, and whether the sale is active)."
+          "Remove all calls to `checkUser(caller)` completely from the code."
         ]
       },
       "acceptanceCriteria": [
-        "`getProductsPageFeaturedFirst` returns items that include sale fields (`salePrice`, `discountPercentage`, and active-sale boolean) for each product.",
-        "`getHomepageCategories` returns products within each category that include sale fields (`salePrice`, `discountPercentage`, and active-sale boolean).",
-        "`getProduct` returns a single product response that includes sale fields (`salePrice`, `discountPercentage`, and active-sale boolean).",
-        "In all three responses, `price` is present regardless of sale status (preserving the existing product `price` field behavior)."
+        "A text search over the backend code confirms there are no remaining call sites of `checkUser(caller)` (i.e., no `checkUser(` usage remains).",
+        "The canister compiles successfully after the refactor.",
+        "All functions that previously used `checkUser(caller)` continue to return the same data and trap for the same non-auth related conditions as before (e.g., missing product/photo), but they do not trap due to user authentication anymore."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement a single shared Motoko helper that determines whether a product currently has an active sale using the existing sale rules, and attaches sale fields to the returned product data without changing the underlying stored data model.",
+      "text": "Ensure the following backend functions are permanently public and contain no authentication, permission, or user-identity gating logic of any kind (including but not limited to `checkUser`, `AccessControl.hasPermission(... #user)`, or any similar checks), while preserving existing `checkAdmin(caller)` enforcement wherever it currently applies: `getBothStoreDetails`, `getAllCategories`, `getProduct`, `getProductPhoto`, `getTotalProductCount`, `getFeaturedProducts`, `getActiveSales`, `getHomepageCategories`, `getCategoryProductCounts`, `getProductsPageFeaturedFirst`, `searchHomepageProducts`. If any of these functions currently perform a user-permission check via something other than `checkUser`, remove that user-permission check as well. Do not change the functions’ non-auth logic or response shapes.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-1"
         ],
         "quotes": [
-          "Use a common helper function to calculate if a product has an active sale and attach the sale price and discount.\n\nSale logic should follow the existing rules:\n\t•\tIf a sale exists and is active, return salePrice and discountPercentage.\n\t•\tIf no sale exists, salePrice is null and discountPercentage is null.\n\t•\tprice should always be included.\n\nYou don’t need to change other functions or the data model—only refactor these three functions to consistently include sale info."
+          "These functions should be fully public and accessible by anyone without authentication.",
+          "Keep admin checks (`checkAdmin(caller)`) intact — do not remove or modify them.",
+          "The functions affected include (but are not limited to): ..."
         ]
       },
       "acceptanceCriteria": [
-        "A shared helper function is used by all three target functions to compute/attach sale info (no duplicated sale-computation logic across the three functions).",
-        "If a sale exists for the product and it is active per existing rules, the response includes non-null `salePrice` and `discountPercentage` and the active-sale boolean is true.",
-        "If no sale exists (or the sale is not active), `salePrice` is null and `discountPercentage` is null and the active-sale boolean is false.",
-        "No changes are made to persisted record shapes for products or sale items (no data model/storage schema changes)."
+        "Each listed function can be called by an anonymous/non-authenticated caller without trapping for authorization reasons.",
+        "No listed function contains a call to `checkUser` or a direct permission check such as `AccessControl.hasPermission(..., #user)` (or equivalent user-auth gating).",
+        "Any admin-only functions continue to enforce admin authorization exactly as before (no `checkAdmin` removal or weakening)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Preserve the existing pagination and sorting behavior of `getProductsPageFeaturedFirst` and `getHomepageCategories` while adding sale info, and follow Motoko best practices by using `map`/functional transformations and avoiding repeated loops where possible.",
+      "text": "Add an explicit, durable in-code guardrail comment in `backend/main.mo` immediately above each of the permanently-public functions listed in REQ-2 stating that the function is permanently public and must never add authentication/permission checks (including `checkUser` or similar) in future changes. The comment must be clear and unambiguous and must not alter runtime behavior.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-1"
         ],
         "quotes": [
-          "Keep Motoko best practices in mind: use map, avoid repeated loops, and maintain pagination and sorting logic."
+          "This change is permanent. Under no circumstances, now or in the future, should any of these functions ever check authentication, permissions, or call `checkUser` or any similar method.",
+          "Ensure that future AI-generated code or modifications respect this rule and never add authentication checks to these functions again."
         ]
       },
       "acceptanceCriteria": [
-        "`getProductsPageFeaturedFirst` still returns the same `totalCount` semantics and featured-first ordering as before, with pagination (`page`, `pageSize`) unchanged.",
-        "`getHomepageCategories` still preserves its existing pagination behavior for category loading and product ordering within categories, only adding sale info fields.",
-        "Implementation uses a shared transformation (e.g., mapping over products once per response structure) rather than re-filtering/re-sorting multiple times for sale augmentation."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update frontend data fetching/mapping code that calls `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` so it uses the backend-provided sale fields (instead of defaulting sale fields to undefined/false), and ensure the UI displays the sale price when present; otherwise it displays the normal price.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Ensure that all front-end pages using these functions display the sale price when it exists; otherwise, display the normal price."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Category page / category product grids driven by `getProductsPageFeaturedFirst` render sale price when backend indicates the sale is active, otherwise render normal price.",
-        "Homepage category sections driven by `getHomepageCategories` render sale price when backend indicates the sale is active, otherwise render normal price.",
-        "Product detail views driven by `getProduct` render sale price when backend indicates the sale is active, otherwise render normal price.",
-        "Frontend no longer hardcodes sale defaults for these endpoints (e.g., does not set `salePrice: undefined`, `discountPercentage: undefined`, `isOnSale: false` when backend returns real values)."
+        "Each permanently-public function listed in REQ-2 has a prominent comment directly above it stating it must remain permanently public and must not gain auth checks in the future.",
+        "No runtime logic changes are introduced by these comments (compile output unchanged except for auth-check removals requested elsewhere)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko architecture with logic in `backend/main.mo`.",
-    "Do not change the persisted data model; only refactor the three specified functions and add shared helper logic needed to attach sale info.",
-    "Do not modify frontend files under `frontend/src/components/ui` or any path listed in `frontend.immutablePaths`.",
-    "Use English for any user-facing text in this build request."
+    "Backend-only change: do not modify any frontend code or behavior.",
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css` (theme variables). If any frontend CSS changes ever become necessary later, they must be appended below that block without altering it.",
+    "Do not remove or modify any admin checks (`checkAdmin(caller)`) or otherwise weaken admin-only protections.",
+    "Keep the actor compiling and otherwise behaving the same, except for removing user-auth requirements from the specified permanently-public functions."
   ],
   "nonGoals": [
-    "Do not refactor or change behavior of other backend functions beyond what is required to keep types consistent for these three endpoints.",
-    "Do not introduce new backend services, external databases, or third-party integrations.",
-    "Do not redesign the sale admin workflow or sale item CRUD logic."
+    "Adding new frontend UI or changing any existing UI flows.",
+    "Changing data models, return types, or response shapes of the affected endpoints beyond removing authentication gates.",
+    "Implementing new authentication methods or changing Internet Identity integration."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

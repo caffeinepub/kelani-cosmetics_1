@@ -1,29 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update frontend product fetch mapping to use backend-provided sale fields and display sale pricing",
-  "requirements": [
-    {
-      "id": "REQ-4",
-      "summary": "Use backend-provided sale fields from getProductsPageFeaturedFirst/getHomepageCategories/getProduct and render sale price when sale is active; otherwise render normal price.",
-      "acceptanceCriteria": [
-        "Category page / category product grids driven by `getProductsPageFeaturedFirst` render sale price when backend indicates the sale is active, otherwise render normal price.",
-        "Homepage category sections driven by `getHomepageCategories` render sale price when backend indicates the sale is active, otherwise render normal price.",
-        "Product detail views driven by `getProduct` render sale price when backend indicates the sale is active, otherwise render normal price.",
-        "Frontend no longer hardcodes sale defaults for these endpoints (e.g., does not set `salePrice: undefined`, `discountPercentage: undefined`, `isOnSale: false` when backend returns real values)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useCategoryProductsPaginated.ts",
-          "operation": "modify",
-          "description": "Stop hardcoding sale defaults when mapping `getProductsPageFeaturedFirst` results; return the backend-provided `ProductWithSale` items directly so `salePrice`, `discountPercentage`, and `isOnSale` flow through to category product grids."
-        },
-        {
-          "path": "frontend/src/hooks/useProductQueries.ts",
-          "operation": "modify",
-          "description": "Fix `useGetProduct` to correctly consume the backend `getProduct` return type (`ProductWithSale`) and map sale fields (`salePrice`, `discountPercentage`, `isOnSale`) onto the UI `Product` model instead of defaulting sale fields."
-        }
-      ]
-    }
-  ]
+  "title": "Frontend-only plan: no changes required for backend-only public read refactor",
+  "requirements": []
 }

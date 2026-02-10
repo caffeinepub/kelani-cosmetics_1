@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure backend product-fetching endpoints consistently include sale information, and update the frontend to display sale pricing when a sale is active.
+**Goal:** Make specified backend read/query endpoints permanently public by removing all user-auth gating (e.g., `checkUser(caller)`), while keeping existing admin-only enforcement unchanged.
 
 **Planned changes:**
-- Refactor Motoko backend functions `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` to always include `price` and also return `salePrice`, `discountPercentage`, and a boolean indicating whether the sale is active.
-- Add a shared Motoko helper used by all three functions to compute/attach sale fields using existing sale rules, without changing persisted product/sale data models.
-- Preserve existing pagination, total count semantics, sorting, and featured-first behavior while attaching sale info (prefer functional mapping / avoid repeated loops).
-- Update frontend data fetching/mapping for these three endpoints to use backend-provided sale fields and render sale price when active; otherwise render normal price (removing any hardcoded sale defaults for these responses).
+- In `backend/main.mo`, remove every remaining call site of `checkUser(caller)` across the actor (resulting in zero `checkUser(` usages).
+- Ensure the following functions contain no authentication/permission/user-identity gating logic (including `checkUser` and user permission checks like `AccessControl.hasPermission(..., #user)`), without changing their non-auth logic or response shapes: `getBothStoreDetails`, `getAllCategories`, `getProduct`, `getProductPhoto`, `getTotalProductCount`, `getFeaturedProducts`, `getActiveSales`, `getHomepageCategories`, `getCategoryProductCounts`, `getProductsPageFeaturedFirst`, `searchHomepageProducts`.
+- Add a prominent guardrail comment immediately above each permanently-public function listed above stating it must remain permanently public and must never add auth/permission checks in future changes.
+- Preserve all existing `checkAdmin(caller)` behavior exactly as-is wherever it currently applies.
 
-**User-visible outcome:** Product listings (homepage sections, category grids) and product detail pages show the sale price when a sale is active; otherwise they show the regular price.
+**User-visible outcome:** Anonymous (non-authenticated) callers can successfully call the listed backend read/query functions without authorization traps, while admin-only protections remain enforced as before.

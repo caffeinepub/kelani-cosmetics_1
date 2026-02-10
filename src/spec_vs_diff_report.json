@@ -1,69 +1,46 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T23:26:20.387Z",
-  "summary": "The diff shows some frontend fetching changes for `getProductsPageFeaturedFirst` (category pagination hook) and partial sale-field mapping for a `ProductWithSale` type, but it does not provide clear evidence that the three specified backend endpoints were refactored to attach sale info via a shared helper, nor that the frontend UI rendering for homepage/category/product detail displays sale price. Several unrelated features/files (migration wiring, admin user management routing/docs) appear added/modified without being requested.",
+  "generatedAt": "2026-02-09T23:42:42.454Z",
+  "summary": "The diff does not provide evidence that `checkUser(caller)` call sites were removed, that the specified endpoints were made permanently public, or that guardrail comments were added above those endpoints. Additionally, `project_state.json` was modified even though the BuildRequest constrained changes to backend behavior (and did not request project state metadata updates).",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Refactor backend `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` to consistently include `salePrice`, `discountPercentage`, and an active-sale boolean, while always including `price`.",
-      "reason": "The `backend/main.mo` diff is truncated and does not show modifications to these three functions or their return types/fields. There is no diff evidence that `getHomepageCategories` or `getProduct` now return sale fields consistently.",
+      "requirement": "Remove all invocations of `checkUser(caller)` from `backend/main.mo` so there are zero remaining call sites (no `checkUser(` usage remains), including the listed query functions and any other occurrences.",
+      "reason": "The provided `backend/main.mo` diff snippet does not show removal of any `checkUser(caller)` calls, and the snippet still contains user-gating logic (e.g., `AccessControl.hasPermission(..., #user)`) in other functions. Because the file content is truncated and no evidence of `checkUser` removal is shown, this requirement cannot be verified as implemented.",
       "evidence": [
-        "backend/main.mo (truncated; no visible changes to target endpoints)"
+        "backend/main.mo (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Implement a single shared Motoko helper used by all three target functions to compute active sale status and attach sale fields without changing persisted data model.",
-      "reason": "No helper function for sale computation/attachment is shown in the truncated `backend/main.mo` content, and the added `backend/migration.mo` does not implement sale-attachment logic for query responses. There is no evidence all three endpoints share a single helper.",
+      "requirement": "Ensure the listed functions are permanently public and contain no authentication/permission/user-identity gating logic (including `checkUser` or `AccessControl.hasPermission(..., #user)`), while preserving existing `checkAdmin(caller)` enforcement where it applies.",
+      "reason": "None of the specified permanently-public functions (e.g., `getBothStoreDetails`, `getAllCategories`, `getProduct`, `getProductPhoto`, etc.) are shown in the truncated diff snippet, and there is no evidence that user-permission checks were removed from those functions. Therefore, compliance cannot be confirmed.",
       "evidence": [
-        "backend/main.mo (truncated; no visible shared helper)",
-        "backend/migration.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "Preserve existing pagination/sorting behavior for `getProductsPageFeaturedFirst` and `getHomepageCategories` while adding sale info; use map/functional transformations and avoid repeated loops.",
-      "reason": "Because backend changes to `getProductsPageFeaturedFirst` / `getHomepageCategories` are not visible in the diff summary, there is no evidence that pagination/sorting behavior was preserved or that sale augmentation is implemented via shared mapping transformations.",
+      "requirement": "Add an explicit guardrail comment immediately above each permanently-public function listed in REQ-2 stating it is permanently public and must never add auth/permission checks in the future.",
+      "reason": "The truncated `backend/main.mo` snippet does not show any new guardrail comments above the listed permanently-public functions, and those functions are not visible in the provided excerpt.",
       "evidence": [
-        "backend/main.mo (truncated; no visible implementation details for the two paginated endpoints)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Update frontend data fetching/mapping for `getProductsPageFeaturedFirst`, `getHomepageCategories`, and `getProduct` to use backend sale fields (no hardcoded defaults), and ensure UI displays sale price when active else normal price.",
-      "reason": "The category products hook now returns backend `response.items` directly, but the product mapping code still hardcodes default sale fields for at least some flows (e.g., `mapBackendProduct` and `mapProductV2ToProduct`). The diff also does not show any UI component changes that render sale vs normal price, nor any changes for `getHomepageCategories` usage. The `useGetProduct` implementation is truncated and does not show using backend sale fields.",
-      "evidence": [
-        "frontend/src/hooks/useCategoryProductsPaginated.ts",
-        "frontend/src/hooks/useProductQueries.ts (shows default sale fields in `mapBackendProduct` and `mapProductV2ToProduct`; truncated for `useGetProduct`)",
-        "backend/main.mo (truncated; no corroborating endpoint contract changes)"
+        "backend/main.mo (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Introduced/added migration module and wired actor migration (`with migration = Migration.run`) despite the request being limited to refactoring three backend functions without data model/storage schema changes.",
-      "reason": "The BuildRequest did not ask for a migration module/file or migration wiring; it explicitly constrained changes to refactoring the three specified functions and adding shared helper logic for sale info attachment.",
+      "description": "Modification of `project_state.json` to track/reflection of requirements and architectural notes.",
+      "reason": "The BuildRequest specifies a backend-only change and does not request updating repository/project metadata files. The diff includes edits to `project_state.json`, which is outside the requested backend endpoint/auth-change work.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo (contains `import Migration \"migration\";` and `(with migration = Migration.run)`)"
-      ]
-    },
-    {
-      "description": "Admin user management routing/page documentation changes referenced in the modified `frontend-file-summaries.txt` (e.g., new /admin/user-management route, dashboard card).",
-      "reason": "The BuildRequest is about sale info in product fetches and UI display of sale price; it does not request admin user management features or routes.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions new /admin/user-management route and related admin UI elements)"
+        "project_state.json (truncated)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.66,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
-    "frontend-file-summaries.txt",
-    "frontend/src/hooks/useCategoryProductsPaginated.ts",
-    "frontend/src/hooks/useProductQueries.ts",
     "project_state.json"
   ]
 }
