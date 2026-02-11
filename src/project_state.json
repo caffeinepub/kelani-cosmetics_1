@@ -1,19 +1,26 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Frontend website update: modify the Privacy Policy (/privacy) contact section (section 12) to remove hardcoded store contact details and replace with a Link to the contact page (/contacto) in Spanish.",
+  "summary": "Frontend-only UI update to the public product card: hide price section when no price exists and remove the stock status text badges below the price, while preserving all other product card behavior and existing CSS theme variables.",
   "architectural_notes": [
-    "On /privacy page, only modify section 12 (contact section); preserve all other sections, headings, layout, and styling.",
-    "Do not modify or overwrite the :root CSS custom properties block in index.css (theme color variables); only append new CSS below if needed."
+    "Do not modify or overwrite the :root CSS custom properties block in index.css (theme color variables); only append new CSS styles below it if needed."
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-on-the-privacy-policy-page-privacy-update-only-section-12-contacto-to-remove-the-hardcoded-store-contact-details-and-replace-them-with-a-single-contact-paragraph-plus-a-standalone-router-link-to-the-contact-page",
-      "title": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
+      "id": "feature-update-the-public-product-card-component-frontend-src-components-public-products-productcard-tsx-so-that-when-the-product-has-no-price-product-price-is-undefined-null-missing-and-the-product-is-not-on-an-active-sale-the-card-renders-no-price-ui-at-all-no-placeholder-text-and-no-empty-price-wrapper-element-for-that-case-keep-the-existing-regular-price-and-sale-price-rendering-logic-unchanged-when-a-valid-price-exists",
+      "title": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
       "reqIds": [
         "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-same-public-product-card-component-frontend-src-components-public-products-productcard-tsx-remove-the-entire-stock-status-text-badge-section-below-the-price-the-div-that-renders-disponible-agotado-do-not-change-the-stock-badge-overlay-within-the-image-area-the-absolute-positioned-badge-or-any-other-badges-behaviors",
+      "title": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+      "reqIds": [
+        "REQ-2"
       ],
       "version": 1
     }
@@ -21,12 +28,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update Privacy Policy contact section (section 12) to remove contact details box and add Link to /contacto with text \"Ir a la página de contacto\" (frontend-only).",
+      "summary": "Update public product card to render no price UI when product.price is missing (remove 'Precio no disponible') and remove the stock status text badge block below the price while keeping image overlay stock badge unchanged (frontend-only, single component).",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Update Privacy Policy contact section to link to /contacto (remove hardcoded store details)",
+  "projectName": "Public ProductCard: Hide missing price and remove stock text badge",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

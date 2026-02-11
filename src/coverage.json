@@ -1,24 +1,35 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T15:32:39.038Z",
+  "generatedAt": "2026-02-11T22:22:37.293Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
+        "summary": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/PrivacyPage.tsx"
+          "frontend/src/components/public/products/ProductCard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/PrivacyPage.tsx"
+          "frontend/src/components/public/products/ProductCard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/public/products/ProductCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/public/products/ProductCard.tsx"
         ]
       }
     ]
@@ -28,7 +39,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/public/PrivacyPage.tsx",
+    "frontend/src/components/public/products/ProductCard.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

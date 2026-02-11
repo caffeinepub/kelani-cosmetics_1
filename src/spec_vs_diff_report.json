@@ -1,74 +1,46 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T15:32:39.035Z",
-  "summary": "REQ-1 is not verifiably implemented from the provided truncated diff, and the diff shows multiple unrelated changes to the Privacy page (loading/error states, actor hooks, SEO side effects, header/back link, and dynamic last-updated date), plus modifications to non-requested files.",
+  "generatedAt": "2026-02-11T22:22:37.289Z",
+  "summary": "The diff shows changes beyond the allowed single-component scope, and it appears to modify the stock overlay badge content in ProductCard.tsx, which was required to remain unchanged. Due to truncation, the price-UI removal and removal of the below-price stock text block cannot be fully verified from the provided snippet.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "On /privacy, update only Section 12 \"Contacto\" to remove hardcoded store contact details and replace with the specified paragraph and a standalone @tanstack/react-router Link to /contacto, without changing other sections or adding loading/error/data-fetch patterns.",
-      "reason": "The diff snippet for PrivacyPage.tsx is truncated before Section 12, so there is no evidence that the Section 12 content was updated as specified (removal of the `bg-muted p-6 rounded-lg space-y-3` div, removal of mailto/tel/details, exact paragraph text, and exact Link text/className). Additionally, the visible changes indicate broader modifications to the page beyond Section 12, which violates the 'update only Section 12' constraint in REQ-1.",
+      "id": "REQ-2",
+      "requirement": "Keep the stock badge overlay within the image area present and unchanged (positioning, text, styling).",
+      "reason": "The diff snippet shows the stock overlay badge text being rendered as “En Stock”/“Sin Stock”, which indicates the overlay content was changed rather than kept unchanged.",
       "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (truncated; does not show Section 12)"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Added loading state with spinner and \"Cargando política de privacidad...\" message for the /privacy page.",
-      "reason": "BuildRequest explicitly forbids introducing data fetching, loading states, fallback handling, or error handling for this contact section update, and the change was supposed to be limited to Section 12 only.",
-      "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (adds isInitialLoading state and early return with Loader2 spinner)"
+        "frontend/src/components/public/products/ProductCard.tsx"
       ]
     },
     {
-      "description": "Added error state handling (`error` state and an error UI).",
-      "reason": "BuildRequest forbids introducing error handling for this update and limits changes to Section 12 only.",
-      "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (adds `error` state and renders an error block)"
-      ]
-    },
-    {
-      "description": "Introduced actor-related logic (`useActor`, `stableActor`) and a simulated initial data fetch via `setTimeout`.",
-      "reason": "Not requested; also violates the constraint to not introduce data-fetching/loading patterns and to only modify Section 12.",
-      "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (imports `useActor`, uses `stableActor`, simulates loading with setTimeout)"
-      ]
-    },
-    {
-      "description": "Added SEO side effects: setting document title and creating/updating meta description tag.",
-      "reason": "Not requested and constitutes changes outside Section 12.",
-      "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (useEffect that sets `document.title` and meta description)"
-      ]
-    },
-    {
-      "description": "Added a back link UI to home (\"Volver al inicio\") with ArrowLeft icon at top of page.",
-      "reason": "Not requested and changes layout outside Section 12.",
-      "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (Back Link section with Link to \"/\" and ArrowLeft)"
-      ]
-    },
-    {
-      "description": "Added a dynamic \"Última actualización\" date computed at runtime.",
-      "reason": "Not requested and changes content outside Section 12.",
-      "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx (computes `currentDate` and renders \"Última actualización\")"
-      ]
-    },
-    {
-      "description": "Modified/updated repository documentation/state files (`frontend-file-summaries.txt`, `project_state.json`).",
-      "reason": "BuildRequest asked for a frontend-only change limited to Section 12 on /privacy; editing these meta/state files was not requested.",
+      "requirement": "Limit code changes to a single component: frontend/src/components/public/products/ProductCard.tsx (no other files).",
+      "reason": "The diff indicates additional modified files beyond ProductCard.tsx.",
       "evidence": [
         "frontend-file-summaries.txt",
         "project_state.json"
       ]
     }
   ],
-  "confidence": 0.74,
+  "hallucinated_features": [
+    {
+      "description": "Updated/added project metadata entries describing the change request (project_state.json).",
+      "reason": "The BuildRequest constrained changes to a single frontend component file only; modifying project_state.json was not requested.",
+      "evidence": [
+        "project_state.json"
+      ]
+    },
+    {
+      "description": "Updated generated repository summary content (frontend-file-summaries.txt).",
+      "reason": "The BuildRequest did not request changes to this file and explicitly constrained changes to a single component.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/pages/public/PrivacyPage.tsx",
+    "frontend/src/components/public/products/ProductCard.tsx",
     "project_state.json"
   ]
 }

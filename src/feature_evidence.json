@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-on-the-privacy-policy-page-privacy-update-only-section-12-contacto-to-remove-the-hardcoded-store-contact-details-and-replace-them-with-a-single-contact-paragraph-plus-a-standalone-router-link-to-the-contact-page",
-      "featureTitle": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
+      "featureId": "feature-update-the-public-product-card-component-frontend-src-components-public-products-productcard-tsx-so-that-when-the-product-has-no-price-product-price-is-undefined-null-missing-and-the-product-is-not-on-an-active-sale-the-card-renders-no-price-ui-at-all-no-placeholder-text-and-no-empty-price-wrapper-element-for-that-case-keep-the-existing-regular-price-and-sale-price-rendering-logic-unchanged-when-a-valid-price-exists",
+      "featureTitle": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
       "files": [
-        "frontend/src/pages/public/PrivacyPage.tsx"
+        "frontend/src/components/public/products/ProductCard.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,6 +17,25 @@
       ],
       "testIds": [
         "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-the-same-public-product-card-component-frontend-src-components-public-products-productcard-tsx-remove-the-entire-stock-status-text-badge-section-below-the-price-the-div-that-renders-disponible-agotado-do-not-change-the-stock-badge-overlay-within-the-image-area-the-absolute-positioned-badge-or-any-other-badges-behaviors",
+      "featureTitle": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+      "files": [
+        "frontend/src/components/public/products/ProductCard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
       ],
       "confidence": "high"
     }

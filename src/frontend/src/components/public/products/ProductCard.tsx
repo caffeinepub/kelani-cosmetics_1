@@ -128,35 +128,24 @@ const ProductCard = React.memo(function ProductCard({
         </h3>
 
         {/* Price Display - strict backend-driven sale logic */}
-        <div className="space-y-1">
-          {showSalePrice ? (
-            <>
-              <div className="text-lg font-bold text-primary">
-                {formatPrice(salePrice)}
-              </div>
-              {product.price !== undefined && product.price !== null && (
-                <div className="text-xs text-muted-foreground line-through">
-                  {formatPrice(product.price)}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-lg font-bold text-foreground">
-              {displayPrice !== undefined && displayPrice !== null
-                ? formatPrice(displayPrice)
-                : 'Precio no disponible'}
+        {showSalePrice ? (
+          <div className="space-y-1">
+            <div className="text-lg font-bold text-primary">
+              {formatPrice(salePrice)}
             </div>
-          )}
-        </div>
-
-        {/* Stock Status Text Badge */}
-        <div className="text-xs">
-          {product.inStock ? (
-            <span className="text-green-600 font-medium">Disponible</span>
-          ) : (
-            <span className="text-red-600 font-medium">Agotado</span>
-          )}
-        </div>
+            {product.price !== undefined && product.price !== null && (
+              <div className="text-xs text-muted-foreground line-through">
+                {formatPrice(product.price)}
+              </div>
+            )}
+          </div>
+        ) : (
+          displayPrice !== undefined && displayPrice !== null && (
+            <div className="text-lg font-bold text-foreground">
+              {formatPrice(displayPrice)}
+            </div>
+          )
+        )}
       </div>
     </div>
   );

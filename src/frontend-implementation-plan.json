@@ -1,24 +1,37 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Privacy page: replace Section 12 contact details with link to /contacto",
+  "title": "ProductCard: Hide missing price UI and remove stock text badge",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update only Section 12 (\"Contacto\") on /privacy to remove hardcoded store contact details and replace with a single paragraph plus a standalone router Link to /contacto.",
+      "summary": "Hide the entire price UI on public ProductCard when no regular price exists and the product is not on an active sale, while preserving existing regular/sale price rendering when prices exist.",
       "acceptanceCriteria": [
-        "In frontend/src/pages/public/PrivacyPage.tsx, the Section 12 contact area no longer renders the div with class `bg-muted p-6 rounded-lg space-y-3`.",
-        "Section 12 no longer displays any individual contact details (store name, email, phone, address) and does not include `mailto:` or `tel:` links.",
-        "Section 12 retains an introductory paragraph, updated to: \"Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos a través de nuestra página de contacto.\"",
-        "Immediately after that paragraph, Section 12 renders a Link (from @tanstack/react-router) pointing to `/contacto` with visible link text exactly \"Ir a la página de contacto\" and className exactly `text-primary hover:underline`.",
-        "No other sections, headings, layout, or styling on /privacy are modified outside Section 12.",
-        "No backend changes are made."
+        "For products not on sale where product.price is undefined/null/missing, the price area renders nothing (no 'Precio no disponible' text and no price container element for that branch).",
+        "For products with a valid product.price and not on sale, the price renders exactly as before (same formatting and classes).",
+        "For products on an active sale (isOnSale with a defined salePrice), sale price rendering remains exactly as before, including the optional struck-through regular price when present."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/public/PrivacyPage.tsx",
+          "path": "frontend/src/components/public/products/ProductCard.tsx",
           "operation": "modify",
-          "description": "Within Section 12 \"Contacto\" only: remove the entire hardcoded contact-details block (the div with class `bg-muted p-6 rounded-lg space-y-3`) and remove any remaining individual contact details and `mailto:`/`tel:` links. Replace the current intro paragraph text with exactly: \"Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos a través de nuestra página de contacto.\" Then render a standalone `Link` from `@tanstack/react-router` immediately after that paragraph with `to=\"/contacto\"`, visible text exactly \"Ir a la página de contacto\", and `className=\"text-primary hover:underline\"`. Do not change any other sections or styles outside Section 12, and do not add any fetching/loading/error logic."
+          "description": "Adjust the price rendering branch so that when not on active sale and product.price is null/undefined/missing, render no price markup at all (remove the 'Precio no disponible' fallback and avoid rendering an empty price wrapper for that case), while keeping existing sale price and regular price UI (formatting/classes) unchanged when a valid price exists."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Remove the below-price stock status text badge ('Disponible'/'Agotado') from the public ProductCard while keeping the stock overlay badge in the image area unchanged.",
+      "acceptanceCriteria": [
+        "The block that renders “Disponible”/“Agotado” below the price is removed from ProductCard.tsx.",
+        "The stock overlay badge in the image area remains present and unchanged (positioning, text, styling).",
+        "Featured badge, sale badge, click handler, image loading/fallback behavior, name truncation, and responsive layout remain unchanged."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/products/ProductCard.tsx",
+          "operation": "modify",
+          "description": "Remove the entire 'Stock Status Text Badge' section below the price (the non-overlay text badge div), without altering the stock badge overlay within the image area or any other badges/behaviors."
         }
       ]
     }

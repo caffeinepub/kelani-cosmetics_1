@@ -1,48 +1,62 @@
 {
   "kind": "build_request",
-  "title": "Update Privacy Policy contact section to link to /contacto (remove hardcoded store details)",
+  "title": "Public ProductCard: Hide missing price and remove stock text badge",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
+      "text": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Update the privacy policy contact section to link to the contact page instead of displaying store contact details. This is a frontend-only change. Do not change anything else.",
-          "Remove the entire div with class `bg-muted p-6 rounded-lg space-y-3`",
-          "Use existing Link component from router",
-          "Target: `/contacto` route",
-          "Link text: \"Ir a la página de contacto\"",
-          "Styling: `text-primary hover:underline` (maintain existing link styling)",
-          "Do not modify any other sections of the privacy policy page"
+          "Do not display any price element when `product.price` is undefined, null, or missing",
+          "Remove the conditional text \"Precio no disponible\"",
+          "If no price exists, render nothing in the price display area",
+          "Regular price and sale price display logic remains unchanged for products with valid prices"
         ]
       },
       "acceptanceCriteria": [
-        "In frontend/src/pages/public/PrivacyPage.tsx, the Section 12 contact area no longer renders the div with class `bg-muted p-6 rounded-lg space-y-3`.",
-        "Section 12 no longer displays any individual contact details (store name, email, phone, address) and does not include `mailto:` or `tel:` links.",
-        "Section 12 retains an introductory paragraph, updated to: \"Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos a través de nuestra página de contacto.\"",
-        "Immediately after that paragraph, Section 12 renders a Link (from @tanstack/react-router) pointing to `/contacto` with visible link text exactly \"Ir a la página de contacto\" and className exactly `text-primary hover:underline`.",
-        "No other sections, headings, layout, or styling on /privacy are modified outside Section 12.",
-        "No backend changes are made."
+        "For products not on sale where product.price is undefined/null/missing, the price area renders nothing (no 'Precio no disponible' text and no price container element for that branch).",
+        "For products with a valid product.price and not on sale, the price renders exactly as before (same formatting and classes).",
+        "For products on an active sale (isOnSale with a defined salePrice), sale price rendering remains exactly as before, including the optional struck-through regular price when present."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Remove the entire `{/* Stock Status Text Badge */}` section",
+          "Remove the div containing the \"Disponible\"/\"Agotado\" text badges",
+          "Stock badge overlay in the image area must remain unchanged",
+          "Only remove the text badge below the price, not the overlay badge on the image"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The block that renders “Disponible”/“Agotado” below the price is removed from ProductCard.tsx.",
+        "The stock overlay badge in the image area remains present and unchanged (positioning, text, styling).",
+        "Featured badge, sale badge, click handler, image loading/fallback behavior, name truncation, and responsive layout remain unchanged."
       ]
     }
   ],
   "constraints": [
-    "Frontend-only change; do not modify backend files.",
-    "Do not modify the contact page (/contacto) or any other components/pages besides the Section 12 contact section on /privacy.",
-    "Do not introduce data fetching, loading states, fallback handling, or error handling for this contact section update.",
-    "Maintain Spanish UI content on the Privacy page.",
-    "Do not remove, modify, or overwrite the :root CSS custom properties block in frontend/src/index.css; if any CSS is added, it must be appended below the existing block without altering it."
+    "Frontend-only change: do not modify backend code, backend API, or data structures.",
+    "Limit code changes to a single component: frontend/src/components/public/products/ProductCard.tsx. Do not change product card props or TypeScript interfaces.",
+    "Do not change any other components/pages; in particular, keep the home page search box width unchanged.",
+    "Do not remove, modify, or overwrite the :root CSS custom properties block in frontend/src/index.css; preserve exact variable names, values, and structure. If any CSS must be added, append it only below that block (though no CSS changes are expected for this request)."
   ],
   "nonGoals": [
-    "Changing any other section (1–11, 13) of the Privacy Policy page.",
-    "Changing routing configuration or adding new routes.",
-    "Updating store details, footer contact info, product modal contact options, or any other place where contact information is displayed.",
-    "Adding tests, analytics, or telemetry for this change."
+    "Refactoring pricing/sale logic beyond removing the missing-price placeholder output.",
+    "Changing any Spanish/English copy outside the specified removals (only remove the specified placeholder/badges).",
+    "Any layout redesign or visual theme updates.",
+    "Adding new tests, routes, or backend validations."
   ],
   "imageRequirements": {
     "required": [],
