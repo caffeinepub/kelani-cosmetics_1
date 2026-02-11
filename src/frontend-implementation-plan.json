@@ -1,37 +1,155 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "ProductCard: Hide missing price UI and remove stock text badge",
+  "title": "Static sitemap/robots and per-route SEO head tags for public pages",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Hide the entire price UI on public ProductCard when no regular price exists and the product is not on an active sale, while preserving existing regular/sale price rendering when prices exist.",
+      "summary": "Add an exact static sitemap.xml in the public folder and ensure it is publicly served at /sitemap.xml.",
       "acceptanceCriteria": [
-        "For products not on sale where product.price is undefined/null/missing, the price area renders nothing (no 'Precio no disponible' text and no price container element for that branch).",
-        "For products with a valid product.price and not on sale, the price renders exactly as before (same formatting and classes).",
-        "For products on an active sale (isOnSale with a defined salePrice), sale price rendering remains exactly as before, including the optional struck-through regular price when present."
+        "`frontend/public/sitemap.xml` exists and matches the provided XML exactly (including loc URLs, lastmod=2026-02-11, changefreq, priority, and urlset xmlns).",
+        "Requesting `/sitemap.xml` in the deployed app returns the sitemap file (HTTP 200) with `Content-Type` appropriate for XML.",
+        "The sitemap contains only the 3 static URLs: `/`, `/contacto`, `/privacy` (no category/product URLs)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/public/products/ProductCard.tsx",
-          "operation": "modify",
-          "description": "Adjust the price rendering branch so that when not on active sale and product.price is null/undefined/missing, render no price markup at all (remove the 'Precio no disponible' fallback and avoid rendering an empty price wrapper for that case), while keeping existing sale price and regular price UI (formatting/classes) unchanged when a valid price exists."
+          "path": "frontend/public/sitemap.xml",
+          "operation": "create",
+          "description": "Create the static sitemap file and paste the user-provided XML content verbatim (no formatting/whitespace changes), containing only the 3 specified static URLs and the exact metadata values (including lastmod=2026-02-11)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Remove the below-price stock status text badge ('Disponible'/'Agotado') from the public ProductCard while keeping the stock overlay badge in the image area unchanged.",
+      "summary": "Add an exact static robots.txt in the public folder referencing the production sitemap URL.",
       "acceptanceCriteria": [
-        "The block that renders “Disponible”/“Agotado” below the price is removed from ProductCard.tsx.",
-        "The stock overlay badge in the image area remains present and unchanged (positioning, text, styling).",
-        "Featured badge, sale badge, click handler, image loading/fallback behavior, name truncation, and responsive layout remain unchanged."
+        "`frontend/public/robots.txt` exists and matches the provided text exactly.",
+        "Requesting `/robots.txt` in the deployed app returns the robots file (HTTP 200).",
+        "`robots.txt` contains `Sitemap: https://kelanicosmetics.es/sitemap.xml`."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/public/products/ProductCard.tsx",
+          "path": "frontend/public/robots.txt",
+          "operation": "create",
+          "description": "Create the static robots file and paste the user-provided content verbatim (no formatting/whitespace changes), including the exact `Sitemap: https://kelanicosmetics.es/sitemap.xml` line."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Implement a frontend-only per-route head-tag manager to set/override SEO tags for the static public pages without changing page behavior.",
+      "acceptanceCriteria": [
+        "Navigating between `/`, `/contacto`, and `/privacy` updates the document title and meta tags to match the current page, and removes/overrides conflicting tags from prior routes.",
+        "No backend changes are introduced.",
+        "All existing UI functionality on these pages remains unchanged (rendering, data fetching, loading/error states, interactions)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/seo/SeoHead.tsx",
+          "operation": "create",
+          "description": "Create an equivalent-to-React-Helmet head manager component (e.g., `SeoHead`) that sets document title and manages meta/link tags (description, keywords, robots, canonical, Open Graph, Twitter) by creating/updating/removing tags in `<head>`. Ensure it overrides conflicts by updating existing tags when present and cleans up any tags it owns on unmount/route change (e.g., via a `data-seo-managed` marker), while leaving unrelated tags intact."
+        },
+        {
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Remove the entire 'Stock Status Text Badge' section below the price (the non-overlay text badge div), without altering the stock badge overlay within the image area or any other badges/behaviors."
+          "description": "Ensure the base HTML provides only minimal default head tags that will not conflict with route-level SEO (keep charset/viewport; keep a generic title if desired). If a default meta description exists or is added, ensure the per-route SEO mechanism can reliably override it."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Set the exact user-provided Spanish SEO head tags on the homepage with canonical https://kelanicosmetics.es/ and correct accents/characters.",
+      "acceptanceCriteria": [
+        "Homepage `<title>` is exactly: `Kelani Cosmetics | Cosmética y cuidado capilar en Valencia y Málaga`.",
+        "Homepage meta tags exist with the exact `content` values provided by the user for: description, keywords, robots (`index, follow`), canonical (`https://kelanicosmetics.es/`), OG title/description/url/type/locale/site_name, and Twitter card/title/description.",
+        "Accents/special characters render correctly in the head tags (e.g., `València`, `C/ de Bailèn`, `P.º de los Tilos`).",
+        "No other homepage functionality changes (including cache clearing behavior)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/HomePage.tsx",
+          "operation": "modify",
+          "description": "Integrate the per-route head manager (from REQ-3) into the homepage component and set the SEO tags exactly as provided by the user (Spanish strings verbatim), including canonical `https://kelanicosmetics.es/`, robots `index, follow`, and the specified Open Graph + Twitter tags. Preserve all existing behavior such as query-cache clearing on unmount."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Set the exact user-provided Spanish SEO head tags on the contact page, including the exact store addresses and postal codes.",
+      "acceptanceCriteria": [
+        "Contact page `<title>` is exactly: `Contacto | Kelani Cosmetics Valencia y Málaga`.",
+        "Contact page meta description includes both stores with the exact address details and postal codes as provided: Valencia (C/ de Bailèn, 34, Extramurs, 46007) and Málaga (P.º de los Tilos, 26, Cruz de Humilladero, 29006).",
+        "Contact page meta tags match the provided values for: keywords, robots (`index, follow`), canonical (`https://kelanicosmetics.es/contacto`), OG title/description/url/type/locale/site_name.",
+        "Existing contact page behavior remains unchanged (including cookie-consent map gating and store-details fetching)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/ContactoPage.tsx",
+          "operation": "modify",
+          "description": "Integrate the per-route head manager (from REQ-3) into the contact page component and set the SEO tags exactly as provided by the user (Spanish strings verbatim), including canonical `https://kelanicosmetics.es/contacto`, robots `index, follow`, and Open Graph tags. Ensure the meta description includes the two addresses exactly as specified with punctuation and accents. Preserve all existing behavior including cookie-consent map gating, store-details fetching, and cache clearing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Set the exact user-provided Spanish SEO head tags on the privacy page with noindex, and remove conflicting ad-hoc title/description side effects.",
+      "acceptanceCriteria": [
+        "Privacy page `<title>` is exactly: `Política de Privacidad | Kelani Cosmetics`.",
+        "Privacy page meta tags match the provided values for: description, keywords, robots (`noindex, follow`), canonical (`https://kelanicosmetics.es/privacy`), OG title/description/url/type/locale.",
+        "The privacy page does not set conflicting title/description values different from the required SEO tags during mount/unmount transitions.",
+        "Existing privacy page rendering/loading behavior remains intact (aside from SEO tag management)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/PrivacyPage.tsx",
+          "operation": "modify",
+          "description": "Replace the current ad-hoc `useEffect` DOM side effects that directly set `document.title` and meta description with the shared per-route head manager (from REQ-3). Set the privacy SEO tags exactly as provided by the user (Spanish strings verbatim), ensure robots remains `noindex, follow`, and ensure no mount/unmount cleanup restores conflicting values. Preserve existing scroll-to-top and simulated loading behavior."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Ensure all canonical/OG URLs use the production domain, all meta text is Spanish, and accents/encoding are preserved in rendered head tags.",
+      "acceptanceCriteria": [
+        "All specified head tag strings are in Spanish and match the user-provided values exactly.",
+        "All canonical/OG URLs use `https://kelanicosmetics.es` (not relative URLs, not alternative domains).",
+        "Rendered head tags correctly preserve accents and punctuation in the final DOM."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/seo/seoPresets.ts",
+          "operation": "create",
+          "description": "Create centralized SEO tag presets/constants for the three static public pages (`/`, `/contacto`, `/privacy`) using the exact user-provided Spanish strings and production-domain URLs. Use this to reduce duplication and prevent accidental drift in canonical/OG URLs and Spanish content across pages."
+        },
+        {
+          "path": "frontend/src/pages/public/HomePage.tsx",
+          "operation": "modify",
+          "description": "Refactor the homepage SEO configuration to consume the centralized presets/constants so canonical + OG URLs are guaranteed to use `https://kelanicosmetics.es` and Spanish text is consistently applied exactly as provided."
+        },
+        {
+          "path": "frontend/src/pages/public/ContactoPage.tsx",
+          "operation": "modify",
+          "description": "Refactor the contact page SEO configuration to consume the centralized presets/constants so canonical + OG URLs are guaranteed to use `https://kelanicosmetics.es` and Spanish text (including store addresses/accents) is consistently applied exactly as provided."
+        },
+        {
+          "path": "frontend/src/pages/public/PrivacyPage.tsx",
+          "operation": "modify",
+          "description": "Refactor the privacy page SEO configuration to consume the centralized presets/constants so canonical + OG URLs are guaranteed to use `https://kelanicosmetics.es` and robots remains `noindex, follow` with Spanish text applied exactly as provided."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Preserve the existing :root CSS custom properties block in frontend/src/index.css; only append styles below if ever needed.",
+      "acceptanceCriteria": [
+        "`frontend/src/index.css` `:root` block remains unchanged (same variables, values, ordering/structure).",
+        "No CSS changes are made above or within the `:root` block."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Do not alter the existing `:root` CSS custom properties block. If any SEO-related styling is ever required (not expected for head-tag work), append new CSS only below the existing `:root` block; otherwise keep styling unchanged. Optionally add a brief comment near the end of the file noting that the `:root` block must remain untouched."
         }
       ]
     }

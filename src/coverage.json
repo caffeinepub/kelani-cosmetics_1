@@ -1,36 +1,108 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T22:22:37.293Z",
+  "generatedAt": "2026-02-11T22:43:37.085Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 8,
+    "implemented": 7,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
+        "summary": "Create a static sitemap at `frontend/public/sitemap.xml` with exactly the XML content provided by the user, and ensure it is served publicly at `https://kelanicosmetics.es/sitemap.xml` (no dynamic URL generation for categories or products).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/products/ProductCard.tsx"
+          "frontend/public/sitemap.xml"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/products/ProductCard.tsx"
+          "frontend/public/sitemap.xml"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+        "summary": "Create a static robots file at `frontend/public/robots.txt` with exactly the content provided by the user, including the sitemap reference to `https://kelanicosmetics.es/sitemap.xml`.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/products/ProductCard.tsx"
+          "frontend/public/robots.txt"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/products/ProductCard.tsx"
+          "frontend/public/robots.txt"
         ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Implement a frontend-only mechanism (React Helmet or an equivalent approach) to set and override per-route `<head>` tags for the static public pages: homepage (`/`), contact page (`/contacto`), and privacy policy page (`/privacy`), without changing page behavior.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/seo/SeoHead.tsx",
+          "frontend/index.html"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/seo/SeoHead.tsx",
+          "frontend/index.html"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Update the homepage (`frontend/src/pages/public/HomePage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph, Twitter) with canonical URL `https://kelanicosmetics.es/` and local SEO wording for Valencia/València and Málaga, including accents and special characters exactly as specified.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/HomePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/HomePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Update the contact page (`frontend/src/pages/public/ContactoPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), including the store addresses and local details (neighborhoods and postal codes) exactly as specified.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/ContactoPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Update the privacy policy page (`frontend/src/pages/public/PrivacyPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), and ensure the page remains `noindex, follow`. Remove/replace any existing ad-hoc title/description side effects that conflict with these tags.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/public/PrivacyPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/public/PrivacyPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Ensure SEO implementation uses the production domain in all canonical and OG URL tags (`https://kelanicosmetics.es`), keeps all meta tag text in Spanish, and correctly handles character encoding for accents (e.g., `València`).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/seo/seoPresets.ts",
+          "frontend/src/pages/public/HomePage.tsx",
+          "frontend/src/pages/public/ContactoPage.tsx",
+          "frontend/src/pages/public/PrivacyPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/seo/seoPresets.ts",
+          "frontend/src/pages/public/HomePage.tsx",
+          "frontend/src/pages/public/ContactoPage.tsx",
+          "frontend/src/pages/public/PrivacyPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; if any styling changes are needed for SEO implementation (not expected), append new CSS only below the existing `:root` block without altering its variable names, values, or structure.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/index.css"
+        ],
+        "matchedFiles": []
       }
     ]
   },
@@ -39,7 +111,14 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/public/products/ProductCard.tsx",
+    "frontend/index.html",
+    "frontend/public/robots.txt",
+    "frontend/public/sitemap.xml",
+    "frontend/src/components/seo/SeoHead.tsx",
+    "frontend/src/components/seo/seoPresets.ts",
+    "frontend/src/pages/public/ContactoPage.tsx",
+    "frontend/src/pages/public/HomePage.tsx",
+    "frontend/src/pages/public/PrivacyPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

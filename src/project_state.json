@@ -1,26 +1,68 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Frontend-only UI update to the public product card: hide price section when no price exists and remove the stock status text badges below the price, while preserving all other product card behavior and existing CSS theme variables.",
+  "summary": "Frontend-only SEO improvements for Kelani Cosmetics static pages: add public sitemap.xml and robots.txt, and implement Spanish/local SEO meta tags (including OG/Twitter/canonical/robots) for homepage, contact, and privacy pages with Valencia and Málaga store details; exclude dynamic category/product pages.",
   "architectural_notes": [
-    "Do not modify or overwrite the :root CSS custom properties block in index.css (theme color variables); only append new CSS styles below it if needed."
+    "Frontend-only change: implement head meta tags using React Helmet (or equivalent) per page component; override conflicting tags; ensure proper accents/encoding.",
+    "Do not remove, modify, or overwrite the existing :root CSS custom properties block in index.css; only append new styles below it.",
+    "Scope limitation: only static pages (/, /contacto, /privacy); exclude dynamic categories/products and no dynamic sitemap generation."
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-the-public-product-card-component-frontend-src-components-public-products-productcard-tsx-so-that-when-the-product-has-no-price-product-price-is-undefined-null-missing-and-the-product-is-not-on-an-active-sale-the-card-renders-no-price-ui-at-all-no-placeholder-text-and-no-empty-price-wrapper-element-for-that-case-keep-the-existing-regular-price-and-sale-price-rendering-logic-unchanged-when-a-valid-price-exists",
-      "title": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
+      "id": "feature-create-a-static-sitemap-at-frontend-public-sitemap-xml-with-exactly-the-xml-content-provided-by-the-user-and-ensure-it-is-served-publicly-at-https-kelanicosmetics-es-sitemap-xml-no-dynamic-url-generation-for-categories-or-products",
+      "title": "Create a static sitemap at `frontend/public/sitemap.xml` with exactly the XML content provided by the user, and ensure it is served publicly at `https://kelanicosmetics.es/sitemap.xml` (no dynamic URL generation for categories or products).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-the-same-public-product-card-component-frontend-src-components-public-products-productcard-tsx-remove-the-entire-stock-status-text-badge-section-below-the-price-the-div-that-renders-disponible-agotado-do-not-change-the-stock-badge-overlay-within-the-image-area-the-absolute-positioned-badge-or-any-other-badges-behaviors",
-      "title": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+      "id": "feature-create-a-static-robots-file-at-frontend-public-robots-txt-with-exactly-the-content-provided-by-the-user-including-the-sitemap-reference-to-https-kelanicosmetics-es-sitemap-xml",
+      "title": "Create a static robots file at `frontend/public/robots.txt` with exactly the content provided by the user, including the sitemap reference to `https://kelanicosmetics.es/sitemap.xml`.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-frontend-only-mechanism-react-helmet-or-an-equivalent-approach-to-set-and-override-per-route-head-tags-for-the-static-public-pages-homepage-contact-page-contacto-and-privacy-policy-page-privacy-without-changing-page-behavior",
+      "title": "Implement a frontend-only mechanism (React Helmet or an equivalent approach) to set and override per-route `<head>` tags for the static public pages: homepage (`/`), contact page (`/contacto`), and privacy policy page (`/privacy`), without changing page behavior.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-homepage-frontend-src-pages-public-homepage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-twitter-with-canonical-url-https-kelanicosmetics-es-and-local-seo-wording-for-valencia-val-ncia-and-m-laga-including-accents-and-special-characters-exactly-as-specified",
+      "title": "Update the homepage (`frontend/src/pages/public/HomePage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph, Twitter) with canonical URL `https://kelanicosmetics.es/` and local SEO wording for Valencia/València and Málaga, including accents and special characters exactly as specified.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-contact-page-frontend-src-pages-public-contactopage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-including-the-store-addresses-and-local-details-neighborhoods-and-postal-codes-exactly-as-specified",
+      "title": "Update the contact page (`frontend/src/pages/public/ContactoPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), including the store addresses and local details (neighborhoods and postal codes) exactly as specified.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-privacy-policy-page-frontend-src-pages-public-privacypage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-and-ensure-the-page-remains-noindex-follow-remove-replace-any-existing-ad-hoc-title-description-side-effects-that-conflict-with-these-tags",
+      "title": "Update the privacy policy page (`frontend/src/pages/public/PrivacyPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), and ensure the page remains `noindex, follow`. Remove/replace any existing ad-hoc title/description side effects that conflict with these tags.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-seo-implementation-uses-the-production-domain-in-all-canonical-and-og-url-tags-https-kelanicosmetics-es-keeps-all-meta-tag-text-in-spanish-and-correctly-handles-character-encoding-for-accents-e-g-val-ncia",
+      "title": "Ensure SEO implementation uses the production domain in all canonical and OG URL tags (`https://kelanicosmetics.es`), keeps all meta tag text in Spanish, and correctly handles character encoding for accents (e.g., `València`).",
+      "reqIds": [
+        "REQ-7"
       ],
       "version": 1
     }
@@ -28,12 +70,21 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update public product card to render no price UI when product.price is missing (remove 'Precio no disponible') and remove the stock status text badge block below the price while keeping image overlay stock badge unchanged (frontend-only, single component).",
+      "summary": "Add static sitemap.xml and robots.txt in /public, plus Spanish/local SEO meta tags (Helmet or equivalent) for homepage, contacto, and privacy pages on kelanicosmetics.es; privacy must remain noindex; include exact Valencia/Málaga address details; no dynamic URLs.",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; if any styling changes are needed for SEO implementation (not expected), append new CSS only below the existing `:root` block without altering its variable names, values, or structure.",
+      "reqIds": [
+        "REQ-8"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Public ProductCard: Hide missing price and remove stock text badge",
+  "gameProjectType": "none",
+  "projectName": "Kelani Cosmetics",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

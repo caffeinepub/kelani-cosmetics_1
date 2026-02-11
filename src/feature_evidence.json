@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-public-product-card-component-frontend-src-components-public-products-productcard-tsx-so-that-when-the-product-has-no-price-product-price-is-undefined-null-missing-and-the-product-is-not-on-an-active-sale-the-card-renders-no-price-ui-at-all-no-placeholder-text-and-no-empty-price-wrapper-element-for-that-case-keep-the-existing-regular-price-and-sale-price-rendering-logic-unchanged-when-a-valid-price-exists",
-      "featureTitle": "Update the public product card component (frontend/src/components/public/products/ProductCard.tsx) so that when the product has no price (product.price is undefined/null/missing and the product is not on an active sale), the card renders no price UI at all (no placeholder text and no empty price wrapper element for that case). Keep the existing regular price and sale price rendering logic unchanged when a valid price exists.",
+      "featureId": "feature-create-a-static-sitemap-at-frontend-public-sitemap-xml-with-exactly-the-xml-content-provided-by-the-user-and-ensure-it-is-served-publicly-at-https-kelanicosmetics-es-sitemap-xml-no-dynamic-url-generation-for-categories-or-products",
+      "featureTitle": "Create a static sitemap at `frontend/public/sitemap.xml` with exactly the XML content provided by the user, and ensure it is served publicly at `https://kelanicosmetics.es/sitemap.xml` (no dynamic URL generation for categories or products).",
       "files": [
-        "frontend/src/components/public/products/ProductCard.tsx"
+        "frontend/public/sitemap.xml"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,10 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-the-same-public-product-card-component-frontend-src-components-public-products-productcard-tsx-remove-the-entire-stock-status-text-badge-section-below-the-price-the-div-that-renders-disponible-agotado-do-not-change-the-stock-badge-overlay-within-the-image-area-the-absolute-positioned-badge-or-any-other-badges-behaviors",
-      "featureTitle": "In the same public product card component (frontend/src/components/public/products/ProductCard.tsx), remove the entire “Stock Status Text Badge” section below the price (the div that renders “Disponible”/“Agotado”). Do not change the stock badge overlay within the image area (the absolute-positioned badge) or any other badges/behaviors.",
+      "featureId": "feature-create-a-static-robots-file-at-frontend-public-robots-txt-with-exactly-the-content-provided-by-the-user-including-the-sitemap-reference-to-https-kelanicosmetics-es-sitemap-xml",
+      "featureTitle": "Create a static robots file at `frontend/public/robots.txt` with exactly the content provided by the user, including the sitemap reference to `https://kelanicosmetics.es/sitemap.xml`.",
       "files": [
-        "frontend/src/components/public/products/ProductCard.tsx"
+        "frontend/public/robots.txt"
       ],
       "components": [
         "authorization@4.0.0",
@@ -36,6 +36,105 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-frontend-only-mechanism-react-helmet-or-an-equivalent-approach-to-set-and-override-per-route-head-tags-for-the-static-public-pages-homepage-contact-page-contacto-and-privacy-policy-page-privacy-without-changing-page-behavior",
+      "featureTitle": "Implement a frontend-only mechanism (React Helmet or an equivalent approach) to set and override per-route `<head>` tags for the static public pages: homepage (`/`), contact page (`/contacto`), and privacy policy page (`/privacy`), without changing page behavior.",
+      "files": [
+        "frontend/index.html",
+        "frontend/src/components/seo/SeoHead.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-homepage-frontend-src-pages-public-homepage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-twitter-with-canonical-url-https-kelanicosmetics-es-and-local-seo-wording-for-valencia-val-ncia-and-m-laga-including-accents-and-special-characters-exactly-as-specified",
+      "featureTitle": "Update the homepage (`frontend/src/pages/public/HomePage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph, Twitter) with canonical URL `https://kelanicosmetics.es/` and local SEO wording for Valencia/València and Málaga, including accents and special characters exactly as specified.",
+      "files": [
+        "frontend/src/pages/public/HomePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-contact-page-frontend-src-pages-public-contactopage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-including-the-store-addresses-and-local-details-neighborhoods-and-postal-codes-exactly-as-specified",
+      "featureTitle": "Update the contact page (`frontend/src/pages/public/ContactoPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), including the store addresses and local details (neighborhoods and postal codes) exactly as specified.",
+      "files": [
+        "frontend/src/pages/public/ContactoPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-privacy-policy-page-frontend-src-pages-public-privacypage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-and-ensure-the-page-remains-noindex-follow-remove-replace-any-existing-ad-hoc-title-description-side-effects-that-conflict-with-these-tags",
+      "featureTitle": "Update the privacy policy page (`frontend/src/pages/public/PrivacyPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), and ensure the page remains `noindex, follow`. Remove/replace any existing ad-hoc title/description side effects that conflict with these tags.",
+      "files": [
+        "frontend/src/pages/public/PrivacyPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-seo-implementation-uses-the-production-domain-in-all-canonical-and-og-url-tags-https-kelanicosmetics-es-keeps-all-meta-tag-text-in-spanish-and-correctly-handles-character-encoding-for-accents-e-g-val-ncia",
+      "featureTitle": "Ensure SEO implementation uses the production domain in all canonical and OG URL tags (`https://kelanicosmetics.es`), keeps all meta tag text in Spanish, and correctly handles character encoding for accents (e.g., `València`).",
+      "files": [
+        "frontend/src/components/seo/seoPresets.ts",
+        "frontend/src/pages/public/ContactoPage.tsx",
+        "frontend/src/pages/public/HomePage.tsx",
+        "frontend/src/pages/public/PrivacyPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
       ],
       "confidence": "high"
     }
