@@ -171,8 +171,6 @@ actor {
     };
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getAllCategories() : async [Category] {
     categories.values().toArray().sort(
       func(a, b) {
@@ -452,8 +450,6 @@ actor {
     };
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getProductPhoto(barcode : Text) : async [Nat8] {
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
@@ -466,14 +462,10 @@ actor {
     };
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getTotalProductCount() : async Nat {
     filterProducts("", null).size();
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
@@ -648,8 +640,6 @@ actor {
     };
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getActiveSales() : async [SaleItem] {
     let currentTime = getCurrentTimestamp();
     saleItems.values().toArray().filter(
@@ -699,22 +689,23 @@ actor {
 
   let store1Default : StoreDetails = {
     storeId = 1;
-    name = "Variety Discount Store";
-    address = "1460 Merritt Blvd, Dundalk, MD 21222";
-    phone = "(410) 288-6792";
-    whatsapp = "+34 600 111 111";
-    email = "variety.discount.store@example.com";
-    facebook = ?"/VarietyDiscountBaltimore";
+    name = "KELANI COSMETICS SPAIN S.L.";
+    address = "KELANI COSMETICS SPAIN S.L., C. Jaume Isern 15B (Nave 14), Polígon Industrial La Torre, 08397 Pineda de Mar, Barcelona, Spain";
+    phone = "+34 660 606 263";
+    whatsapp = "+34 660 606 263";
+    email = "info@kco.es";
+    facebook = null;
     instagram = null;
     website = null;
-    coordinates = "{ \"lat\": 39.266422, \"lng\": -76.505659 }";
+    coordinates = "{\"lat\": 41.625415, \"lng\": 2.656324}";
     storeHours = [
-      ("Monday", "9:00 AM - 9:00 PM"),
-      ("Tuesday", "9:00 AM - 9:00 PM"),
-      ("Wednesday", "9:00 AM - 9:00 PM"),
-      ("Thursday", "9:00 AM - 9:00 PM"),
-      ("Friday", "9:00 AM - 9:00 PM"),
-      ("Saturday", "9:00 AM - 9:00 PM"),
+      ("Monday", "9:00-20:30"),
+      ("Tuesday", "9:00-20:30"),
+      ("Wednesday", "9:00-20:30"),
+      ("Thursday", "9:00-20:30"),
+      ("Friday", "9:00-20:30"),
+      ("Saturday", "9:00-20:00"),
+      ("Sunday", "Closed"),
     ];
     createdDate = 1718136388582;
     lastUpdated = 1718136388582;
@@ -723,22 +714,23 @@ actor {
 
   let store2Default : StoreDetails = {
     storeId = 2;
-    name = "Variety Discount Store II";
-    address = "5850 Hollins Ferry Road, Baltimore, MD 21227";
-    phone = "(443) 234-0005";
-    whatsapp = "+34 600 222 222";
-    email = "variety.discount.store2@example.com";
-    facebook = ?"/VarietyDiscountBaltimore";
+    name = "KELANI COSMETICS SPAIN S.L.";
+    address = "KELANI COSMETICS SPAIN S.L., C. Jaume Isern 15B (Nave 14), Polígon Industrial La Torre, 08397 Pineda de Mar, Barcelona, Spain";
+    phone = "+34 660 606 263";
+    whatsapp = "+34 660 606 263";
+    email = "info@kco.es";
+    facebook = null;
     instagram = null;
     website = null;
-    coordinates = "{ \"lat\": 39.236383, \"lng\": -76.704709 }";
+    coordinates = "{\"lat\": 41.625415, \"lng\": 2.656324}";
     storeHours = [
-      ("Monday", "10:00 AM - 9:00 PM"),
-      ("Tuesday", "10:00 AM - 9:00 PM"),
-      ("Wednesday", "10:00 AM - 9:00 PM"),
-      ("Thursday", "10:00 AM - 9:00 PM"),
-      ("Friday", "10:00 AM - 9:00 PM"),
-      ("Saturday", "10:00 AM - 9:00 PM"),
+      ("Monday", "9:00-20:30"),
+      ("Tuesday", "9:00-20:30"),
+      ("Wednesday", "9:00-20:30"),
+      ("Thursday", "9:00-20:30"),
+      ("Friday", "9:00-20:30"),
+      ("Saturday", "9:00-20:00"),
+      ("Sunday", "Closed"),
     ];
     createdDate = 1718136388582;
     lastUpdated = 1718136388582;
@@ -763,8 +755,6 @@ actor {
     };
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getBothStoreDetails() : async [(Nat, StoreDetails)] {
     [
       (1, switch (storeDetails.get(1)) {
@@ -920,8 +910,6 @@ actor {
   //-----------------------------------------------------------------
   // Smart Search Homepage Product Search with Autocomplete (Query)
   //-----------------------------------------------------------------
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func searchHomepageProducts(searchQuery : Text) : async [HomepageSearchResult] {
     let trimmedQuery = searchQuery.trim(#char ' ');
 
@@ -1015,8 +1003,6 @@ actor {
     [];
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getCategoryProductCounts() : async [(Nat, Nat)] {
     categories.toArray().map(
       func((categoryId, _category)) {
@@ -1030,8 +1016,6 @@ actor {
     );
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
     let sortedCategories = categories.values().toArray().sort(
       func(a, b) {
@@ -1237,8 +1221,6 @@ actor {
   //---------------------------------------------------
   // Enhanced Endpoints with Sale Information
   //---------------------------------------------------
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getProductsPageFeaturedFirst(
     search : Text,
     categoryId : ?Nat,
@@ -1277,8 +1259,6 @@ actor {
     { items; totalCount = filteredProducts.size() };
   };
 
-  // PERMANENTLY PUBLIC: This function must remain publicly accessible without any authentication
-  // or permission checks (including checkUser, hasPermission, or similar). Do not add auth in future changes.
   public query ({ caller }) func getProduct(barcode : Text) : async ProductWithSale {
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };

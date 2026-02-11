@@ -168,7 +168,7 @@ export default function ContactoPage() {
                 <div className="flex items-start gap-3">
                   <MessageCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-foreground">WhatsApp</p>
+                    <p className="font-medium text-foreground">WhatsApp (Para pedidos)</p>
                     <a
                       href={`https://wa.me/${formatWhatsAppApiNumber(store.whatsapp)}`}
                       target="_blank"

@@ -1,6 +1,137 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend-only plan: no changes required for backend-only public read refactor",
-  "requirements": []
+  "title": "Expandable store selector for WhatsApp contact on product modal and product page",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Add a reusable StoreSelector that expands under the main contact button to choose a store and then opens WhatsApp with a consistent Spanish message containing product name and barcode.",
+      "acceptanceCriteria": [
+        "In both the product modal and the product page, clicking \"Contactar sobre este producto\" only expands/collapses the selector and never opens WhatsApp directly.",
+        "Expanded selector shows two store buttons when two stores are available; each label uses the store name from store details.",
+        "Selecting a store opens https://wa.me/<formattedNumber>?text=<encodedMessage> in a new tab/window.",
+        "The pre-filled message is in Spanish and includes product name and barcode in a consistent format for both stores.",
+        "Store option buttons meet touch target guidance (>=44px height) and have clear spacing and active/pressed feedback.",
+        "Expand/collapse has a visible smooth animation.",
+        "All existing product display functionality (images, sale pricing, share link, etc.) remains unchanged."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/product/StoreSelector.tsx",
+          "operation": "create",
+          "description": "Create a reusable StoreSelector component that renders the primary \"Contactar sobre este producto\" toggle button and an animated expand/collapse area with one store option button per provided StoreDetails; selecting an option opens WhatsApp in a new tab using that store’s whatsapp number and a shared Spanish message format. Use the shadcn-ui Button component for consistent styling and pressed/active states (Verify the component's usage instructions before implementing)."
+        },
+        {
+          "path": "frontend/src/utils/whatsappContact.ts",
+          "operation": "create",
+          "description": "Add shared helpers to (1) build the Spanish WhatsApp message including product name and barcode in a single consistent format and (2) build the wa.me URL using formatWhatsAppApiNumber and encodeURIComponent so both modal and page behavior match exactly."
+        },
+        {
+          "path": "frontend/src/pages/public/ProductPage.tsx",
+          "operation": "modify",
+          "description": "Replace the direct WhatsApp open behavior with the new StoreSelector usage (still on the product page), passing product name/barcode and the store details array; ensure the main contact button only toggles expand/collapse and WhatsApp opens only after a store is selected. Use the shadcn-ui Button component where applicable (Verify the component's usage instructions before implementing)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Refactor Product Details Modal to receive both store details from its parent/store and use StoreSelector without any internal store-details fetching; ensure selector is collapsed on open.",
+      "acceptanceCriteria": [
+        "Opening a product modal shows the same content as before, but the WhatsApp contact action is replaced by the expandable selector behavior.",
+        "The modal has access to both stores’ details provided by the parent flow and does not fetch store details itself.",
+        "Modal selector state is collapsed on initial open; toggling works reliably; selecting a store opens WhatsApp for that store."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "operation": "modify",
+          "description": "Remove the existing direct WhatsApp contact handler and replace the action area with StoreSelector, passing product name/barcode and the store details array from the modal store; ensure the selector starts collapsed whenever the modal opens (e.g., reset internal StoreSelector state on modal open/product change). Use the shadcn-ui Button component as needed (Verify the component's usage instructions before implementing)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Update product modal state and all modal openers to pass an array of both store details (from useBothStoreDetails) instead of a single store detail.",
+      "acceptanceCriteria": [
+        "Wherever the product modal is opened from the public site, it passes a store details array (not just the first store).",
+        "The modal can render both store options when both stores are available.",
+        "No regressions in opening/closing the modal from homepage categories or search results."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/stores/productModalStore.ts",
+          "operation": "modify",
+          "description": "Change modal state to store an array of StoreDetails (e.g., storeDetails: StoreDetails[] | null) and update openModal/setStoreDetails signatures accordingly so callers provide both stores."
+        },
+        {
+          "path": "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+          "operation": "modify",
+          "description": "Stop selecting only the first store; pass the full store details array from useBothStoreDetails down to CategorySection (and onward to modal openers) so the modal can show both options."
+        },
+        {
+          "path": "frontend/src/components/public/home/CategorySection.tsx",
+          "operation": "modify",
+          "description": "Update props to accept a StoreDetails[] (or null/empty) and pass that array into useProductModalStore.openModal when a product is clicked."
+        },
+        {
+          "path": "frontend/src/components/public/home/search/SearchBar.tsx",
+          "operation": "modify",
+          "description": "Stop selecting only the first store; pass the full store details array from useBothStoreDetails into openModal when selecting an autocomplete result."
+        },
+        {
+          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "operation": "modify",
+          "description": "Stop selecting only the first store; pass the full store details array from useBothStoreDetails into ProductGrid so products opened from category pages provide both stores to the modal."
+        },
+        {
+          "path": "frontend/src/components/public/products/ProductGrid.tsx",
+          "operation": "modify",
+          "description": "Update the ProductGrid prop type from a single StoreDetails to StoreDetails[] (or null/empty) and pass that array through to openModal on product click."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Update the public Product Details Page to use StoreSelector with both stores from useBothStoreDetails and remove the current first-store-only WhatsApp behavior.",
+      "acceptanceCriteria": [
+        "On the product page, clicking \"Contactar sobre este producto\" expands/collapses the selector and does not open WhatsApp directly.",
+        "The page offers store-specific WhatsApp contact actions for each available store.",
+        "The WhatsApp message content matches the modal’s message format and includes product name and barcode.",
+        "The page still fetches and displays product details, images, sale pricing, and share link exactly as before."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/ProductPage.tsx",
+          "operation": "modify",
+          "description": "Remove handleWhatsAppContact (first-store-only) and render StoreSelector in the action area, passing the product name/barcode and the full store details array from useBothStoreDetails; keep all existing product fetch/display, image handling, pricing/sale display, and share link behavior unchanged. Use the shadcn-ui Button component where applicable (Verify the component's usage instructions before implementing)."
+        },
+        {
+          "path": "frontend/src/utils/whatsappContact.ts",
+          "operation": "modify",
+          "description": "Ensure the shared WhatsApp message builder used by ProductPage remains identical to the modal’s/StoreSelector’s message format and stays Spanish-only."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Ensure Spanish-only UI for the new store selector/contact flow and use store-provided names for store buttons; keep message text Spanish and consistent.",
+      "acceptanceCriteria": [
+        "All new/updated UI strings introduced by this change are Spanish (or store-provided names).",
+        "Store button labels come from store details names and are not hardcoded.",
+        "WhatsApp message text is Spanish and consistent across both stores."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/public/product/StoreSelector.tsx",
+          "operation": "modify",
+          "description": "Audit/ensure the StoreSelector introduces no English UI strings: keep the main label exactly \"Contactar sobre este producto\" and render store option labels strictly from StoreDetails.name; do not add any English helper text. Use the shadcn-ui Button component for all interactive buttons (Verify the component's usage instructions before implementing)."
+        },
+        {
+          "path": "frontend/src/utils/whatsappContact.ts",
+          "operation": "modify",
+          "description": "Ensure the WhatsApp message builder returns Spanish text only and is used uniformly by both modal and product page flows so message wording is consistent across stores."
+        }
+      ]
+    }
+  ]
 }

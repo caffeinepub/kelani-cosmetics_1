@@ -1,75 +1,123 @@
 {
   "kind": "build_request",
-  "title": "Make specified backend read endpoints permanently public (remove checkUser calls)",
+  "title": "Add expandable store selector for WhatsApp product contact (modal + product page)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `backend/main.mo`, remove all invocations of `checkUser(caller)` from the actor codebase so that the affected endpoints no longer require any authenticated-user permission check. This includes, at minimum, removing the `checkUser(caller);` statement from the following query functions: `getAllCategories` (currently calls `checkUser`), `getCategoryById` (currently calls `checkUser`), `getProductPhoto` (currently calls `checkUser`), `getTotalProductCount` (currently calls `checkUser`), `getFeaturedProducts` (currently calls `checkUser`), and `getActiveSales` (currently calls `checkUser`). Also remove `checkUser(caller)` calls from any other functions present in the file (even if not listed here) so that there are zero call sites remaining.",
-      "target": "backend",
+      "text": "Create a reusable StoreSelector UI used by both the Product Details Modal and the Product Details Page: a primary contact button labeled \"Contactar sobre este producto\" that toggles an expandable section directly beneath it; when expanded, render one touch-friendly button per available store (minimum 44px height) labeled with the store name from store details; clicking a store button opens WhatsApp in a new tab with a pre-filled Spanish message that includes the product name and barcode, using that store’s WhatsApp number; the contact button must not open WhatsApp directly without a store selection; clicking the contact button again collapses the selector; add a smooth expand/collapse animation; optionally collapse after selecting a store.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-1"
+          "msg-10"
         ],
         "quotes": [
-          "Remove all calls to `checkUser(caller)` completely from the code."
+          "Replace direct WhatsApp link with an expandable store selector that shows both store options when contacting about a product.",
+          "Button toggles expansion of store selector section below it",
+          "No direct WhatsApp opening without store selection"
         ]
       },
       "acceptanceCriteria": [
-        "A text search over the backend code confirms there are no remaining call sites of `checkUser(caller)` (i.e., no `checkUser(` usage remains).",
-        "The canister compiles successfully after the refactor.",
-        "All functions that previously used `checkUser(caller)` continue to return the same data and trap for the same non-auth related conditions as before (e.g., missing product/photo), but they do not trap due to user authentication anymore."
+        "In both the product modal and the product page, clicking \"Contactar sobre este producto\" only expands/collapses the selector and never opens WhatsApp directly.",
+        "Expanded selector shows two store buttons when two stores are available; each label uses the store name from store details.",
+        "Selecting a store opens https://wa.me/<formattedNumber>?text=<encodedMessage> in a new tab/window.",
+        "The pre-filled message is in Spanish and includes product name and barcode in a consistent format for both stores.",
+        "Store option buttons meet touch target guidance (>=44px height) and have clear spacing and active/pressed feedback.",
+        "Expand/collapse has a visible smooth animation.",
+        "All existing product display functionality (images, sale pricing, share link, etc.) remains unchanged."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the following backend functions are permanently public and contain no authentication, permission, or user-identity gating logic of any kind (including but not limited to `checkUser`, `AccessControl.hasPermission(... #user)`, or any similar checks), while preserving existing `checkAdmin(caller)` enforcement wherever it currently applies: `getBothStoreDetails`, `getAllCategories`, `getProduct`, `getProductPhoto`, `getTotalProductCount`, `getFeaturedProducts`, `getActiveSales`, `getHomepageCategories`, `getCategoryProductCounts`, `getProductsPageFeaturedFirst`, `searchHomepageProducts`. If any of these functions currently perform a user-permission check via something other than `checkUser`, remove that user-permission check as well. Do not change the functions’ non-auth logic or response shapes.",
-      "target": "backend",
+      "text": "Update the Product Details Modal flow so it receives and uses both store details from its parent (no additional API calls inside the modal): refactor the existing modal WhatsApp logic to use the new StoreSelector and accept a complete store details array for rendering options; ensure modal state defaults to collapsed when opened; ensure Spanish-only UI text remains unchanged (including the \"Contactar sobre este producto\" label).",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-1"
+          "msg-10"
         ],
         "quotes": [
-          "These functions should be fully public and accessible by anyone without authentication.",
-          "Keep admin checks (`checkAdmin(caller)`) intact — do not remove or modify them.",
-          "The functions affected include (but are not limited to): ..."
+          "Product details modal receives both store details from parent",
+          "Modal receives store details as props",
+          "No additional API calls within modal"
         ]
       },
       "acceptanceCriteria": [
-        "Each listed function can be called by an anonymous/non-authenticated caller without trapping for authorization reasons.",
-        "No listed function contains a call to `checkUser` or a direct permission check such as `AccessControl.hasPermission(..., #user)` (or equivalent user-auth gating).",
-        "Any admin-only functions continue to enforce admin authorization exactly as before (no `checkAdmin` removal or weakening)."
+        "Opening a product modal shows the same content as before, but the WhatsApp contact action is replaced by the expandable selector behavior.",
+        "The modal has access to both stores’ details provided by the parent flow and does not fetch store details itself.",
+        "Modal selector state is collapsed on initial open; toggling works reliably; selecting a store opens WhatsApp for that store."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add an explicit, durable in-code guardrail comment in `backend/main.mo` immediately above each of the permanently-public functions listed in REQ-2 stating that the function is permanently public and must never add authentication/permission checks (including `checkUser` or similar) in future changes. The comment must be clear and unambiguous and must not alter runtime behavior.",
-      "target": "backend",
+      "text": "Update the product modal state/data flow to support passing and storing an array of store details (two stores) instead of a single store: adjust the modal store and all modal openers (e.g., homepage category sections and search selection) to pass the complete result of the existing `useBothStoreDetails()` hook to the modal so both store options can be shown.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-1"
+          "msg-10"
         ],
         "quotes": [
-          "This change is permanent. Under no circumstances, now or in the future, should any of these functions ever check authentication, permissions, or call `checkUser` or any similar method.",
-          "Ensure that future AI-generated code or modifications respect this rule and never add authentication checks to these functions again."
+          "Parent component (home page or category page) passes ... Complete store details array from `getBothStoreDetails()`",
+          "Add `storeDetails` prop to ProductDetailsModal component",
+          "Create reusable `StoreSelector` component for both modal and page"
         ]
       },
       "acceptanceCriteria": [
-        "Each permanently-public function listed in REQ-2 has a prominent comment directly above it stating it must remain permanently public and must not gain auth checks in the future.",
-        "No runtime logic changes are introduced by these comments (compile output unchanged except for auth-check removals requested elsewhere)."
+        "Wherever the product modal is opened from the public site, it passes a store details array (not just the first store).",
+        "The modal can render both store options when both stores are available.",
+        "No regressions in opening/closing the modal from homepage categories or search results."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Update the Product Details Page (`frontend/src/pages/public/ProductPage.tsx`) to use the new StoreSelector: fetch product data using the existing product query; fetch both store details using the existing `useBothStoreDetails()` hook (backed by `getBothStoreDetails()`); pass the resulting store details array into the selector; remove the current behavior that automatically uses only the first store for WhatsApp.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-10"
+        ],
+        "quotes": [
+          "Product details page fetches both store details using `getBothStoreDetails()` method",
+          "No direct WhatsApp opening without store selection"
+        ]
+      },
+      "acceptanceCriteria": [
+        "On the product page, clicking \"Contactar sobre este producto\" expands/collapses the selector and does not open WhatsApp directly.",
+        "The page offers store-specific WhatsApp contact actions for each available store.",
+        "The WhatsApp message content matches the modal’s message format and includes product name and barcode.",
+        "The page still fetches and displays product details, images, sale pricing, and share link exactly as before."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Preserve Spanish UI throughout this change: do not introduce any new English UI strings related to the store selector/contact flow; store names must display exactly as configured in admin store details; ensure WhatsApp message text is Spanish.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-10"
+        ],
+        "quotes": [
+          "Spanish interface throughout",
+          "No English text in the interface",
+          "WhatsApp message in Spanish"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All new/updated UI strings introduced by this change are Spanish (or store-provided names).",
+        "Store button labels come from store details names and are not hardcoded.",
+        "WhatsApp message text is Spanish and consistent across both stores."
       ]
     }
   ],
   "constraints": [
-    "Backend-only change: do not modify any frontend code or behavior.",
-    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css` (theme variables). If any frontend CSS changes ever become necessary later, they must be appended below that block without altering it.",
-    "Do not remove or modify any admin checks (`checkAdmin(caller)`) or otherwise weaken admin-only protections.",
-    "Keep the actor compiling and otherwise behaving the same, except for removing user-auth requirements from the specified permanently-public functions."
+    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; append any new CSS only below that block if needed.",
+    "Do not open WhatsApp directly from the main contact button; WhatsApp must open only after a store option is selected.",
+    "Do not add new API calls inside the Product Details Modal; it must receive store details from its parent flow.",
+    "Do not edit files under the frontend immutable paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Adding new frontend UI or changing any existing UI flows.",
-    "Changing data models, return types, or response shapes of the affected endpoints beyond removing authentication gates.",
-    "Implementing new authentication methods or changing Internet Identity integration."
+    "Do not change backend data models or add new backend endpoints (use existing `getBothStoreDetails()` / `useBothStoreDetails()` as-is).",
+    "Do not change existing product pricing/sale logic, product fetching, or SEO behavior beyond integrating the selector.",
+    "Do not redesign unrelated parts of the modal or product page UI."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,46 +1,57 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T23:42:42.454Z",
-  "summary": "The diff does not provide evidence that `checkUser(caller)` call sites were removed, that the specified endpoints were made permanently public, or that guardrail comments were added above those endpoints. Additionally, `project_state.json` was modified even though the BuildRequest constrained changes to backend behavior (and did not request project state metadata updates).",
+  "generatedAt": "2026-02-11T14:31:52.201Z",
+  "summary": "Implemented a reusable StoreSelector component and updated several modal openers to pass an array of store details. Added a WhatsApp URL/message utility. However, the diff summary is truncated for key integration files (ProductDetailsModal, ProductPage), and the StoreSelector’s animation appears to only animate expansion (not collapse), so some requirements cannot be fully confirmed from the provided evidence.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Remove all invocations of `checkUser(caller)` from `backend/main.mo` so there are zero remaining call sites (no `checkUser(` usage remains), including the listed query functions and any other occurrences.",
-      "reason": "The provided `backend/main.mo` diff snippet does not show removal of any `checkUser(caller)` calls, and the snippet still contains user-gating logic (e.g., `AccessControl.hasPermission(..., #user)`) in other functions. Because the file content is truncated and no evidence of `checkUser` removal is shown, this requirement cannot be verified as implemented.",
+      "requirement": "Add a smooth expand/collapse animation for the store options section.",
+      "reason": "StoreSelector uses an entrance animation class (\"animate-in slide-in-from-top-2 duration-200\") only when the expanded section is conditionally rendered; there is no evidence of a collapse/exit animation (unmount will remove instantly).",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "frontend/src/components/public/product/StoreSelector.tsx"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Ensure the listed functions are permanently public and contain no authentication/permission/user-identity gating logic (including `checkUser` or `AccessControl.hasPermission(..., #user)`), while preserving existing `checkAdmin(caller)` enforcement where it applies.",
-      "reason": "None of the specified permanently-public functions (e.g., `getBothStoreDetails`, `getAllCategories`, `getProduct`, `getProductPhoto`, etc.) are shown in the truncated diff snippet, and there is no evidence that user-permission checks were removed from those functions. Therefore, compliance cannot be confirmed.",
+      "requirement": "Ensure the Product Details Modal’s WhatsApp contact action is replaced by the expandable selector behavior (and not direct WhatsApp).",
+      "reason": "ProductDetailsModal.tsx is truncated; while it imports StoreSelector, the diff summary does not show the actual rendered contact area being replaced, nor removal of any prior direct WhatsApp behavior.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "frontend/src/components/public/product/ProductDetailsModal.tsx"
       ]
     },
     {
-      "id": "REQ-3",
-      "requirement": "Add an explicit guardrail comment immediately above each permanently-public function listed in REQ-2 stating it is permanently public and must never add auth/permission checks in the future.",
-      "reason": "The truncated `backend/main.mo` snippet does not show any new guardrail comments above the listed permanently-public functions, and those functions are not visible in the provided excerpt.",
+      "id": "REQ-2",
+      "requirement": "Modal selector state defaults to collapsed when opened.",
+      "reason": "StoreSelector defaults to collapsed via local state, but the modal file is truncated and does not prove whether StoreSelector is remounted/reset on each open versus preserved between opens; cannot confirm from diff summary.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "frontend/src/components/public/product/StoreSelector.tsx",
+        "frontend/src/components/public/product/ProductDetailsModal.tsx"
       ]
-    }
-  ],
-  "hallucinated_features": [
+    },
     {
-      "description": "Modification of `project_state.json` to track/reflection of requirements and architectural notes.",
-      "reason": "The BuildRequest specifies a backend-only change and does not request updating repository/project metadata files. The diff includes edits to `project_state.json`, which is outside the requested backend endpoint/auth-change work.",
+      "id": "REQ-4",
+      "requirement": "Update Product Details Page to use StoreSelector and remove current behavior that automatically uses only the first store for WhatsApp.",
+      "reason": "ProductPage.tsx is truncated; it imports StoreSelector and fetches both store details, but the diff summary does not show the contact UI being replaced or the old “first store” WhatsApp behavior being removed.",
       "evidence": [
-        "project_state.json (truncated)"
+        "frontend/src/pages/public/ProductPage.tsx"
       ]
     }
   ],
-  "confidence": 0.66,
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
-    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/public/home/CategorySection.tsx",
+    "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
+    "frontend/src/components/public/home/search/SearchBar.tsx",
+    "frontend/src/components/public/product/ProductDetailsModal.tsx",
+    "frontend/src/components/public/product/StoreSelector.tsx",
+    "frontend/src/components/public/products/ProductGrid.tsx",
+    "frontend/src/pages/public/CategoryPage.tsx",
+    "frontend/src/pages/public/ProductPage.tsx",
+    "frontend/src/stores/productModalStore.ts",
+    "frontend/src/utils/whatsappContact.ts",
     "project_state.json"
   ]
 }

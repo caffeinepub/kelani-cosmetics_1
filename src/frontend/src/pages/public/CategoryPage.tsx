@@ -1,128 +1,83 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useGetCategoryById } from '../../hooks/useQueries';
 import { useGetCategoryProductsPaginated } from '../../hooks/useCategoryProductsPaginated';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
+import { useGetCategoryById } from '../../hooks/useQueries';
 import ProductGrid from '../../components/public/products/ProductGrid';
 import { Button } from '../../components/ui/button';
-import type { ProductWithSale } from '../../backend';
-
-const PAGE_SIZE = 15;
 
 export default function CategoryPage() {
   const { id } = useParams({ from: '/public/category/$id' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
 
-  // Fetch store details for modal
   const { data: storeDetailsArray } = useBothStoreDetails();
-  const storeDetails = storeDetailsArray?.[0] ?? null;
 
-  // Parse category ID
-  const categoryId = parseInt(id, 10);
-  const isValidId = !isNaN(categoryId) && categoryId > 0;
+  const categoryIdNum = id ? Number(id) : 0;
+  const isValidCategoryId = id && id !== '0';
 
-  // Fetch category details
+  const { data: category } = useGetCategoryById(categoryIdNum);
+
   const {
-    data: category,
-    isLoading: categoryLoading,
-    error: categoryError,
-  } = useGetCategoryById(isValidId ? categoryId : null);
-
-  // Product pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [allProducts, setAllProducts] = useState<ProductWithSale[]>([]);
-
-  // Fetch products for current page
-  const {
-    products: pageProducts,
+    products,
     totalCount,
-    isLoading: isLoadingProducts,
-    error: productError,
-  } = useGetCategoryProductsPaginated(isValidId ? categoryId : null, currentPage, PAGE_SIZE);
+    isLoading,
+    error,
+  } = useGetCategoryProductsPaginated(categoryIdNum, page, pageSize);
 
-  // Scroll to top when category ID changes
+  const hasMore = products.length > 0 && products.length + page * pageSize < totalCount;
+
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [categoryId]);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [id]);
 
-  // Reset state when category changes
-  useEffect(() => {
-    setAllProducts([]);
-    setCurrentPage(0);
-  }, [categoryId]);
-
-  // Redirect if invalid category ID
-  useEffect(() => {
-    if (!isValidId) {
-      navigate({ to: '/' });
-      return;
-    }
-  }, [isValidId, navigate]);
-
-  // Redirect if category not found after loading
-  useEffect(() => {
-    if (!categoryLoading && categoryError) {
-      navigate({ to: '/' });
-    }
-  }, [categoryLoading, categoryError, navigate]);
-
-  // Accumulate products as pages load
-  useEffect(() => {
-    if (pageProducts.length > 0) {
-      setAllProducts((prev) => {
-        if (currentPage === 0) {
-          return pageProducts;
-        }
-        const existingBarcodes = new Set(prev.map((p) => p.product.barcode));
-        const uniqueNewProducts = pageProducts.filter(
-          (p) => !existingBarcodes.has(p.product.barcode)
-        );
-        return [...prev, ...uniqueNewProducts];
-      });
-    }
-  }, [pageProducts, currentPage]);
-
-  // Calculate hasMore
-  const hasMore = allProducts.length < totalCount;
-
-  // Load more handler
-  const handleLoadMore = () => {
-    if (!isLoadingProducts && hasMore) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  // Retry handler
-  const handleRetry = () => {
-    setCurrentPage(0);
-    setAllProducts([]);
-  };
-
-  // Infinite scroll hook
-  const sentinelRef = useInfiniteScroll({
-    hasMore,
-    isLoading: isLoadingProducts,
-    onLoadMore: handleLoadMore,
-    enabled: allProducts.length > 0 && !productError,
-    threshold: 500,
-  });
-
-  // Clear cache on unmount
   useEffect(() => {
     return () => {
-      queryClient.removeQueries({ queryKey: ['category'], exact: false });
       queryClient.removeQueries({ queryKey: ['category-products'], exact: false });
     };
   }, [queryClient]);
 
-  // Show full-page spinner during initial load
-  const showInitialSpinner = categoryLoading || (currentPage === 0 && isLoadingProducts);
+  const handleLoadMore = useCallback(() => {
+    if (!isLoading && hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  }, [isLoading, hasMore]);
 
-  if (showInitialSpinner) {
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isLoading || !hasMore) return;
+
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const threshold = document.documentElement.scrollHeight - 500;
+
+      if (scrollPosition >= threshold) {
+        handleLoadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleLoadMore, isLoading, hasMore]);
+
+  if (!isValidCategoryId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-4">
+        <p className="text-lg text-muted-foreground">Categoría no encontrada</p>
+        <Button onClick={() => navigate({ to: '/' })} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver al inicio
+        </Button>
+      </div>
+    );
+  }
+
+  if (isLoading && page === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -131,17 +86,26 @@ export default function CategoryPage() {
     );
   }
 
-  if (!category) {
-    return null;
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-4">
+        <p className="text-lg text-destructive">Error al cargar los productos</p>
+        <div className="flex gap-3">
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Reintentar
+          </Button>
+          <Button onClick={() => navigate({ to: '/' })} variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver al inicio
+          </Button>
+        </div>
+      </div>
+    );
   }
-
-  // Product count with proper pluralization
-  const productCountText = totalCount === 1 ? '1 producto' : `${totalCount} productos`;
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Category Header */}
-      <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <button
           onClick={() => navigate({ to: '/' })}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -150,54 +114,41 @@ export default function CategoryPage() {
           <ArrowLeft className="h-4 w-4" />
           <span>Volver al inicio</span>
         </button>
-
-        <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">{category.name}</h1>
-          <p className="text-lg text-muted-foreground">{productCountText}</p>
-        </div>
       </div>
 
-      {/* Error State */}
-      {productError && (
-        <div className="text-center py-12 space-y-4">
-          <p className="text-destructive">Error al cargar los productos</p>
-          <Button onClick={handleRetry} variant="outline">
-            Reintentar
-          </Button>
+      {category && (
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground">{category.name}</h1>
         </div>
       )}
 
-      {/* Empty State */}
-      {!productError && !isLoadingProducts && allProducts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No hay productos en esta categoría</p>
+      {products.length === 0 && !isLoading ? (
+        <div className="flex flex-col items-center justify-center py-24">
+          <p className="text-lg text-muted-foreground">No hay productos en esta categoría</p>
         </div>
-      )}
-
-      {/* Product Grid */}
-      {!productError && allProducts.length > 0 && (
+      ) : (
         <>
-          <ProductGrid products={allProducts} storeDetails={storeDetails} />
+          <ProductGrid
+            products={products.map((p) => ({
+              product: p.product,
+              salePrice: p.salePrice,
+              discountPercentage: p.discountPercentage,
+              isOnSale: p.isOnSale,
+            }))}
+            storeDetails={storeDetailsArray || []}
+          />
 
-          {/* Loading More Indicator */}
-          {isLoadingProducts && currentPage > 0 && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-              <span className="text-muted-foreground">Cargando más productos...</span>
+          {isLoading && page > 0 && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           )}
 
-          {/* End of Content Message */}
-          {!hasMore && !isLoadingProducts && (
+          {!hasMore && products.length > 0 && (
             <div className="text-center py-8">
-              <p className="text-muted-foreground text-sm">
-                Has visto todos los productos de esta categoría
-              </p>
+              <p className="text-muted-foreground">No hay más productos</p>
             </div>
           )}
-
-          {/* Sentinel element for infinite scroll */}
-          <div ref={sentinelRef} className="h-1" aria-hidden="true" />
         </>
       )}
     </div>

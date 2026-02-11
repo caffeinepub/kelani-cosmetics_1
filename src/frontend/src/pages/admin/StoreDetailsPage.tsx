@@ -152,7 +152,7 @@ export default function StoreDetailsPage() {
       // Clear errors
       setErrors({});
 
-      // Save with error handling
+      // Save with BigInt timestamps preserved
       await updateMutation.mutateAsync({
         ...formData,
         latitude,

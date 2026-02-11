@@ -6,6 +6,7 @@ import { useGetProduct } from '../../hooks/useProductQueries';
 import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
 import { Button } from '../../components/ui/button';
 import CopyToClipboardButton from '../../components/public/product/CopyToClipboardButton';
+import StoreSelector from '../../components/public/product/StoreSelector';
 
 const DEFAULT_IMAGE_URL = 'https://i.imgur.com/pNccXMT.png';
 
@@ -17,7 +18,7 @@ export default function ProductPage() {
   const [imageError, setImageError] = useState(false);
 
   // Fetch store details for WhatsApp contact
-  const { data: storeDetails } = useBothStoreDetails();
+  const { data: storeDetailsArray } = useBothStoreDetails();
 
   // Validate and normalize barcode
   const normalizedBarcode = barcode?.trim() || '';
@@ -90,19 +91,6 @@ export default function ProductPage() {
       style: 'currency',
       currency: 'EUR',
     }).format(price);
-  };
-
-  // Handle WhatsApp contact
-  const handleWhatsAppContact = () => {
-    if (!product || !storeDetails || storeDetails.length === 0) return;
-
-    // Use first store's WhatsApp number
-    const whatsappNumber = storeDetails[0].whatsapp.replace(/\D/g, '');
-    const message = encodeURIComponent(
-      `Hola, estoy interesado en el producto:\n${product.name}\nCódigo de barras: ${product.barcode}`
-    );
-
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
   };
 
   // Handle share URL
@@ -280,7 +268,7 @@ export default function ProductPage() {
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Descripción</p>
               <div
-                className="text-foreground prose prose-sm max-w-none"
+                className="text-sm text-foreground prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: product.description }}
               />
             </div>
@@ -288,14 +276,11 @@ export default function ProductPage() {
 
           {/* Action Buttons */}
           <div className="space-y-3 pt-4">
-            <Button
-              onClick={handleWhatsAppContact}
-              className="w-full"
-              size="lg"
-              disabled={!storeDetails || storeDetails.length === 0}
-            >
-              Contactar sobre este producto
-            </Button>
+            <StoreSelector
+              productName={product.name}
+              barcode={product.barcode}
+              storeDetails={storeDetailsArray || []}
+            />
 
             <Button onClick={handleShareUrl} variant="outline" className="w-full" size="lg">
               <Share2 className="h-4 w-4 mr-2" />

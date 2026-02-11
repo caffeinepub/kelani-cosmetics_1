@@ -1,112 +1,82 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import AutocompleteDropdown from './AutocompleteDropdown';
 import { useHomepageAutocomplete } from '../../../../hooks/useHomepageAutocomplete';
-import { useProductModalStore } from '../../../../stores/productModalStore';
 import { useBothStoreDetails } from '../../../../hooks/useBothStoreDetails';
+import { useProductModalStore } from '../../../../stores/productModalStore';
+import AutocompleteDropdown from './AutocompleteDropdown';
 import type { HomepageSearchResult } from '../../../../backend';
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const openModal = useProductModalStore((state) => state.openModal);
-
-  // Fetch store details for modal
-  const { data: storeDetailsArray } = useBothStoreDetails();
-  const storeDetails = storeDetailsArray?.[0] ?? null;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { results, isLoading, error } = useHomepageAutocomplete(query);
+  const { data: storeDetailsArray } = useBothStoreDetails();
+  const openModal = useProductModalStore((state) => state.openModal);
 
-  // Show dropdown when there are results or loading/error states
-  useEffect(() => {
-    if (query.length >= 2) {
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
-    }
-  }, [query, results, isLoading, error]);
+  const showDropdown = isFocused && query.length >= 2;
 
   const handleSelect = (result: HomepageSearchResult) => {
-    setIsOpen(false);
     setQuery('');
+    setIsFocused(false);
     setActiveIndex(-1);
-    openModal(result, storeDetails);
+    inputRef.current?.blur();
+    openModal(result, storeDetailsArray || []);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen || results.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setActiveIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setActiveIndex((prev) => (prev > 0 ? prev - 1 : -1));
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (activeIndex >= 0 && activeIndex < results.length) {
-          handleSelect(results[activeIndex]);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setIsOpen(false);
-        setActiveIndex(-1);
-        break;
-    }
+  const handleMouseEnter = (index: number) => {
+    setActiveIndex(index);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    setActiveIndex(-1);
-  };
-
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsFocused(false);
         setActiveIndex(-1);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
+  // Reset active index when results change
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [results]);
+
   return (
-    <div className="relative w-full max-w-3xl md:max-w-none mx-auto" ref={inputRef}>
+    <div ref={containerRef} className="relative w-full max-w-3xl mx-auto px-4 md:px-0">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-        <Input
-          type="search"
-          placeholder="Buscar productos por nombre, descripción o código"
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+        <input
+          ref={inputRef}
+          type="text"
           value={query}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          className="pl-10 pr-4 h-12 text-base"
-          role="combobox"
-          aria-expanded={isOpen}
-          aria-controls="search-results"
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          placeholder="Buscar productos..."
+          className="w-full pl-12 pr-4 py-3 rounded-full border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          aria-label="Buscar productos"
           aria-autocomplete="list"
-          aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
+          aria-controls="search-results"
+          aria-expanded={showDropdown}
         />
       </div>
 
-      {isOpen && (
+      {showDropdown && (
         <AutocompleteDropdown
           results={results}
           isLoading={isLoading}
           error={error}
           activeIndex={activeIndex}
           onSelect={handleSelect}
-          onMouseEnter={(index) => setActiveIndex(index)}
+          onMouseEnter={handleMouseEnter}
         />
       )}
     </div>

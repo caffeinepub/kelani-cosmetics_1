@@ -133,7 +133,7 @@ function StoreColumn({ store }: StoreColumnProps) {
           rel="noopener noreferrer"
           className="text-sm text-foreground hover:text-primary transition-colors"
         >
-          {formatSpanishPhoneDisplay(store.whatsapp)}
+          {formatSpanishPhoneDisplay(store.whatsapp)} (Para pedidos)
         </a>
       </div>
 

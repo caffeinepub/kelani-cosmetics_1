@@ -5,7 +5,7 @@ import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErr
 import type { StoreDetails as BackendStoreDetails } from '../backend';
 import { numberToBigInt, bigIntToNumber } from '../utils/categoryNumeric';
 
-// UI StoreDetails type with number fields and parsed coordinates
+// UI StoreDetails type with bigint timestamps and parsed coordinates
 export interface StoreDetails {
   storeId: number;
   name: string;
@@ -19,8 +19,8 @@ export interface StoreDetails {
   latitude: number;
   longitude: number;
   storeHours: Array<[string, string]>;
-  createdDate: number;
-  lastUpdated: number;
+  createdDate: bigint;
+  lastUpdated: bigint;
   isActive: boolean;
 }
 
@@ -48,6 +48,7 @@ function serializeCoordinates(lat: number, lng: number): string {
 
 /**
  * Convert backend StoreDetails to UI StoreDetails
+ * Preserves BigInt timestamps without conversion
  */
 function backendStoreDetailsToUI(backendStore: BackendStoreDetails): StoreDetails {
   const coords = parseCoordinates(backendStore.coordinates);
@@ -65,14 +66,15 @@ function backendStoreDetailsToUI(backendStore: BackendStoreDetails): StoreDetail
     latitude: coords.lat,
     longitude: coords.lng,
     storeHours: backendStore.storeHours,
-    createdDate: bigIntToNumber(backendStore.createdDate),
-    lastUpdated: bigIntToNumber(backendStore.lastUpdated),
+    createdDate: backendStore.createdDate,
+    lastUpdated: backendStore.lastUpdated,
     isActive: backendStore.isActive,
   };
 }
 
 /**
  * Convert UI StoreDetails to backend StoreDetails
+ * Passes BigInt timestamps through unchanged
  */
 function uiStoreDetailsToBackend(uiStore: StoreDetails): BackendStoreDetails {
   return {
@@ -87,8 +89,8 @@ function uiStoreDetailsToBackend(uiStore: StoreDetails): BackendStoreDetails {
     website: uiStore.website ?? undefined,
     coordinates: serializeCoordinates(uiStore.latitude, uiStore.longitude),
     storeHours: uiStore.storeHours,
-    createdDate: numberToBigInt(uiStore.createdDate),
-    lastUpdated: numberToBigInt(uiStore.lastUpdated),
+    createdDate: uiStore.createdDate,
+    lastUpdated: uiStore.lastUpdated,
     isActive: uiStore.isActive,
   };
 }
