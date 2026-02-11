@@ -8,10 +8,12 @@ interface UseCategoryProductsPaginatedResult {
   totalCount: number;
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
 }
 
 /**
- * Hook for fetching paginated category products with featured-first ordering and sale-aware pricing from backend
+ * Hook for fetching paginated category products with featured-first ordering and sale-aware pricing from backend.
+ * Uses stable actor pattern to prevent duplicate requests and supports refetch for retry functionality.
  */
 export function useGetCategoryProductsPaginated(
   categoryId: number | null,
@@ -28,7 +30,7 @@ export function useGetCategoryProductsPaginated(
     }
   }, [rawActor, stableActor]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['category-products', categoryId, page, pageSize],
     queryFn: async ({ signal }) => {
       if (!stableActor || categoryId === null) {
@@ -62,5 +64,6 @@ export function useGetCategoryProductsPaginated(
     totalCount: data?.totalCount ?? 0,
     isLoading,
     error: error as Error | null,
+    refetch,
   };
 }

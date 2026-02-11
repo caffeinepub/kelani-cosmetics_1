@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from '@tanstack/react-router';
 import { useProductModalStore } from '../../../stores/productModalStore';
 import ProductCard from '../products/ProductCard';
+import { useIsMobile } from '../../../hooks/useMediaQuery';
 import type { CategorizedProductWithSale, StoreDetails } from '../../../backend';
 
 interface CategorySectionProps {
@@ -11,10 +12,16 @@ interface CategorySectionProps {
 
 const CategorySection = React.memo(({ category, storeDetails }: CategorySectionProps) => {
   const openModal = useProductModalStore((state) => state.openModal);
+  const isMobile = useIsMobile();
 
   const handleProductClick = (product: CategorizedProductWithSale['products'][0]) => {
     openModal(product, storeDetails);
   };
+
+  // Limit to 4 products on mobile (≤768px), show all 5 on desktop
+  const productsToRender = isMobile 
+    ? category.products.slice(0, 4) 
+    : category.products;
 
   return (
     <section className="space-y-4">
@@ -34,7 +41,7 @@ const CategorySection = React.memo(({ category, storeDetails }: CategorySectionP
 
       {/* Products Grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {category.products.map((productWithSale) => (
+        {productsToRender.map((productWithSale) => (
           <ProductCard
             key={productWithSale.product.barcode}
             productWithSale={productWithSale}

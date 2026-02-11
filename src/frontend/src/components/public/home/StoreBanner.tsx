@@ -17,10 +17,10 @@ export default function StoreBanner() {
             Kelani Cosmetics
           </h1>
           <p className="text-lg md:text-xl lg:text-2xl text-white/95 mb-2 md:mb-3 drop-shadow-md">
-            Tu tienda integral de productos de belleza, cuidado del cabello y la piel
+            Tu tienda especializada en belleza, cuidado capilar y de la piel, con pelo natural y artificial de alta calidad.
           </p>
           <p className="text-base md:text-lg lg:text-xl text-white/90 drop-shadow-md">
-            Pelucas, cuidado capilar, aceites, cremas, champús y productos de estilizado
+            Pelucas, pelo natural y sintético, productos capilares, aceites, cremas, champús y productos de estilizado.
           </p>
         </div>
       </div>

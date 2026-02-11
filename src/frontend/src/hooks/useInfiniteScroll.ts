@@ -9,8 +9,8 @@ interface UseInfiniteScrollOptions {
 }
 
 /**
- * Custom hook for implementing infinite scroll with requestAnimationFrame throttling
- * Monitors window scroll position and triggers load more when near bottom
+ * Custom hook for implementing infinite scroll with requestAnimationFrame throttling, IntersectionObserver fallback, and cooldown period to prevent duplicate triggers.
+ * Monitors window scroll position and triggers load more when within threshold distance from bottom, with proper cleanup on unmount.
  */
 export function useInfiniteScroll({
   hasMore,
@@ -22,8 +22,51 @@ export function useInfiniteScroll({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
   const lastTriggerRef = useRef<number>(0);
+  const observerRef = useRef<IntersectionObserver | null>(null);
   const cooldownPeriod = 1000; // 1 second cooldown between triggers
 
+  // IntersectionObserver setup
+  useEffect(() => {
+    if (!enabled || !hasMore || isLoading || !sentinelRef.current) {
+      return;
+    }
+
+    // Check if IntersectionObserver is supported
+    if ('IntersectionObserver' in window) {
+      const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+        const [entry] = entries;
+        const now = Date.now();
+        const timeSinceLastTrigger = now - lastTriggerRef.current;
+
+        if (
+          entry.isIntersecting &&
+          hasMore &&
+          !isLoading &&
+          timeSinceLastTrigger >= cooldownPeriod
+        ) {
+          lastTriggerRef.current = now;
+          onLoadMore();
+        }
+      };
+
+      observerRef.current = new IntersectionObserver(handleIntersection, {
+        root: null,
+        rootMargin: `${threshold}px`,
+        threshold: 0,
+      });
+
+      observerRef.current.observe(sentinelRef.current);
+
+      return () => {
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+          observerRef.current = null;
+        }
+      };
+    }
+  }, [enabled, hasMore, isLoading, onLoadMore, threshold]);
+
+  // Scroll event listener with requestAnimationFrame throttling (fallback)
   useEffect(() => {
     if (!enabled || !hasMore || isLoading) {
       return;

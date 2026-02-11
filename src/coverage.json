@@ -1,86 +1,24 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T14:31:52.205Z",
+  "generatedAt": "2026-02-11T15:32:39.038Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Create a reusable StoreSelector UI used by both the Product Details Modal and the Product Details Page: a primary contact button labeled \"Contactar sobre este producto\" that toggles an expandable section directly beneath it; when expanded, render one touch-friendly button per available store (minimum 44px height) labeled with the store name from store details; clicking a store button opens WhatsApp in a new tab with a pre-filled Spanish message that includes the product name and barcode, using that store’s WhatsApp number; the contact button must not open WhatsApp directly without a store selection; clicking the contact button again collapses the selector; add a smooth expand/collapse animation; optionally collapse after selecting a store.",
+        "summary": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/public/product/StoreSelector.tsx",
-          "frontend/src/utils/whatsappContact.ts",
-          "frontend/src/pages/public/ProductPage.tsx"
+          "frontend/src/pages/public/PrivacyPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/public/product/StoreSelector.tsx",
-          "frontend/src/utils/whatsappContact.ts",
-          "frontend/src/pages/public/ProductPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Update the Product Details Modal flow so it receives and uses both store details from its parent (no additional API calls inside the modal): refactor the existing modal WhatsApp logic to use the new StoreSelector and accept a complete store details array for rendering options; ensure modal state defaults to collapsed when opened; ensure Spanish-only UI text remains unchanged (including the \"Contactar sobre este producto\" label).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/public/product/ProductDetailsModal.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/public/product/ProductDetailsModal.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Update the product modal state/data flow to support passing and storing an array of store details (two stores) instead of a single store: adjust the modal store and all modal openers (e.g., homepage category sections and search selection) to pass the complete result of the existing `useBothStoreDetails()` hook to the modal so both store options can be shown.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/stores/productModalStore.ts",
-          "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-          "frontend/src/components/public/home/CategorySection.tsx",
-          "frontend/src/components/public/home/search/SearchBar.tsx",
-          "frontend/src/pages/public/CategoryPage.tsx",
-          "frontend/src/components/public/products/ProductGrid.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/stores/productModalStore.ts",
-          "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-          "frontend/src/components/public/home/CategorySection.tsx",
-          "frontend/src/components/public/home/search/SearchBar.tsx",
-          "frontend/src/pages/public/CategoryPage.tsx",
-          "frontend/src/components/public/products/ProductGrid.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Update the Product Details Page (`frontend/src/pages/public/ProductPage.tsx`) to use the new StoreSelector: fetch product data using the existing product query; fetch both store details using the existing `useBothStoreDetails()` hook (backed by `getBothStoreDetails()`); pass the resulting store details array into the selector; remove the current behavior that automatically uses only the first store for WhatsApp.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/ProductPage.tsx",
-          "frontend/src/utils/whatsappContact.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/ProductPage.tsx",
-          "frontend/src/utils/whatsappContact.ts"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Preserve Spanish UI throughout this change: do not introduce any new English UI strings related to the store selector/contact flow; store names must display exactly as configured in admin store details; ensure WhatsApp message text is Spanish.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/public/product/StoreSelector.tsx",
-          "frontend/src/utils/whatsappContact.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/public/product/StoreSelector.tsx",
-          "frontend/src/utils/whatsappContact.ts"
+          "frontend/src/pages/public/PrivacyPage.tsx"
         ]
       }
     ]
@@ -90,16 +28,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/public/home/CategorySection.tsx",
-    "frontend/src/components/public/home/HomepageCategoriesSection.tsx",
-    "frontend/src/components/public/home/search/SearchBar.tsx",
-    "frontend/src/components/public/product/ProductDetailsModal.tsx",
-    "frontend/src/components/public/product/StoreSelector.tsx",
-    "frontend/src/components/public/products/ProductGrid.tsx",
-    "frontend/src/pages/public/CategoryPage.tsx",
-    "frontend/src/pages/public/ProductPage.tsx",
-    "frontend/src/stores/productModalStore.ts",
-    "frontend/src/utils/whatsappContact.ts",
+    "frontend/src/pages/public/PrivacyPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

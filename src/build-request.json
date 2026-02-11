@@ -1,126 +1,61 @@
 {
   "kind": "build_request",
-  "title": "Add expandable store selector for WhatsApp product contact (modal + product page)",
+  "title": "Update Privacy Policy contact section to link to /contacto (remove hardcoded store details)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Create a reusable StoreSelector UI used by both the Product Details Modal and the Product Details Page: a primary contact button labeled \"Contactar sobre este producto\" that toggles an expandable section directly beneath it; when expanded, render one touch-friendly button per available store (minimum 44px height) labeled with the store name from store details; clicking a store button opens WhatsApp in a new tab with a pre-filled Spanish message that includes the product name and barcode, using that store’s WhatsApp number; the contact button must not open WhatsApp directly without a store selection; clicking the contact button again collapses the selector; add a smooth expand/collapse animation; optionally collapse after selecting a store.",
+      "text": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-10"
+          "msg-1"
         ],
         "quotes": [
-          "Replace direct WhatsApp link with an expandable store selector that shows both store options when contacting about a product.",
-          "Button toggles expansion of store selector section below it",
-          "No direct WhatsApp opening without store selection"
+          "Update the privacy policy contact section to link to the contact page instead of displaying store contact details. This is a frontend-only change. Do not change anything else.",
+          "Remove the entire div with class `bg-muted p-6 rounded-lg space-y-3`",
+          "Use existing Link component from router",
+          "Target: `/contacto` route",
+          "Link text: \"Ir a la página de contacto\"",
+          "Styling: `text-primary hover:underline` (maintain existing link styling)",
+          "Do not modify any other sections of the privacy policy page"
         ]
       },
       "acceptanceCriteria": [
-        "In both the product modal and the product page, clicking \"Contactar sobre este producto\" only expands/collapses the selector and never opens WhatsApp directly.",
-        "Expanded selector shows two store buttons when two stores are available; each label uses the store name from store details.",
-        "Selecting a store opens https://wa.me/<formattedNumber>?text=<encodedMessage> in a new tab/window.",
-        "The pre-filled message is in Spanish and includes product name and barcode in a consistent format for both stores.",
-        "Store option buttons meet touch target guidance (>=44px height) and have clear spacing and active/pressed feedback.",
-        "Expand/collapse has a visible smooth animation.",
-        "All existing product display functionality (images, sale pricing, share link, etc.) remains unchanged."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Update the Product Details Modal flow so it receives and uses both store details from its parent (no additional API calls inside the modal): refactor the existing modal WhatsApp logic to use the new StoreSelector and accept a complete store details array for rendering options; ensure modal state defaults to collapsed when opened; ensure Spanish-only UI text remains unchanged (including the \"Contactar sobre este producto\" label).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-10"
-        ],
-        "quotes": [
-          "Product details modal receives both store details from parent",
-          "Modal receives store details as props",
-          "No additional API calls within modal"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Opening a product modal shows the same content as before, but the WhatsApp contact action is replaced by the expandable selector behavior.",
-        "The modal has access to both stores’ details provided by the parent flow and does not fetch store details itself.",
-        "Modal selector state is collapsed on initial open; toggling works reliably; selecting a store opens WhatsApp for that store."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Update the product modal state/data flow to support passing and storing an array of store details (two stores) instead of a single store: adjust the modal store and all modal openers (e.g., homepage category sections and search selection) to pass the complete result of the existing `useBothStoreDetails()` hook to the modal so both store options can be shown.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-10"
-        ],
-        "quotes": [
-          "Parent component (home page or category page) passes ... Complete store details array from `getBothStoreDetails()`",
-          "Add `storeDetails` prop to ProductDetailsModal component",
-          "Create reusable `StoreSelector` component for both modal and page"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Wherever the product modal is opened from the public site, it passes a store details array (not just the first store).",
-        "The modal can render both store options when both stores are available.",
-        "No regressions in opening/closing the modal from homepage categories or search results."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update the Product Details Page (`frontend/src/pages/public/ProductPage.tsx`) to use the new StoreSelector: fetch product data using the existing product query; fetch both store details using the existing `useBothStoreDetails()` hook (backed by `getBothStoreDetails()`); pass the resulting store details array into the selector; remove the current behavior that automatically uses only the first store for WhatsApp.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-10"
-        ],
-        "quotes": [
-          "Product details page fetches both store details using `getBothStoreDetails()` method",
-          "No direct WhatsApp opening without store selection"
-        ]
-      },
-      "acceptanceCriteria": [
-        "On the product page, clicking \"Contactar sobre este producto\" expands/collapses the selector and does not open WhatsApp directly.",
-        "The page offers store-specific WhatsApp contact actions for each available store.",
-        "The WhatsApp message content matches the modal’s message format and includes product name and barcode.",
-        "The page still fetches and displays product details, images, sale pricing, and share link exactly as before."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Preserve Spanish UI throughout this change: do not introduce any new English UI strings related to the store selector/contact flow; store names must display exactly as configured in admin store details; ensure WhatsApp message text is Spanish.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-10"
-        ],
-        "quotes": [
-          "Spanish interface throughout",
-          "No English text in the interface",
-          "WhatsApp message in Spanish"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All new/updated UI strings introduced by this change are Spanish (or store-provided names).",
-        "Store button labels come from store details names and are not hardcoded.",
-        "WhatsApp message text is Spanish and consistent across both stores."
+        "In frontend/src/pages/public/PrivacyPage.tsx, the Section 12 contact area no longer renders the div with class `bg-muted p-6 rounded-lg space-y-3`.",
+        "Section 12 no longer displays any individual contact details (store name, email, phone, address) and does not include `mailto:` or `tel:` links.",
+        "Section 12 retains an introductory paragraph, updated to: \"Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos a través de nuestra página de contacto.\"",
+        "Immediately after that paragraph, Section 12 renders a Link (from @tanstack/react-router) pointing to `/contacto` with visible link text exactly \"Ir a la página de contacto\" and className exactly `text-primary hover:underline`.",
+        "No other sections, headings, layout, or styling on /privacy are modified outside Section 12.",
+        "No backend changes are made."
       ]
     }
   ],
   "constraints": [
-    "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; append any new CSS only below that block if needed.",
-    "Do not open WhatsApp directly from the main contact button; WhatsApp must open only after a store option is selected.",
-    "Do not add new API calls inside the Product Details Modal; it must receive store details from its parent flow.",
-    "Do not edit files under the frontend immutable paths listed in SYSTEM_CONTEXT."
+    "Frontend-only change; do not modify backend files.",
+    "Do not modify the contact page (/contacto) or any other components/pages besides the Section 12 contact section on /privacy.",
+    "Do not introduce data fetching, loading states, fallback handling, or error handling for this contact section update.",
+    "Maintain Spanish UI content on the Privacy page.",
+    "Do not remove, modify, or overwrite the :root CSS custom properties block in frontend/src/index.css; if any CSS is added, it must be appended below the existing block without altering it."
   ],
   "nonGoals": [
-    "Do not change backend data models or add new backend endpoints (use existing `getBothStoreDetails()` / `useBothStoreDetails()` as-is).",
-    "Do not change existing product pricing/sale logic, product fetching, or SEO behavior beyond integrating the selector.",
-    "Do not redesign unrelated parts of the modal or product page UI."
+    "Changing any other section (1–11, 13) of the Privacy Policy page.",
+    "Changing routing configuration or adding new routes.",
+    "Updating store details, footer contact info, product modal contact options, or any other place where contact information is displayed.",
+    "Adding tests, analytics, or telemetry for this change."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

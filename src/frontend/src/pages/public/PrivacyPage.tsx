@@ -322,24 +322,12 @@ export default function PrivacyPage() {
             12. Contacto
           </h2>
           <p className="text-foreground leading-relaxed">
-            Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos:
+            Si tienes preguntas, inquietudes o solicitudes relacionadas con esta Política de Privacidad o nuestras prácticas de datos, contáctanos a través de nuestra página de contacto.
           </p>
-          <div className="bg-muted p-6 rounded-lg space-y-3">
-            <p className="text-foreground">
-              <strong>Kelani Cosmetics</strong>
-            </p>
-            <p className="text-foreground">
-              Email: <a href="mailto:variety.discount.store@example.com" className="text-primary hover:underline">variety.discount.store@example.com</a>
-            </p>
-            <p className="text-foreground">
-              Teléfono: <a href="tel:+14102886792" className="text-primary hover:underline">(410) 288-6792</a>
-            </p>
-            <p className="text-foreground">
-              Dirección: 1460 Merritt Blvd, Dundalk, MD 21222
-            </p>
-          </div>
           <p className="text-foreground leading-relaxed">
-            También puedes visitar nuestra <Link to="/contacto" className="text-primary hover:underline">página de contacto</Link> para más opciones de comunicación.
+            <Link to="/contacto" className="text-primary hover:underline">
+              Ir a la página de contacto
+            </Link>
           </p>
         </section>
 

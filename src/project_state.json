@@ -1,50 +1,19 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Implement an expandable store selector for the product contact (WhatsApp) flow so users can choose between two stores on both the product details modal and product details page.",
+  "summary": "Frontend website update: modify the Privacy Policy (/privacy) contact section (section 12) to remove hardcoded store contact details and replace with a Link to the contact page (/contacto) in Spanish.",
   "architectural_notes": [
-    "Do not modify or overwrite the existing :root CSS custom properties block in index.css; append new styles only below it, preserving exact variable names/values/structure."
+    "On /privacy page, only modify section 12 (contact section); preserve all other sections, headings, layout, and styling.",
+    "Do not modify or overwrite the :root CSS custom properties block in index.css (theme color variables); only append new CSS below if needed."
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-create-a-reusable-storeselector-ui-used-by-both-the-product-details-modal-and-the-product-details-page-a-primary-contact-button-labeled-contactar-sobre-este-producto-that-toggles-an-expandable-section-directly-beneath-it-when-expanded-render-one-touch-friendly-button-per-available-store-minimum-44px-height-labeled-with-the-store-name-from-store-details-clicking-a-store-button-opens-whatsapp-in-a-new-tab-with-a-pre-filled-spanish-message-that-includes-the-product-name-and-barcode-using-that-store-s-whatsapp-number-the-contact-button-must-not-open-whatsapp-directly-without-a-store-selection-clicking-the-contact-button-again-collapses-the-selector-add-a-smooth-expand-collapse-animation-optionally-collapse-after-selecting-a-store",
-      "title": "Create a reusable StoreSelector UI used by both the Product Details Modal and the Product Details Page: a primary contact button labeled \"Contactar sobre este producto\" that toggles an expandable section directly beneath it; when expanded, render one touch-friendly button per available store (minimum 44px height) labeled with the store name from store details; clicking a store button opens WhatsApp in a new tab with a pre-filled Spanish message that includes the product name and barcode, using that store’s WhatsApp number; the contact button must not open WhatsApp directly without a store selection; clicking the contact button again collapses the selector; add a smooth expand/collapse animation; optionally collapse after selecting a store.",
+      "id": "feature-on-the-privacy-policy-page-privacy-update-only-section-12-contacto-to-remove-the-hardcoded-store-contact-details-and-replace-them-with-a-single-contact-paragraph-plus-a-standalone-router-link-to-the-contact-page",
+      "title": "On the Privacy Policy page (/privacy), update only Section 12 \"Contacto\" to remove the hardcoded store contact details and replace them with a single contact paragraph plus a standalone router Link to the contact page.",
       "reqIds": [
         "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-product-details-modal-flow-so-it-receives-and-uses-both-store-details-from-its-parent-no-additional-api-calls-inside-the-modal-refactor-the-existing-modal-whatsapp-logic-to-use-the-new-storeselector-and-accept-a-complete-store-details-array-for-rendering-options-ensure-modal-state-defaults-to-collapsed-when-opened-ensure-spanish-only-ui-text-remains-unchanged-including-the-contactar-sobre-este-producto-label",
-      "title": "Update the Product Details Modal flow so it receives and uses both store details from its parent (no additional API calls inside the modal): refactor the existing modal WhatsApp logic to use the new StoreSelector and accept a complete store details array for rendering options; ensure modal state defaults to collapsed when opened; ensure Spanish-only UI text remains unchanged (including the \"Contactar sobre este producto\" label).",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-product-modal-state-data-flow-to-support-passing-and-storing-an-array-of-store-details-two-stores-instead-of-a-single-store-adjust-the-modal-store-and-all-modal-openers-e-g-homepage-category-sections-and-search-selection-to-pass-the-complete-result-of-the-existing-usebothstoredetails-hook-to-the-modal-so-both-store-options-can-be-shown",
-      "title": "Update the product modal state/data flow to support passing and storing an array of store details (two stores) instead of a single store: adjust the modal store and all modal openers (e.g., homepage category sections and search selection) to pass the complete result of the existing `useBothStoreDetails()` hook to the modal so both store options can be shown.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-product-details-page-frontend-src-pages-public-productpage-tsx-to-use-the-new-storeselector-fetch-product-data-using-the-existing-product-query-fetch-both-store-details-using-the-existing-usebothstoredetails-hook-backed-by-getbothstoredetails-pass-the-resulting-store-details-array-into-the-selector-remove-the-current-behavior-that-automatically-uses-only-the-first-store-for-whatsapp",
-      "title": "Update the Product Details Page (`frontend/src/pages/public/ProductPage.tsx`) to use the new StoreSelector: fetch product data using the existing product query; fetch both store details using the existing `useBothStoreDetails()` hook (backed by `getBothStoreDetails()`); pass the resulting store details array into the selector; remove the current behavior that automatically uses only the first store for WhatsApp.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-preserve-spanish-ui-throughout-this-change-do-not-introduce-any-new-english-ui-strings-related-to-the-store-selector-contact-flow-store-names-must-display-exactly-as-configured-in-admin-store-details-ensure-whatsapp-message-text-is-spanish",
-      "title": "Preserve Spanish UI throughout this change: do not introduce any new English UI strings related to the store selector/contact flow; store names must display exactly as configured in admin store details; ensure WhatsApp message text is Spanish.",
-      "reqIds": [
-        "REQ-5"
       ],
       "version": 1
     }
@@ -52,12 +21,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Replace direct WhatsApp product contact with expandable store selector (two store options) using getBothStoreDetails; reusable selector for modal and product page; Spanish UI and pre-filled message includes product name + barcode",
+      "summary": "Update Privacy Policy contact section (section 12) to remove contact details box and add Link to /contacto with text \"Ir a la página de contacto\" (frontend-only).",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Add expandable store selector for WhatsApp product contact (modal + product page)",
+  "projectName": "Update Privacy Policy contact section to link to /contacto (remove hardcoded store details)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
