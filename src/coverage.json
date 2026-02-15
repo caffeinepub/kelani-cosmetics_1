@@ -1,124 +1,121 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T22:43:37.085Z",
+  "generatedAt": "2026-02-15T23:43:15.722Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 7,
+    "total": 6,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Create a static sitemap at `frontend/public/sitemap.xml` with exactly the XML content provided by the user, and ensure it is served publicly at `https://kelanicosmetics.es/sitemap.xml` (no dynamic URL generation for categories or products).",
+        "summary": "Standardize product image rendering across all public-facing UI by applying Tailwind `object-contain` to every <img> that displays a product photo (including fallback/default images), while preserving all other existing classes and layout behavior.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/public/sitemap.xml"
+          "frontend/src/components/public/products/ProductCard.tsx",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "frontend/src/pages/public/ProductPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/public/sitemap.xml"
+          "frontend/src/components/public/products/ProductCard.tsx",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "frontend/src/pages/public/ProductPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Create a static robots file at `frontend/public/robots.txt` with exactly the content provided by the user, including the sitemap reference to `https://kelanicosmetics.es/sitemap.xml`.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/public/robots.txt"
-        ],
-        "matchedFiles": [
-          "frontend/public/robots.txt"
-        ]
+        "summary": "Fix the backend `searchHomepageProducts` function to return complete product data including the binary `photo` field (stored as `?[Nat8]`) for each search result, and remove any attempt to return/construct a product image URL string. Keep the maximum result limit at 10 and preserve all other fields needed for UI display (e.g., name, barcode, category name/id, pricing, and sale fields if currently included).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Implement a frontend-only mechanism (React Helmet or an equivalent approach) to set and override per-route `<head>` tags for the static public pages: homepage (`/`), contact page (`/contacto`), and privacy policy page (`/privacy`), without changing page behavior.",
+        "summary": "Ensure the homepage autocomplete dropdown remains text-only: do not render product images, do not create blob URLs, and do not attempt any binary-to-image conversion inside dropdown item components; dropdown items must show only product name, category name, and formatted price (with sale formatting if applicable).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/seo/SeoHead.tsx",
-          "frontend/index.html"
+          "frontend/src/components/public/home/search/SearchResultItem.tsx",
+          "frontend/src/components/public/home/search/AutocompleteDropdown.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/seo/SeoHead.tsx",
-          "frontend/index.html"
+          "frontend/src/components/public/home/search/SearchResultItem.tsx",
+          "frontend/src/components/public/home/search/AutocompleteDropdown.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Update the homepage (`frontend/src/pages/public/HomePage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph, Twitter) with canonical URL `https://kelanicosmetics.es/` and local SEO wording for Valencia/València and Málaga, including accents and special characters exactly as specified.",
+        "summary": "Fix the product details modal image rendering when opened from homepage search results by generating a blob URL from the binary `photo` data on search-result selection (click/keyboard select), attaching the blob URL to the modal-bound product object (or storing it alongside modal state), and updating the modal to prefer the blob URL when present and otherwise fall back to the default image; the modal must not make any additional API calls to fetch photos.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/HomePage.tsx"
+          "frontend/src/stores/productModalStore.ts",
+          "frontend/src/components/public/home/search/SearchBar.tsx",
+          "frontend/src/hooks/useProductModalNavigation.ts",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/HomePage.tsx"
+          "frontend/src/stores/productModalStore.ts",
+          "frontend/src/components/public/home/search/SearchBar.tsx",
+          "frontend/src/hooks/useProductModalNavigation.ts",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx"
         ]
       },
       {
         "id": "REQ-5",
-        "summary": "Update the contact page (`frontend/src/pages/public/ContactoPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), including the store addresses and local details (neighborhoods and postal codes) exactly as specified.",
+        "summary": "Implement blob URL lifecycle management for blob URLs created from binary product photos in the public UI (including the search-result-to-modal flow): track created blob URLs and revoke them when no longer needed (e.g., when the modal closes and/or when the active modal product changes) to prevent memory leaks; do not revoke blob URLs while they are still in use by a visible image element.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
+          "frontend/src/hooks/useProductPhotoBlobUrl.ts",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "frontend/src/stores/productModalStore.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/ContactoPage.tsx"
+          "frontend/src/hooks/useProductPhotoBlobUrl.ts",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "frontend/src/stores/productModalStore.ts"
         ]
       },
       {
         "id": "REQ-6",
-        "summary": "Update the privacy policy page (`frontend/src/pages/public/PrivacyPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), and ensure the page remains `noindex, follow`. Remove/replace any existing ad-hoc title/description side effects that conflict with these tags.",
+        "summary": "Maintain existing behavior for opening the product details modal from non-search entry points (e.g., clicking product cards on homepage/category grids) while aligning all public product image sources to the same data flow pattern: binary photo data → blob URL → image display, with correct fallback handling.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/PrivacyPage.tsx"
+          "frontend/src/utils/productImage.ts",
+          "frontend/src/components/public/products/ProductCard.tsx",
+          "frontend/src/pages/public/ProductPage.tsx",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/PrivacyPage.tsx"
+          "frontend/src/utils/productImage.ts",
+          "frontend/src/components/public/products/ProductCard.tsx",
+          "frontend/src/pages/public/ProductPage.tsx",
+          "frontend/src/components/public/product/ProductDetailsModal.tsx"
         ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Ensure SEO implementation uses the production domain in all canonical and OG URL tags (`https://kelanicosmetics.es`), keeps all meta tag text in Spanish, and correctly handles character encoding for accents (e.g., `València`).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/seo/seoPresets.ts",
-          "frontend/src/pages/public/HomePage.tsx",
-          "frontend/src/pages/public/ContactoPage.tsx",
-          "frontend/src/pages/public/PrivacyPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/seo/seoPresets.ts",
-          "frontend/src/pages/public/HomePage.tsx",
-          "frontend/src/pages/public/ContactoPage.tsx",
-          "frontend/src/pages/public/PrivacyPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Do not remove, modify, or overwrite the `:root` CSS custom properties block in `frontend/src/index.css`; if any styling changes are needed for SEO implementation (not expected), append new CSS only below the existing `:root` block without altering its variable names, values, or structure.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/index.css"
-        ],
-        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.html",
-    "frontend/public/robots.txt",
-    "frontend/public/sitemap.xml",
-    "frontend/src/components/seo/SeoHead.tsx",
-    "frontend/src/components/seo/seoPresets.ts",
-    "frontend/src/pages/public/ContactoPage.tsx",
-    "frontend/src/pages/public/HomePage.tsx",
-    "frontend/src/pages/public/PrivacyPage.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/public/home/search/AutocompleteDropdown.tsx",
+    "frontend/src/components/public/home/search/SearchBar.tsx",
+    "frontend/src/components/public/home/search/SearchResultItem.tsx",
+    "frontend/src/components/public/product/ProductDetailsModal.tsx",
+    "frontend/src/components/public/products/ProductCard.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useProductModalNavigation.ts",
+    "frontend/src/hooks/useProductPhotoBlobUrl.ts",
+    "frontend/src/pages/public/ProductPage.tsx",
+    "frontend/src/stores/productModalStore.ts",
+    "frontend/src/utils/productImage.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

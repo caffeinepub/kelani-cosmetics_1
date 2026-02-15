@@ -4,6 +4,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useGetProductsPage, type Product } from '../../hooks/useProductQueries';
+import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import ProductsTable from '../../components/admin/products/ProductsTable';
 import ProductsCards from '../../components/admin/products/ProductsCards';
@@ -11,6 +12,7 @@ import ProductsPagination from '../../components/admin/products/ProductsPaginati
 import CategoryFilterSelect from '../../components/admin/products/CategoryFilterSelect';
 import ProductUpsertModal from '../../components/admin/products/ProductUpsertModal';
 import DeleteProductDialog from '../../components/admin/products/DeleteProductDialog';
+import { reportErrorWithToast } from '../../utils/reportErrorWithToast';
 
 const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -27,6 +29,38 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+
+  // Fetch store details once at page level
+  const {
+    data: storeDetailsArray,
+    isLoading: storeDetailsLoading,
+    isError: storeDetailsError,
+    error: storeDetailsErrorObj,
+  } = useBothStoreDetails();
+
+  // Derive store names with loading and error fallbacks
+  const store1Name = storeDetailsLoading
+    ? 'Cargando...'
+    : storeDetailsError || !storeDetailsArray || storeDetailsArray.length < 1
+    ? 'Tienda 1'
+    : storeDetailsArray[0].name;
+
+  const store2Name = storeDetailsLoading
+    ? 'Cargando...'
+    : storeDetailsError || !storeDetailsArray || storeDetailsArray.length < 2
+    ? 'Tienda 2'
+    : storeDetailsArray[1].name;
+
+  // Report store details error once
+  useEffect(() => {
+    if (storeDetailsError && storeDetailsErrorObj) {
+      console.error('Failed to load store details:', storeDetailsErrorObj);
+      reportErrorWithToast(
+        storeDetailsErrorObj,
+        'No se pudieron cargar los nombres de las tiendas'
+      );
+    }
+  }, [storeDetailsError, storeDetailsErrorObj]);
 
   // Clear query cache on unmount
   useEffect(() => {
@@ -140,6 +174,8 @@ export default function ProductsPage() {
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
           isLoading={isLoading}
+          store1Name={store1Name}
+          store2Name={store2Name}
         />
       ) : (
         <ProductsTable
@@ -147,6 +183,8 @@ export default function ProductsPage() {
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
           isLoading={isLoading}
+          store1Name={store1Name}
+          store2Name={store2Name}
         />
       )}
 
@@ -166,6 +204,9 @@ export default function ProductsPage() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         editingProduct={editingProduct}
+        store1Name={store1Name}
+        store2Name={store2Name}
+        storeNamesLoading={storeDetailsLoading}
       />
 
       {/* Delete Confirmation Dialog */}

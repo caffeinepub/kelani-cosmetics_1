@@ -45,6 +45,9 @@ interface ProductUpsertModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingProduct: Product | null;
+  store1Name: string;
+  store2Name: string;
+  storeNamesLoading: boolean;
 }
 
 interface FormData {
@@ -53,7 +56,8 @@ interface FormData {
   categoryId: string;
   description: string;
   price: string;
-  inStock: boolean;
+  store1InStock: boolean;
+  store2InStock: boolean;
   isFeatured: boolean;
 }
 
@@ -61,11 +65,16 @@ export default function ProductUpsertModal({
   open,
   onOpenChange,
   editingProduct,
+  store1Name,
+  store2Name,
+  storeNamesLoading,
 }: ProductUpsertModalProps) {
   const { data: categories = [] } = useGetAllCategories();
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const isMobile = useIsMobile();
+
+  const isEditMode = !!editingProduct;
 
   const [formData, setFormData] = useState<FormData>({
     barcode: '',
@@ -73,13 +82,15 @@ export default function ProductUpsertModal({
     categoryId: SENTINEL_VALUES.NONE,
     description: '',
     price: '',
-    inStock: true,
+    store1InStock: false,
+    store2InStock: false,
     isFeatured: false,
   });
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [photoFile, setPhotoFile] = useState<Uint8Array | null>(null);
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [existingPhotoBytes, setExistingPhotoBytes] = useState<Uint8Array | null>(null);
+  const [copiedBarcode, setCopiedBarcode] = useState(false);
 
   // Initialize form when editing product changes
   useEffect(() => {
@@ -87,35 +98,45 @@ export default function ProductUpsertModal({
       setFormData({
         barcode: editingProduct.barcode,
         name: editingProduct.name,
-        categoryId: editingProduct.categoryId.toString(),
-        description: editingProduct.description ?? '',
+        categoryId: initializeSelectState(editingProduct.categoryId.toString()),
+        description: editingProduct.description || '',
         price: editingProduct.price !== undefined ? editingProduct.price.toString() : '',
-        inStock: editingProduct.inStock,
+        store1InStock: editingProduct.store1InStock,
+        store2InStock: editingProduct.store2InStock,
         isFeatured: editingProduct.isFeatured,
       });
 
+      // Handle existing photo
       if (editingProduct.photo) {
-        setPhotoFile(editingProduct.photo);
-        const url = createBlobUrl(editingProduct.photo);
+        setExistingPhotoBytes(editingProduct.photo);
+        const url = createBlobUrl(editingProduct.photo, 'image/jpeg');
         setPhotoPreviewUrl(url);
+      } else {
+        setExistingPhotoBytes(null);
+        setPhotoPreviewUrl(null);
       }
+
+      setPhotoFile(null);
     } else {
+      // Reset form for create mode
       setFormData({
         barcode: '',
         name: '',
         categoryId: SENTINEL_VALUES.NONE,
         description: '',
         price: '',
-        inStock: true,
+        store1InStock: false,
+        store2InStock: false,
         isFeatured: false,
       });
       setPhotoFile(null);
       setPhotoPreviewUrl(null);
+      setExistingPhotoBytes(null);
     }
-    setFormErrors({});
+    setCopiedBarcode(false);
   }, [editingProduct, open]);
 
-  // Cleanup preview URL
+  // Cleanup blob URLs on unmount or when preview changes
   useEffect(() => {
     return () => {
       if (photoPreviewUrl) {
@@ -124,115 +145,119 @@ export default function ProductUpsertModal({
     };
   }, [photoPreviewUrl]);
 
-  const handleCopy = async (text: string, fieldId: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(fieldId);
-      reportSuccessWithToast('Copiado al portapapeles');
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
+  const handleInputChange = (field: keyof FormData, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
-    const validation = validateImageFile(file);
-    if (!validation.valid) {
-      reportErrorWithToast(new Error(validation.error), validation.error ?? 'Archivo inválido', {
-        operation: 'validateImageFile',
-      });
-      return;
-    }
-
     try {
-      const webpBytes = await convertToWebP(file, 0.8);
-      setPhotoFile(webpBytes);
+      // Validate file
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        reportErrorWithToast(new Error(validation.error), 'Error de validación de imagen');
+        return;
+      }
+
+      // Convert to WebP
+      const webpBytes = await convertToWebP(file);
 
       // Create preview URL
       if (photoPreviewUrl) {
         revokeBlobUrl(photoPreviewUrl);
       }
-      const url = createBlobUrl(webpBytes);
-      setPhotoPreviewUrl(url);
+      const previewUrl = createBlobUrl(webpBytes, 'image/webp');
+      setPhotoPreviewUrl(previewUrl);
+
+      // Store file for upload - convert Uint8Array to Blob then to File
+      // Create a new Uint8Array to ensure proper ArrayBuffer type
+      const buffer = new Uint8Array(webpBytes);
+      const webpBlob = new Blob([buffer.buffer], { type: 'image/webp' });
+      const webpFile = new File([webpBlob], 'product.webp', { type: 'image/webp' });
+      setPhotoFile(webpFile);
+      setExistingPhotoBytes(null);
     } catch (error) {
-      reportErrorWithToast(error, 'Error al procesar la imagen', {
-        operation: 'convertToWebP',
-      });
+      reportErrorWithToast(error, 'Error al procesar la imagen');
     }
   };
 
   const handleRemovePhoto = () => {
-    setPhotoFile(null);
     if (photoPreviewUrl) {
       revokeBlobUrl(photoPreviewUrl);
-      setPhotoPreviewUrl(null);
+    }
+    setPhotoFile(null);
+    setPhotoPreviewUrl(null);
+    setExistingPhotoBytes(null);
+  };
+
+  const handleCopyBarcode = async () => {
+    if (formData.barcode) {
+      try {
+        await navigator.clipboard.writeText(formData.barcode);
+        setCopiedBarcode(true);
+        reportSuccessWithToast('Código copiado al portapapeles');
+        setTimeout(() => setCopiedBarcode(false), 2000);
+      } catch (error) {
+        console.error('Failed to copy:', error);
+      }
     }
   };
 
-  const validateForm = (): boolean => {
-    const errors: Partial<Record<keyof FormData, string>> = {};
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
+    // Validate required fields
     if (!formData.barcode.trim()) {
-      errors.barcode = 'El código de barras es requerido';
+      reportErrorWithToast(new Error('Validation error'), 'El código de barras es requerido');
+      return;
     }
 
     if (!formData.name.trim()) {
-      errors.name = 'El nombre es requerido';
+      reportErrorWithToast(new Error('Validation error'), 'El nombre es requerido');
+      return;
     }
 
-    const categoryIdConverted = convertSentinelToNull(formData.categoryId);
-    if (!categoryIdConverted) {
-      errors.categoryId = 'La categoría es requerida';
+    const categoryIdNumber = convertSentinelToNull(formData.categoryId);
+    if (categoryIdNumber === null) {
+      reportErrorWithToast(new Error('Validation error'), 'La categoría es requerida');
+      return;
     }
 
-    if (formData.price.trim()) {
-      const priceNum = safeConvertToNumber(formData.price);
-      if (priceNum === null || priceNum < 0) {
-        errors.price = 'El precio debe ser un número válido positivo';
-      }
+    // Convert price
+    const priceNumber = formData.price.trim() ? safeConvertToNumber(formData.price) : null;
+    if (formData.price.trim() && priceNumber === null) {
+      reportErrorWithToast(new Error('Validation error'), 'El precio debe ser un número válido');
+      return;
     }
 
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    // Prepare photo bytes
+    let photoBytes: Uint8Array | undefined = undefined;
+    if (photoFile) {
+      const arrayBuffer = await photoFile.arrayBuffer();
+      photoBytes = new Uint8Array(arrayBuffer);
+    } else if (existingPhotoBytes) {
+      photoBytes = existingPhotoBytes;
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    const categoryIdConverted = convertSentinelToNull(formData.categoryId);
-    if (!categoryIdConverted) return;
-
-    const categoryId = Number(categoryIdConverted);
-    const price = formData.price.trim() ? safeConvertToNumber(formData.price) : undefined;
+    const productData = {
+      barcode: formData.barcode.trim(),
+      name: formData.name.trim(),
+      categoryId: Number(categoryIdNumber),
+      description: formData.description.trim() || undefined,
+      price: priceNumber !== null ? priceNumber : undefined,
+      store1InStock: formData.store1InStock,
+      store2InStock: formData.store2InStock,
+      isFeatured: formData.isFeatured,
+      photo: photoBytes,
+    };
 
     try {
-      if (editingProduct) {
-        await updateMutation.mutateAsync({
-          barcode: formData.barcode,
-          name: formData.name.trim(),
-          categoryId,
-          description: formData.description.trim() || undefined,
-          price: price ?? undefined,
-          inStock: formData.inStock,
-          isFeatured: formData.isFeatured,
-          photo: photoFile ?? undefined,
-        });
+      if (isEditMode) {
+        await updateMutation.mutateAsync(productData);
       } else {
-        await createMutation.mutateAsync({
-          barcode: formData.barcode.trim(),
-          name: formData.name.trim(),
-          categoryId,
-          description: formData.description.trim() || undefined,
-          price: price ?? undefined,
-          inStock: formData.inStock,
-          isFeatured: formData.isFeatured,
-          photo: photoFile ?? undefined,
-        });
+        await createMutation.mutateAsync(productData);
       }
       onOpenChange(false);
     } catch (error) {
@@ -242,254 +267,231 @@ export default function ProductUpsertModal({
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  const safeCategoryId = useMemo(
-    () => initializeSelectState(formData.categoryId, SENTINEL_VALUES.NONE),
-    [formData.categoryId]
-  );
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={isMobile ? "admin-modal-mobile" : "max-h-[90vh] sm:max-w-[600px]"}>
-        <DialogHeader>
-          <DialogTitle>{editingProduct ? 'Editar Producto' : 'Agregar Producto'}</DialogTitle>
+      <DialogContent
+        className={`${
+          isMobile ? 'h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none p-0' : 'max-w-2xl'
+        }`}
+      >
+        <DialogHeader className={isMobile ? 'px-6 pt-6' : ''}>
+          <DialogTitle>{isEditMode ? 'Editar Producto' : 'Nuevo Producto'}</DialogTitle>
           <DialogDescription>
-            {editingProduct
-              ? 'Actualiza los detalles del producto.'
-              : 'Completa los detalles para crear un nuevo producto.'}
+            {isEditMode
+              ? 'Modifica los detalles del producto'
+              : 'Completa los detalles del nuevo producto'}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className={isMobile ? "admin-modal-content-mobile" : "max-h-[60vh] pr-4"}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Barcode */}
-            <div className="space-y-2">
-              <Label htmlFor="barcode">
-                Código de Barras <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="barcode"
-                  type="text"
-                  value={formData.barcode}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, barcode: e.target.value }))
-                  }
-                  placeholder="ej: 1234567890"
-                  disabled={!!editingProduct}
-                  className={`${formErrors.barcode ? 'border-destructive' : ''} ${isMobile ? 'min-h-[48px]' : ''}`}
-                />
-                {formData.barcode && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopy(formData.barcode, 'barcode')}
-                    className={isMobile ? "min-h-[48px] min-w-[48px]" : ""}
-                  >
-                    {copiedField === 'barcode' ? (
-                      <Check className="h-4 w-4 text-success" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Copiar código</span>
-                  </Button>
-                )}
+        <ScrollArea className={isMobile ? 'h-[calc(100dvh-180px)]' : 'max-h-[60vh]'}>
+          <form onSubmit={handleSubmit} className={isMobile ? 'px-6' : 'px-6'}>
+            <div className="space-y-6 py-4">
+              {/* Barcode */}
+              <div className="space-y-2">
+                <Label htmlFor="barcode">Código de Barras *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="barcode"
+                    value={formData.barcode}
+                    onChange={(e) => handleInputChange('barcode', e.target.value)}
+                    disabled={isEditMode}
+                    placeholder="Ej: 8412345678901"
+                    className={isMobile ? 'h-12 text-base' : ''}
+                  />
+                  {isEditMode && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopyBarcode}
+                      className={isMobile ? 'h-12 w-12' : ''}
+                    >
+                      {copiedBarcode ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">Copiar código</span>
+                    </Button>
+                  )}
+                </div>
               </div>
-              {formErrors.barcode && (
-                <p className="text-sm text-destructive">{formErrors.barcode}</p>
-              )}
-            </div>
 
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Nombre <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
+              {/* Name */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
-                  type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="ej: Lápiz Labial Rojo"
-                  className={`${formErrors.name ? 'border-destructive' : ''} ${isMobile ? 'min-h-[48px]' : ''}`}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Ej: Shampoo Reparador"
+                  className={isMobile ? 'h-12 text-base' : ''}
                 />
-                {formData.name && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopy(formData.name, 'name')}
-                    className={isMobile ? "min-h-[48px] min-w-[48px]" : ""}
-                  >
-                    {copiedField === 'name' ? (
-                      <Check className="h-4 w-4 text-success" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Copiar nombre</span>
-                  </Button>
+              </div>
+
+              {/* Category */}
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoría *</Label>
+                <SafeSelect
+                  value={formData.categoryId}
+                  onValueChange={(value) => handleInputChange('categoryId', value)}
+                  contentClassName="admin-category-select-content"
+                >
+                  <SelectScrollUpButton />
+                  <SelectGroup>
+                    <SelectLabel>Categorías</SelectLabel>
+                    {categories.map((category) => (
+                      <SelectItem key={category.categoryId} value={category.categoryId.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectScrollDownButton />
+                </SafeSelect>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Descripción del producto (opcional)"
+                  rows={3}
+                  className={isMobile ? 'text-base' : ''}
+                />
+              </div>
+
+              {/* Price */}
+              <div className="space-y-2">
+                <Label htmlFor="price">Precio (€)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  placeholder="Ej: 12.99"
+                  className={isMobile ? 'h-12 text-base' : ''}
+                />
+              </div>
+
+              {/* Store 1 Stock */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="store1InStock"
+                  checked={formData.store1InStock}
+                  onCheckedChange={(checked) =>
+                    handleInputChange('store1InStock', checked === true)
+                  }
+                  disabled={storeNamesLoading}
+                  className={isMobile ? 'h-6 w-6' : ''}
+                />
+                <Label
+                  htmlFor="store1InStock"
+                  className={`cursor-pointer ${isMobile ? 'text-base' : ''}`}
+                >
+                  {store1Name} - En Stock
+                </Label>
+              </div>
+
+              {/* Store 2 Stock */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="store2InStock"
+                  checked={formData.store2InStock}
+                  onCheckedChange={(checked) =>
+                    handleInputChange('store2InStock', checked === true)
+                  }
+                  disabled={storeNamesLoading}
+                  className={isMobile ? 'h-6 w-6' : ''}
+                />
+                <Label
+                  htmlFor="store2InStock"
+                  className={`cursor-pointer ${isMobile ? 'text-base' : ''}`}
+                >
+                  {store2Name} - En Stock
+                </Label>
+              </div>
+
+              {/* Featured */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isFeatured"
+                  checked={formData.isFeatured}
+                  onCheckedChange={(checked) => handleInputChange('isFeatured', checked === true)}
+                  className={isMobile ? 'h-6 w-6' : ''}
+                />
+                <Label
+                  htmlFor="isFeatured"
+                  className={`cursor-pointer ${isMobile ? 'text-base' : ''}`}
+                >
+                  Producto Destacado
+                </Label>
+              </div>
+
+              {/* Photo Upload */}
+              <div className="space-y-2">
+                <Label>Foto del Producto</Label>
+                {photoPreviewUrl ? (
+                  <div className="space-y-2">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-muted">
+                      <img
+                        src={photoPreviewUrl}
+                        alt="Vista previa"
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleRemovePhoto}
+                      className="w-full gap-2"
+                      size={isMobile ? 'lg' : 'default'}
+                    >
+                      <X className="h-4 w-4" />
+                      Eliminar Foto
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      id="photo"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('photo')?.click()}
+                      className="w-full gap-2"
+                      size={isMobile ? 'lg' : 'default'}
+                    >
+                      <Upload className="h-4 w-4" />
+                      Subir Foto
+                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      JPG, PNG o WebP. Máximo 10MB.
+                    </p>
+                  </div>
                 )}
               </div>
-              {formErrors.name && (
-                <p className="text-sm text-destructive">{formErrors.name}</p>
-              )}
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <Label htmlFor="category">
-                Categoría <span className="text-destructive">*</span>
-              </Label>
-              <SafeSelect
-                value={safeCategoryId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, categoryId: value }))
-                }
-                contentClassName="admin-category-select-content"
-              >
-                <SelectScrollUpButton />
-                <SelectGroup>
-                  <SelectLabel>Categorías</SelectLabel>
-                  {categories.map((category) => (
-                    <SelectItem key={category.categoryId} value={category.categoryId.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-                <SelectScrollDownButton />
-              </SafeSelect>
-              {formErrors.categoryId && (
-                <p className="text-sm text-destructive">{formErrors.categoryId}</p>
-              )}
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
-                }
-                placeholder="Descripción del producto (opcional)"
-                rows={3}
-                className={isMobile ? 'min-h-[96px]' : ''}
-              />
-            </div>
-
-            {/* Price */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Precio</Label>
-              <Input
-                id="price"
-                type="text"
-                inputMode="decimal"
-                value={formData.price}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, price: e.target.value }))
-                }
-                placeholder="ej: 19.99"
-                className={`${formErrors.price ? 'border-destructive' : ''} ${isMobile ? 'min-h-[48px]' : ''}`}
-              />
-              {formErrors.price && (
-                <p className="text-sm text-destructive">{formErrors.price}</p>
-              )}
-            </div>
-
-            {/* Photo Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="photo">Foto del Producto</Label>
-              {photoPreviewUrl ? (
-                <div className="relative">
-                  <img
-                    src={photoPreviewUrl}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-md border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={handleRemovePhoto}
-                    className="absolute top-2 right-2"
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Eliminar foto</span>
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="photo"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handlePhotoSelect}
-                    className={isMobile ? 'min-h-[48px]' : ''}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => document.getElementById('photo')?.click()}
-                    className={isMobile ? "min-h-[48px] min-w-[48px]" : ""}
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span className="sr-only">Subir foto</span>
-                  </Button>
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                JPG, PNG o WebP. Máximo 10MB.
-              </p>
-            </div>
-
-            {/* In Stock Checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="inStock"
-                checked={formData.inStock}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, inStock: checked === true }))
-                }
-              />
-              <Label
-                htmlFor="inStock"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                En Stock
-              </Label>
-            </div>
-
-            {/* Featured Checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isFeatured"
-                checked={formData.isFeatured}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, isFeatured: checked === true }))
-                }
-              />
-              <Label
-                htmlFor="isFeatured"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Destacado
-              </Label>
             </div>
           </form>
         </ScrollArea>
 
-        <DialogFooter className={isMobile ? "admin-modal-footer-mobile" : ""}>
+        <DialogFooter className={isMobile ? 'px-6 pb-6' : ''}>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
-            className={isMobile ? "flex-1" : ""}
+            className={isMobile ? 'flex-1' : ''}
+            size={isMobile ? 'lg' : 'default'}
           >
             Cancelar
           </Button>
@@ -497,9 +499,10 @@ export default function ProductUpsertModal({
             type="submit"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className={isMobile ? "flex-1" : ""}
+            className={isMobile ? 'flex-1' : ''}
+            size={isMobile ? 'lg' : 'default'}
           >
-            {isSubmitting ? 'Guardando...' : editingProduct ? 'Actualizar' : 'Crear'}
+            {isSubmitting ? 'Guardando...' : isEditMode ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogFooter>
       </DialogContent>

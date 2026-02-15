@@ -10,19 +10,17 @@ import Text "mo:core/Text";
 import Float "mo:core/Float";
 import Iter "mo:core/Iter";
 
-
-
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
+
+  public type UserRole = AccessControl.UserRole;
 
   func checkAdmin(caller : Principal) {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
   };
-
-  public type UserRole = AccessControl.UserRole;
 
   public type AppUser = {
     principal : Principal;
@@ -211,6 +209,8 @@ actor {
     photo : ?[Nat8];
     createdDate : Int;
     lastUpdatedDate : Int;
+    store1InStock : Bool;
+    store2InStock : Bool;
   };
 
   type ProductV2 = {
@@ -225,6 +225,8 @@ actor {
     photo : ?[Nat8];
     createdDate : Int;
     lastUpdatedDate : Int;
+    store1InStock : Bool;
+    store2InStock : Bool;
   };
 
   let products = Map.empty<Text, Product>();
@@ -341,7 +343,9 @@ actor {
     price : ?Float,
     inStock : Bool,
     isFeatured : Bool,
-    photo : ?[Nat8]
+    photo : ?[Nat8],
+    store1InStock : Bool,
+    store2InStock : Bool,
   ) : async Product {
     checkAdmin(caller);
 
@@ -359,6 +363,8 @@ actor {
           photo;
           createdDate = currentTime;
           lastUpdatedDate = currentTime;
+          store1InStock;
+          store2InStock;
         };
         products.add(barcode, newProduct);
         newProduct;
@@ -375,7 +381,9 @@ actor {
     price : ?Float,
     inStock : Bool,
     isFeatured : Bool,
-    photo : ?[Nat8]
+    photo : ?[Nat8],
+    store1InStock : Bool,
+    store2InStock : Bool,
   ) : async Product {
     checkAdmin(caller);
 
@@ -393,6 +401,8 @@ actor {
           photo;
           createdDate = existingProduct.createdDate;
           lastUpdatedDate = getCurrentTimestamp();
+          store1InStock;
+          store2InStock;
         };
         products.add(barcode, updatedProduct);
         updatedProduct;
@@ -598,7 +608,7 @@ actor {
     };
   };
 
-  public query ({ caller }) func getSaleItemsPage(search : Text, page : Nat, pageSize : Nat, includeInactive : Bool) : async SaleItemArray {
+  public shared ({ caller }) func getSaleItemsPage(search : Text, page : Nat, pageSize : Nat, includeInactive : Bool) : async SaleItemArray {
     checkAdmin(caller);
 
     let filteredSaleItems = saleItems.values().toArray().filter(
@@ -740,9 +750,7 @@ actor {
   //------------------------------------
   // Store Management API
   //------------------------------------
-  public shared ({ caller }) func getStoreDetails(storeId : Nat) : async StoreDetails {
-    checkAdmin(caller);
-
+  public query ({ caller }) func getStoreDetails(storeId : Nat) : async StoreDetails {
     switch (storeDetails.get(storeId)) {
       case (?details) { details };
       case (null) {
@@ -792,6 +800,8 @@ actor {
     isFeatured : Bool;
     createdDate : Int;
     lastUpdatedDate : Int;
+    store1InStock : Bool;
+    store2InStock : Bool;
   };
 
   public type ExportPayload = {
@@ -820,6 +830,8 @@ actor {
           isFeatured = product.isFeatured;
           createdDate = product.createdDate;
           lastUpdatedDate = product.lastUpdatedDate;
+          store1InStock = product.store1InStock;
+          store2InStock = product.store2InStock;
         };
       }
     );
@@ -846,7 +858,7 @@ actor {
     salePrice : ?Float;
     salePercentage : ?Float;
     saleIsActive : Bool;
-    productImageUrl : ?Text;
+    photo : ?[Nat8];
   };
 
   public type CategorizedProductData = {
@@ -969,7 +981,7 @@ actor {
           salePrice;
           salePercentage;
           saleIsActive;
-          productImageUrl = ?("/product-images/" # product.barcode # ".jpg");
+          photo = product.photo;
         };
 
         results := results.concat([result]);

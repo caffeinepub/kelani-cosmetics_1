@@ -7,6 +7,8 @@ interface UseCategoryProductsPaginatedResult {
   products: ProductWithSale[];
   totalCount: number;
   isLoading: boolean;
+  isInitialLoading: boolean;
+  isFetched: boolean;
   error: Error | null;
   refetch: () => void;
 }
@@ -30,7 +32,7 @@ export function useGetCategoryProductsPaginated(
     }
   }, [rawActor, stableActor]);
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const query = useQuery({
     queryKey: ['category-products', categoryId, page, pageSize],
     queryFn: async ({ signal }) => {
       if (!stableActor || categoryId === null) {
@@ -51,7 +53,7 @@ export function useGetCategoryProductsPaginated(
         totalCount: Number(response.totalCount),
       };
     },
-    enabled: Boolean(stableActor) && !actorFetching && categoryId !== null,
+    enabled: Boolean(stableActor) && categoryId !== null,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnMount: false,
@@ -60,10 +62,12 @@ export function useGetCategoryProductsPaginated(
   });
 
   return {
-    products: data?.products ?? [],
-    totalCount: data?.totalCount ?? 0,
-    isLoading,
-    error: error as Error | null,
-    refetch,
+    products: query.data?.products ?? [],
+    totalCount: query.data?.totalCount ?? 0,
+    isLoading: query.isLoading,
+    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
+    isFetched: !!stableActor && query.isFetched,
+    error: query.error as Error | null,
+    refetch: query.refetch,
   };
 }

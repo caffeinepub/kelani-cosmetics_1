@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-create-a-static-sitemap-at-frontend-public-sitemap-xml-with-exactly-the-xml-content-provided-by-the-user-and-ensure-it-is-served-publicly-at-https-kelanicosmetics-es-sitemap-xml-no-dynamic-url-generation-for-categories-or-products",
-      "featureTitle": "Create a static sitemap at `frontend/public/sitemap.xml` with exactly the XML content provided by the user, and ensure it is served publicly at `https://kelanicosmetics.es/sitemap.xml` (no dynamic URL generation for categories or products).",
+      "featureId": "feature-standardize-product-image-rendering-across-all-public-facing-ui-by-applying-tailwind-object-contain-to-every-img-that-displays-a-product-photo-including-fallback-default-images-while-preserving-all-other-existing-classes-and-layout-behavior",
+      "featureTitle": "Standardize product image rendering across all public-facing UI by applying Tailwind `object-contain` to every <img> that displays a product photo (including fallback/default images), while preserving all other existing classes and layout behavior.",
       "files": [
-        "frontend/public/sitemap.xml"
+        "frontend/src/components/public/product/ProductDetailsModal.tsx",
+        "frontend/src/components/public/products/ProductCard.tsx",
+        "frontend/src/pages/public/ProductPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,30 +23,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-create-a-static-robots-file-at-frontend-public-robots-txt-with-exactly-the-content-provided-by-the-user-including-the-sitemap-reference-to-https-kelanicosmetics-es-sitemap-xml",
-      "featureTitle": "Create a static robots file at `frontend/public/robots.txt` with exactly the content provided by the user, including the sitemap reference to `https://kelanicosmetics.es/sitemap.xml`.",
+      "featureId": "feature-ensure-the-homepage-autocomplete-dropdown-remains-text-only-do-not-render-product-images-do-not-create-blob-urls-and-do-not-attempt-any-binary-to-image-conversion-inside-dropdown-item-components-dropdown-items-must-show-only-product-name-category-name-and-formatted-price-with-sale-formatting-if-applicable",
+      "featureTitle": "Ensure the homepage autocomplete dropdown remains text-only: do not render product images, do not create blob URLs, and do not attempt any binary-to-image conversion inside dropdown item components; dropdown items must show only product name, category name, and formatted price (with sale formatting if applicable).",
       "files": [
-        "frontend/public/robots.txt"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-a-frontend-only-mechanism-react-helmet-or-an-equivalent-approach-to-set-and-override-per-route-head-tags-for-the-static-public-pages-homepage-contact-page-contacto-and-privacy-policy-page-privacy-without-changing-page-behavior",
-      "featureTitle": "Implement a frontend-only mechanism (React Helmet or an equivalent approach) to set and override per-route `<head>` tags for the static public pages: homepage (`/`), contact page (`/contacto`), and privacy policy page (`/privacy`), without changing page behavior.",
-      "files": [
-        "frontend/index.html",
-        "frontend/src/components/seo/SeoHead.tsx"
+        "frontend/src/components/public/home/search/AutocompleteDropdown.tsx",
+        "frontend/src/components/public/home/search/SearchResultItem.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -60,10 +43,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-homepage-frontend-src-pages-public-homepage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-twitter-with-canonical-url-https-kelanicosmetics-es-and-local-seo-wording-for-valencia-val-ncia-and-m-laga-including-accents-and-special-characters-exactly-as-specified",
-      "featureTitle": "Update the homepage (`frontend/src/pages/public/HomePage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph, Twitter) with canonical URL `https://kelanicosmetics.es/` and local SEO wording for Valencia/València and Málaga, including accents and special characters exactly as specified.",
+      "featureId": "feature-fix-the-product-details-modal-image-rendering-when-opened-from-homepage-search-results-by-generating-a-blob-url-from-the-binary-photo-data-on-search-result-selection-click-keyboard-select-attaching-the-blob-url-to-the-modal-bound-product-object-or-storing-it-alongside-modal-state-and-updating-the-modal-to-prefer-the-blob-url-when-present-and-otherwise-fall-back-to-the-default-image-the-modal-must-not-make-any-additional-api-calls-to-fetch-photos",
+      "featureTitle": "Fix the product details modal image rendering when opened from homepage search results by generating a blob URL from the binary `photo` data on search-result selection (click/keyboard select), attaching the blob URL to the modal-bound product object (or storing it alongside modal state), and updating the modal to prefer the blob URL when present and otherwise fall back to the default image; the modal must not make any additional API calls to fetch photos.",
       "files": [
-        "frontend/src/pages/public/HomePage.tsx"
+        "frontend/src/components/public/home/search/SearchBar.tsx",
+        "frontend/src/components/public/product/ProductDetailsModal.tsx",
+        "frontend/src/hooks/useProductModalNavigation.ts",
+        "frontend/src/stores/productModalStore.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -79,10 +65,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-contact-page-frontend-src-pages-public-contactopage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-including-the-store-addresses-and-local-details-neighborhoods-and-postal-codes-exactly-as-specified",
-      "featureTitle": "Update the contact page (`frontend/src/pages/public/ContactoPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), including the store addresses and local details (neighborhoods and postal codes) exactly as specified.",
+      "featureId": "feature-implement-blob-url-lifecycle-management-for-blob-urls-created-from-binary-product-photos-in-the-public-ui-including-the-search-result-to-modal-flow-track-created-blob-urls-and-revoke-them-when-no-longer-needed-e-g-when-the-modal-closes-and-or-when-the-active-modal-product-changes-to-prevent-memory-leaks-do-not-revoke-blob-urls-while-they-are-still-in-use-by-a-visible-image-element",
+      "featureTitle": "Implement blob URL lifecycle management for blob URLs created from binary product photos in the public UI (including the search-result-to-modal flow): track created blob URLs and revoke them when no longer needed (e.g., when the modal closes and/or when the active modal product changes) to prevent memory leaks; do not revoke blob URLs while they are still in use by a visible image element.",
       "files": [
-        "frontend/src/pages/public/ContactoPage.tsx"
+        "frontend/src/components/public/product/ProductDetailsModal.tsx",
+        "frontend/src/hooks/useProductPhotoBlobUrl.ts",
+        "frontend/src/stores/productModalStore.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -98,10 +86,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-privacy-policy-page-frontend-src-pages-public-privacypage-tsx-to-set-exactly-the-provided-spanish-seo-tags-title-description-keywords-robots-canonical-open-graph-and-ensure-the-page-remains-noindex-follow-remove-replace-any-existing-ad-hoc-title-description-side-effects-that-conflict-with-these-tags",
-      "featureTitle": "Update the privacy policy page (`frontend/src/pages/public/PrivacyPage.tsx`) to set exactly the provided Spanish SEO tags (title, description, keywords, robots, canonical, Open Graph), and ensure the page remains `noindex, follow`. Remove/replace any existing ad-hoc title/description side effects that conflict with these tags.",
+      "featureId": "feature-maintain-existing-behavior-for-opening-the-product-details-modal-from-non-search-entry-points-e-g-clicking-product-cards-on-homepage-category-grids-while-aligning-all-public-product-image-sources-to-the-same-data-flow-pattern-binary-photo-data-blob-url-image-display-with-correct-fallback-handling",
+      "featureTitle": "Maintain existing behavior for opening the product details modal from non-search entry points (e.g., clicking product cards on homepage/category grids) while aligning all public product image sources to the same data flow pattern: binary photo data → blob URL → image display, with correct fallback handling.",
       "files": [
-        "frontend/src/pages/public/PrivacyPage.tsx"
+        "frontend/src/components/public/product/ProductDetailsModal.tsx",
+        "frontend/src/components/public/products/ProductCard.tsx",
+        "frontend/src/pages/public/ProductPage.tsx",
+        "frontend/src/utils/productImage.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -113,28 +104,6 @@
       ],
       "testIds": [
         "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-seo-implementation-uses-the-production-domain-in-all-canonical-and-og-url-tags-https-kelanicosmetics-es-keeps-all-meta-tag-text-in-spanish-and-correctly-handles-character-encoding-for-accents-e-g-val-ncia",
-      "featureTitle": "Ensure SEO implementation uses the production domain in all canonical and OG URL tags (`https://kelanicosmetics.es`), keeps all meta tag text in Spanish, and correctly handles character encoding for accents (e.g., `València`).",
-      "files": [
-        "frontend/src/components/seo/seoPresets.ts",
-        "frontend/src/pages/public/ContactoPage.tsx",
-        "frontend/src/pages/public/HomePage.tsx",
-        "frontend/src/pages/public/PrivacyPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
       ],
       "confidence": "high"
     }

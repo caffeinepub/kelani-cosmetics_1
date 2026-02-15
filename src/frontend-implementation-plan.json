@@ -1,155 +1,140 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Static sitemap/robots and per-route SEO head tags for public pages",
+  "title": "Standardize public product images (object-contain) and fix search-to-modal blob URL flow with cleanup",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add an exact static sitemap.xml in the public folder and ensure it is publicly served at /sitemap.xml.",
+      "summary": "Apply Tailwind `object-contain` to every public-facing product <img> (including fallbacks) without altering other styling/layout behaviors.",
       "acceptanceCriteria": [
-        "`frontend/public/sitemap.xml` exists and matches the provided XML exactly (including loc URLs, lastmod=2026-02-11, changefreq, priority, and urlset xmlns).",
-        "Requesting `/sitemap.xml` in the deployed app returns the sitemap file (HTTP 200) with `Content-Type` appropriate for XML.",
-        "The sitemap contains only the 3 static URLs: `/`, `/contacto`, `/privacy` (no category/product URLs)."
+        "On the homepage product cards, the product image uses `object-contain` (no cropping), and other existing classes (dimensions, hover effects, rounding, etc.) remain intact.",
+        "On the category page product cards, the product image uses `object-contain` (no cropping).",
+        "In the product details modal, the main product image uses `object-contain` (no cropping).",
+        "On the product details page, the main product image uses `object-contain` (no cropping).",
+        "Fallback/default images (when no photo exists) also render with `object-contain` wherever product images appear."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/sitemap.xml",
-          "operation": "create",
-          "description": "Create the static sitemap file and paste the user-provided XML content verbatim (no formatting/whitespace changes), containing only the 3 specified static URLs and the exact metadata values (including lastmod=2026-02-11)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Add an exact static robots.txt in the public folder referencing the production sitemap URL.",
-      "acceptanceCriteria": [
-        "`frontend/public/robots.txt` exists and matches the provided text exactly.",
-        "Requesting `/robots.txt` in the deployed app returns the robots file (HTTP 200).",
-        "`robots.txt` contains `Sitemap: https://kelanicosmetics.es/sitemap.xml`."
-      ],
-      "file_operations": [
+          "path": "frontend/src/components/public/products/ProductCard.tsx",
+          "operation": "modify",
+          "description": "Update the product photo <img> className to use `object-contain` (replacing `object-cover`) while preserving all other existing classes and behaviors (e.g., sizing, hover scale, transitions)."
+        },
         {
-          "path": "frontend/public/robots.txt",
-          "operation": "create",
-          "description": "Create the static robots file and paste the user-provided content verbatim (no formatting/whitespace changes), including the exact `Sitemap: https://kelanicosmetics.es/sitemap.xml` line."
+          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "operation": "modify",
+          "description": "Update the modal main product <img> className to use `object-contain` (replacing `object-cover`) while preserving all other existing classes and layout."
+        },
+        {
+          "path": "frontend/src/pages/public/ProductPage.tsx",
+          "operation": "modify",
+          "description": "Update the product page main product <img> className to use `object-contain` (replacing `object-cover`) while preserving all other existing classes and layout."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Implement a frontend-only per-route head-tag manager to set/override SEO tags for the static public pages without changing page behavior.",
+      "summary": "Keep the homepage autocomplete dropdown text-only with no image rendering and no blob/binary-to-image conversion in dropdown items.",
       "acceptanceCriteria": [
-        "Navigating between `/`, `/contacto`, and `/privacy` updates the document title and meta tags to match the current page, and removes/overrides conflicting tags from prior routes.",
-        "No backend changes are introduced.",
-        "All existing UI functionality on these pages remains unchanged (rendering, data fetching, loading/error states, interactions)."
+        "Autocomplete dropdown items render no <img> and do not call any image/blob helpers.",
+        "Dropdown items display product name (primary), category name (secondary), and price formatting consistent with current behavior."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/seo/SeoHead.tsx",
-          "operation": "create",
-          "description": "Create an equivalent-to-React-Helmet head manager component (e.g., `SeoHead`) that sets document title and manages meta/link tags (description, keywords, robots, canonical, Open Graph, Twitter) by creating/updating/removing tags in `<head>`. Ensure it overrides conflicts by updating existing tags when present and cleans up any tags it owns on unmount/route change (e.g., via a `data-seo-managed` marker), while leaving unrelated tags intact."
+          "path": "frontend/src/components/public/home/search/SearchResultItem.tsx",
+          "operation": "modify",
+          "description": "Add a guard against accidental image rendering/conversion by keeping this component strictly text-only (no <img>, no imports of product image/blob helpers), preserving current name/category/price formatting."
         },
         {
-          "path": "frontend/index.html",
+          "path": "frontend/src/components/public/home/search/AutocompleteDropdown.tsx",
           "operation": "modify",
-          "description": "Ensure the base HTML provides only minimal default head tags that will not conflict with route-level SEO (keep charset/viewport; keep a generic title if desired). If a default meta description exists or is added, ensure the per-route SEO mechanism can reliably override it."
+          "description": "Ensure dropdown rendering remains text-only by continuing to render SearchResultItem without any image-related props or helpers, preserving current loading/error/empty states."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Set the exact user-provided Spanish SEO head tags on the homepage with canonical https://kelanicosmetics.es/ and correct accents/characters.",
+      "summary": "When opening the product details modal from homepage search selection, generate and pass a blob URL derived from binary photo data and have the modal prefer it without additional photo fetches.",
       "acceptanceCriteria": [
-        "Homepage `<title>` is exactly: `Kelani Cosmetics | Cosmética y cuidado capilar en Valencia y Málaga`.",
-        "Homepage meta tags exist with the exact `content` values provided by the user for: description, keywords, robots (`index, follow`), canonical (`https://kelanicosmetics.es/`), OG title/description/url/type/locale/site_name, and Twitter card/title/description.",
-        "Accents/special characters render correctly in the head tags (e.g., `València`, `C/ de Bailèn`, `P.º de los Tilos`).",
-        "No other homepage functionality changes (including cache clearing behavior)."
+        "Selecting a search result opens the existing product details modal and displays the correct product image when the search result includes binary `photo` data.",
+        "If a selected search result has no photo (null/empty), the modal displays the existing default fallback image.",
+        "The modal uses a precomputed blob URL when provided and does not trigger any new backend calls to load product photos."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/public/HomePage.tsx",
+          "path": "frontend/src/stores/productModalStore.ts",
           "operation": "modify",
-          "description": "Integrate the per-route head manager (from REQ-3) into the homepage component and set the SEO tags exactly as provided by the user (Spanish strings verbatim), including canonical `https://kelanicosmetics.es/`, robots `index, follow`, and the specified Open Graph + Twitter tags. Preserve all existing behavior such as query-cache clearing on unmount."
+          "description": "Extend modal state to store an optional precomputed product photo blob URL alongside the modal-bound product, and update open/close actions to set/clear this blob URL (without adding any new backend calls)."
+        },
+        {
+          "path": "frontend/src/components/public/home/search/SearchBar.tsx",
+          "operation": "modify",
+          "description": "On search-result selection (click/keyboard selection handler), if binary `photo` exists, generate a blob URL and pass it alongside the selected product into the modal-open flow; ensure this happens only on selection (not within dropdown items) and does not trigger any additional backend calls."
+        },
+        {
+          "path": "frontend/src/hooks/useProductModalNavigation.ts",
+          "operation": "modify",
+          "description": "Update `openModalWithHistory` to accept and forward an optional precomputed product photo blob URL into the modal store when opening the modal, while preserving existing history behavior for all sources."
+        },
+        {
+          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
+          "operation": "modify",
+          "description": "Update the modal image source selection to prefer the modal state's precomputed blob URL when present; otherwise fall back to deriving the image from binary photo data or default fallback, and ensure the modal does not attempt any additional photo-fetching backend calls."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Set the exact user-provided Spanish SEO head tags on the contact page, including the exact store addresses and postal codes.",
+      "summary": "Manage blob URL lifecycle for public UI product images by revoking created URLs on cleanup events without breaking visible images.",
       "acceptanceCriteria": [
-        "Contact page `<title>` is exactly: `Contacto | Kelani Cosmetics Valencia y Málaga`.",
-        "Contact page meta description includes both stores with the exact address details and postal codes as provided: Valencia (C/ de Bailèn, 34, Extramurs, 46007) and Málaga (P.º de los Tilos, 26, Cruz de Humilladero, 29006).",
-        "Contact page meta tags match the provided values for: keywords, robots (`index, follow`), canonical (`https://kelanicosmetics.es/contacto`), OG title/description/url/type/locale/site_name.",
-        "Existing contact page behavior remains unchanged (including cookie-consent map gating and store-details fetching)."
+        "Blob URLs created for modal product images are revoked on an appropriate cleanup event (at minimum: modal close and/or product change).",
+        "No console errors occur from revoking a blob URL that is still actively being used for the currently displayed modal image.",
+        "Repeated open/close cycles of the modal from search selections do not continuously increase retained blob URLs (verified by code-level cleanup)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/public/ContactoPage.tsx",
+          "path": "frontend/src/hooks/useProductPhotoBlobUrl.ts",
+          "operation": "create",
+          "description": "Create a dedicated hook that converts optional binary product photo data into a memoized blob URL and revokes the previous URL during cleanup when the photo changes or the component unmounts (to prevent memory leaks)."
+        },
+        {
+          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
           "operation": "modify",
-          "description": "Integrate the per-route head manager (from REQ-3) into the contact page component and set the SEO tags exactly as provided by the user (Spanish strings verbatim), including canonical `https://kelanicosmetics.es/contacto`, robots `index, follow`, and Open Graph tags. Ensure the meta description includes the two addresses exactly as specified with punctuation and accents. Preserve all existing behavior including cookie-consent map gating, store-details fetching, and cache clearing."
+          "description": "Implement modal-specific blob URL cleanup: when the modal closes and/or the active modal product changes, revoke any blob URL that was created for the modal image and is no longer in use; ensure the currently displayed image URL is not revoked prematurely."
+        },
+        {
+          "path": "frontend/src/stores/productModalStore.ts",
+          "operation": "modify",
+          "description": "Ensure modal close/reset clears any stored precomputed blob URL reference so the modal does not retain stale blob URLs between open/close cycles."
         }
       ]
     },
     {
       "id": "REQ-6",
-      "summary": "Set the exact user-provided Spanish SEO head tags on the privacy page with noindex, and remove conflicting ad-hoc title/description side effects.",
+      "summary": "Preserve modal opening behavior from non-search entry points while standardizing public product image rendering to binary photo → blob URL → image with fallback handling.",
       "acceptanceCriteria": [
-        "Privacy page `<title>` is exactly: `Política de Privacidad | Kelani Cosmetics`.",
-        "Privacy page meta tags match the provided values for: description, keywords, robots (`noindex, follow`), canonical (`https://kelanicosmetics.es/privacy`), OG title/description/url/type/locale.",
-        "The privacy page does not set conflicting title/description values different from the required SEO tags during mount/unmount transitions.",
-        "Existing privacy page rendering/loading behavior remains intact (aside from SEO tag management)."
+        "Clicking a product card on homepage/category pages still opens the modal correctly and displays the product image or fallback as before (no regression).",
+        "Public product image rendering uses binary photo data as the source of truth and displays via a blob URL (or default fallback) consistently across modal/page/cards."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/public/PrivacyPage.tsx",
+          "path": "frontend/src/utils/productImage.ts",
           "operation": "modify",
-          "description": "Replace the current ad-hoc `useEffect` DOM side effects that directly set `document.title` and meta description with the shared per-route head manager (from REQ-3). Set the privacy SEO tags exactly as provided by the user (Spanish strings verbatim), ensure robots remains `noindex, follow`, and ensure no mount/unmount cleanup restores conflicting values. Preserve existing scroll-to-top and simulated loading behavior."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Ensure all canonical/OG URLs use the production domain, all meta text is Spanish, and accents/encoding are preserved in rendered head tags.",
-      "acceptanceCriteria": [
-        "All specified head tag strings are in Spanish and match the user-provided values exactly.",
-        "All canonical/OG URLs use `https://kelanicosmetics.es` (not relative URLs, not alternative domains).",
-        "Rendered head tags correctly preserve accents and punctuation in the final DOM."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/seo/seoPresets.ts",
-          "operation": "create",
-          "description": "Create centralized SEO tag presets/constants for the three static public pages (`/`, `/contacto`, `/privacy`) using the exact user-provided Spanish strings and production-domain URLs. Use this to reduce duplication and prevent accidental drift in canonical/OG URLs and Spanish content across pages."
+          "description": "Refactor public image utilities to support the standardized flow by exposing a shared default fallback URL and safe helpers for determining photo presence, without introducing any URL-string construction from the backend."
         },
         {
-          "path": "frontend/src/pages/public/HomePage.tsx",
+          "path": "frontend/src/components/public/products/ProductCard.tsx",
           "operation": "modify",
-          "description": "Refactor the homepage SEO configuration to consume the centralized presets/constants so canonical + OG URLs are guaranteed to use `https://kelanicosmetics.es` and Spanish text is consistently applied exactly as provided."
+          "description": "Switch card image rendering to use the standardized binary photo → blob URL → display pattern (via the shared hook/util) with correct fallback, preserving existing modal-open behavior and all non-image UI."
         },
         {
-          "path": "frontend/src/pages/public/ContactoPage.tsx",
+          "path": "frontend/src/pages/public/ProductPage.tsx",
           "operation": "modify",
-          "description": "Refactor the contact page SEO configuration to consume the centralized presets/constants so canonical + OG URLs are guaranteed to use `https://kelanicosmetics.es` and Spanish text (including store addresses/accents) is consistently applied exactly as provided."
+          "description": "Switch product page image rendering to use the standardized binary photo → blob URL → display pattern (via the shared hook/util) with correct fallback, preserving current page behavior and Spanish UI."
         },
         {
-          "path": "frontend/src/pages/public/PrivacyPage.tsx",
+          "path": "frontend/src/components/public/product/ProductDetailsModal.tsx",
           "operation": "modify",
-          "description": "Refactor the privacy page SEO configuration to consume the centralized presets/constants so canonical + OG URLs are guaranteed to use `https://kelanicosmetics.es` and robots remains `noindex, follow` with Spanish text applied exactly as provided."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Preserve the existing :root CSS custom properties block in frontend/src/index.css; only append styles below if ever needed.",
-      "acceptanceCriteria": [
-        "`frontend/src/index.css` `:root` block remains unchanged (same variables, values, ordering/structure).",
-        "No CSS changes are made above or within the `:root` block."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Do not alter the existing `:root` CSS custom properties block. If any SEO-related styling is ever required (not expected for head-tag work), append new CSS only below the existing `:root` block; otherwise keep styling unchanged. Optionally add a brief comment near the end of the file noting that the `:root` block must remain untouched."
+          "description": "Ensure the modal uses the same standardized image flow for all open sources (cards and search), preferring precomputed blob URL when provided, otherwise deriving from binary photo data with fallback."
         }
       ]
     }

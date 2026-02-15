@@ -1,8 +1,9 @@
-import React from 'react';
-import { Link } from '@tanstack/react-router';
-import { useProductModalStore } from '../../../stores/productModalStore';
-import ProductCard from '../products/ProductCard';
+import { memo } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { ChevronRight } from 'lucide-react';
+import { useProductModalNavigation } from '../../../hooks/useProductModalNavigation';
 import { useIsMobile } from '../../../hooks/useMediaQuery';
+import ProductCard from '../../public/products/ProductCard';
 import type { CategorizedProductWithSale, StoreDetails } from '../../../backend';
 
 interface CategorySectionProps {
@@ -10,49 +11,46 @@ interface CategorySectionProps {
   storeDetails: StoreDetails[];
 }
 
-const CategorySection = React.memo(({ category, storeDetails }: CategorySectionProps) => {
-  const openModal = useProductModalStore((state) => state.openModal);
+function CategorySection({ category, storeDetails }: CategorySectionProps) {
+  const navigate = useNavigate();
+  const { openModalWithHistory } = useProductModalNavigation();
   const isMobile = useIsMobile();
 
-  const handleProductClick = (product: CategorizedProductWithSale['products'][0]) => {
-    openModal(product, storeDetails);
+  const handleViewAll = () => {
+    navigate({ to: '/category/$id', params: { id: category.categoryId.toString() } });
   };
 
-  // Limit to 4 products on mobile (≤768px), show all 5 on desktop
-  const productsToRender = isMobile 
+  // On mobile (≤768px), limit to 4 products; on desktop, show all 5
+  const displayProducts = isMobile 
     ? category.products.slice(0, 4) 
     : category.products;
 
   return (
     <section className="space-y-4">
-      {/* Category Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground truncate">
-          {category.categoryName}
-        </h2>
-        <Link
-          to="/category/$id"
-          params={{ id: category.categoryId.toString() }}
-          className="text-primary hover:underline font-medium whitespace-nowrap text-sm md:text-base"
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{category.categoryName}</h2>
+        <button
+          onClick={handleViewAll}
+          className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors font-medium"
+          aria-label={`Ver todos los productos de ${category.categoryName}`}
         >
-          Ver todos
-        </Link>
+          <span className="hidden sm:inline">Ver todos</span>
+          <ChevronRight className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {productsToRender.map((productWithSale) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {displayProducts.map((productWithSale) => (
           <ProductCard
             key={productWithSale.product.barcode}
-            productWithSale={productWithSale}
-            onClick={() => handleProductClick(productWithSale)}
+            product={productWithSale}
+            storeDetails={storeDetails}
+            onClick={() => openModalWithHistory(productWithSale, storeDetails, 'homepage-category')}
           />
         ))}
       </div>
     </section>
   );
-});
+}
 
-CategorySection.displayName = 'CategorySection';
-
-export default CategorySection;
+export default memo(CategorySection);

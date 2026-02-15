@@ -39,7 +39,9 @@ export interface ExportProduct {
   'isFeatured' : boolean,
   'barcode' : string,
   'lastUpdatedDate' : bigint,
+  'store1InStock' : boolean,
   'price' : [] | [number],
+  'store2InStock' : boolean,
 }
 export interface HomepageCategoriesResult {
   'categories' : Array<CategorizedProductWithSale>,
@@ -47,12 +49,12 @@ export interface HomepageCategoriesResult {
 }
 export interface HomepageSearchResult {
   'categoryId' : bigint,
-  'productImageUrl' : [] | [string],
   'categoryName' : string,
   'name' : string,
   'salePercentage' : [] | [number],
   'barcode' : string,
   'salePrice' : [] | [number],
+  'photo' : [] | [Uint8Array],
   'price' : [] | [number],
   'saleIsActive' : boolean,
 }
@@ -79,8 +81,10 @@ export interface Product {
   'isFeatured' : boolean,
   'barcode' : string,
   'lastUpdatedDate' : bigint,
+  'store1InStock' : boolean,
   'photo' : [] | [Uint8Array],
   'price' : [] | [number],
+  'store2InStock' : boolean,
 }
 export interface ProductV2 {
   'categoryId' : bigint,
@@ -92,8 +96,10 @@ export interface ProductV2 {
   'isFeatured' : boolean,
   'barcode' : string,
   'lastUpdatedDate' : bigint,
+  'store1InStock' : boolean,
   'photo' : [] | [Uint8Array],
   'price' : [] | [number],
+  'store2InStock' : boolean,
 }
 export interface ProductWithSale {
   'isOnSale' : boolean,
@@ -157,6 +163,8 @@ export interface _SERVICE {
       boolean,
       boolean,
       [] | [Uint8Array],
+      boolean,
+      boolean,
     ],
     Product
   >,
@@ -215,6 +223,8 @@ export interface _SERVICE {
       boolean,
       boolean,
       [] | [Uint8Array],
+      boolean,
+      boolean,
     ],
     Product
   >,

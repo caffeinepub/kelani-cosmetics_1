@@ -250,6 +250,23 @@ export function validateImportData(data: any): ValidationResult {
         };
       }
 
+      // Validate per-store stock fields
+      if (typeof prod.store1InStock !== 'boolean') {
+        return {
+          isValid: false,
+          errorMessage: `Producto ${i + 1} (${prod.barcode}): Campo "store1InStock" debe ser booleano`,
+          validatedData: { categories: [], products: [] },
+        };
+      }
+
+      if (typeof prod.store2InStock !== 'boolean') {
+        return {
+          isValid: false,
+          errorMessage: `Producto ${i + 1} (${prod.barcode}): Campo "store2InStock" debe ser booleano`,
+          validatedData: { categories: [], products: [] },
+        };
+      }
+
       // Convert optional price (non-timestamp numeric field)
       let price: number | null = null;
       if (prod.price !== null && prod.price !== undefined) {
@@ -287,6 +304,8 @@ export function validateImportData(data: any): ValidationResult {
         photo: undefined, // Photos are not imported
         createdDate,
         lastUpdatedDate,
+        store1InStock: prod.store1InStock,
+        store2InStock: prod.store2InStock,
       });
     }
 

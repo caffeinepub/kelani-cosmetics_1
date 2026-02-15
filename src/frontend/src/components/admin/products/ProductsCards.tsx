@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToggleProductInStock, useToggleProductFeatured, type Product } from '../../../hooks/useProductQueries';
+import { useToggleStoreStock, useToggleProductFeatured, type Product } from '../../../hooks/useProductQueries';
 import { formatPriceForDisplay } from '../../../utils/NumericConverter';
 import { reportSuccessWithToast } from '../../../utils/reportErrorWithToast';
 
@@ -13,26 +13,36 @@ interface ProductsCardsProps {
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
   isLoading: boolean;
+  store1Name: string;
+  store2Name: string;
 }
 
 const ProductCard = memo(({ 
   product, 
   onEdit, 
   onDelete,
-  isPendingStock,
+  isPendingStore1,
+  isPendingStore2,
   isPendingFeatured,
-  onToggleStock,
+  onToggleStore1,
+  onToggleStore2,
   onToggleFeatured,
-  onCopyBarcode
+  onCopyBarcode,
+  store1Name,
+  store2Name,
 }: {
   product: Product;
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
-  isPendingStock: boolean;
+  isPendingStore1: boolean;
+  isPendingStore2: boolean;
   isPendingFeatured: boolean;
-  onToggleStock: (product: Product) => void;
+  onToggleStore1: (product: Product) => void;
+  onToggleStore2: (product: Product) => void;
   onToggleFeatured: (product: Product) => void;
   onCopyBarcode: (barcode: string) => void;
+  store1Name: string;
+  store2Name: string;
 }) => {
   const [copiedBarcode, setCopiedBarcode] = useState(false);
 
@@ -89,21 +99,22 @@ const ProductCard = memo(({
             </div>
           </div>
 
-          {/* Stock Status Badge */}
-          <div>
-            <Badge variant={product.inStock ? 'default' : 'destructive'}>
-              {product.inStock ? 'En Stock' : 'Sin Stock'}
-            </Badge>
-          </div>
-
           {/* Toggles */}
           <div className="flex flex-col gap-3 border-t pt-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">En Stock:</span>
+              <span className="text-sm text-muted-foreground">{store1Name}:</span>
               <Checkbox
-                checked={product.inStock}
-                onCheckedChange={() => onToggleStock(product)}
-                disabled={isPendingStock}
+                checked={product.store1InStock}
+                onCheckedChange={() => onToggleStore1(product)}
+                disabled={isPendingStore1}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{store2Name}:</span>
+              <Checkbox
+                checked={product.store2InStock}
+                onCheckedChange={() => onToggleStore2(product)}
+                disabled={isPendingStore2}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -122,7 +133,7 @@ const ProductCard = memo(({
               variant="outline"
               size="sm"
               onClick={() => onEdit(product)}
-              disabled={isPendingStock || isPendingFeatured}
+              disabled={isPendingStore1 || isPendingStore2 || isPendingFeatured}
               className="min-h-[44px] w-full sm:flex-1"
             >
               <Edit className="mr-2 h-4 w-4" />
@@ -132,7 +143,7 @@ const ProductCard = memo(({
               variant="outline"
               size="sm"
               onClick={() => onDelete(product)}
-              disabled={isPendingStock || isPendingFeatured}
+              disabled={isPendingStore1 || isPendingStore2 || isPendingFeatured}
               className="min-h-[44px] w-full text-destructive hover:text-destructive sm:flex-1"
             >
               <Trash2 className="mr-2 h-4 w-4" />
@@ -152,18 +163,31 @@ export default function ProductsCards({
   onEdit,
   onDelete,
   isLoading,
+  store1Name,
+  store2Name,
 }: ProductsCardsProps) {
-  const toggleStockMutation = useToggleProductInStock();
+  const toggleStoreStockMutation = useToggleStoreStock();
   const toggleFeaturedMutation = useToggleProductFeatured();
-  const [pendingStockBarcode, setPendingStockBarcode] = useState<string | null>(null);
+  const [pendingStockKey, setPendingStockKey] = useState<string | null>(null);
   const [pendingFeaturedBarcode, setPendingFeaturedBarcode] = useState<string | null>(null);
 
-  const handleToggleStock = async (product: Product) => {
-    setPendingStockBarcode(product.barcode);
+  const handleToggleStore1 = async (product: Product) => {
+    const key = `${product.barcode}-store1`;
+    setPendingStockKey(key);
     try {
-      await toggleStockMutation.mutateAsync(product.barcode);
+      await toggleStoreStockMutation.mutateAsync({ product, storeNumber: 1 });
     } finally {
-      setPendingStockBarcode(null);
+      setPendingStockKey(null);
+    }
+  };
+
+  const handleToggleStore2 = async (product: Product) => {
+    const key = `${product.barcode}-store2`;
+    setPendingStockKey(key);
+    try {
+      await toggleStoreStockMutation.mutateAsync({ product, storeNumber: 2 });
+    } finally {
+      setPendingStockKey(null);
     }
   };
 
@@ -187,7 +211,7 @@ export default function ProductsCards({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center">
+      <div className="rounded-lg border border-border bg-card p-12 text-center">
         <p className="text-muted-foreground">Cargando productos...</p>
       </div>
     );
@@ -195,7 +219,7 @@ export default function ProductsCards({
 
   if (products.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center">
+      <div className="rounded-lg border border-border bg-card p-12 text-center">
         <p className="text-muted-foreground">No se encontraron productos</p>
       </div>
     );
@@ -203,19 +227,29 @@ export default function ProductsCards({
 
   return (
     <div className="space-y-4">
-      {products.map((product) => (
-        <ProductCard
-          key={product.barcode}
-          product={product}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          isPendingStock={pendingStockBarcode === product.barcode}
-          isPendingFeatured={pendingFeaturedBarcode === product.barcode}
-          onToggleStock={handleToggleStock}
-          onToggleFeatured={handleToggleFeatured}
-          onCopyBarcode={handleCopyBarcode}
-        />
-      ))}
+      {products.map((product) => {
+        const isPendingStore1 = pendingStockKey === `${product.barcode}-store1`;
+        const isPendingStore2 = pendingStockKey === `${product.barcode}-store2`;
+        const isPendingFeatured = pendingFeaturedBarcode === product.barcode;
+
+        return (
+          <ProductCard
+            key={product.barcode}
+            product={product}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isPendingStore1={isPendingStore1}
+            isPendingStore2={isPendingStore2}
+            isPendingFeatured={isPendingFeatured}
+            onToggleStore1={handleToggleStore1}
+            onToggleStore2={handleToggleStore2}
+            onToggleFeatured={handleToggleFeatured}
+            onCopyBarcode={handleCopyBarcode}
+            store1Name={store1Name}
+            store2Name={store2Name}
+          />
+        );
+      })}
     </div>
   );
 }

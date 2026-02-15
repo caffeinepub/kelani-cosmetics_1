@@ -1,21 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { useHomepageAutocomplete } from '../../../../hooks/useHomepageAutocomplete';
-import { useBothStoreDetails } from '../../../../hooks/useBothStoreDetails';
-import { useProductModalStore } from '../../../../stores/productModalStore';
+import { useProductModalNavigation } from '../../../../hooks/useProductModalNavigation';
 import AutocompleteDropdown from './AutocompleteDropdown';
-import type { HomepageSearchResult } from '../../../../backend';
+import type { HomepageSearchResult, StoreDetails } from '../../../../backend';
 
-export default function SearchBar() {
+interface SearchBarProps {
+  storeDetails: StoreDetails[];
+}
+
+export default function SearchBar({ storeDetails }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const blobUrlsRef = useRef<string[]>([]);
 
   const { results, isLoading, error } = useHomepageAutocomplete(query);
-  const { data: storeDetailsArray } = useBothStoreDetails();
-  const openModal = useProductModalStore((state) => state.openModal);
+  const { openModalWithHistory } = useProductModalNavigation();
 
   const showDropdown = isFocused && query.length >= 2;
 
@@ -24,7 +27,15 @@ export default function SearchBar() {
     setIsFocused(false);
     setActiveIndex(-1);
     inputRef.current?.blur();
-    openModal(result, storeDetailsArray || []);
+
+    // Generate blob URL if photo exists
+    let blobUrl: string | null = null;
+    if (result.photo && result.photo.length > 0) {
+      blobUrl = URL.createObjectURL(new Blob([new Uint8Array(result.photo)], { type: 'image/jpeg' }));
+      blobUrlsRef.current.push(blobUrl);
+    }
+
+    openModalWithHistory(result, storeDetails, 'homepage-search', blobUrl);
   };
 
   const handleMouseEnter = (index: number) => {
@@ -50,6 +61,21 @@ export default function SearchBar() {
     setActiveIndex(-1);
   }, [results]);
 
+  // Cleanup blob URLs when new search results arrive
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      blobUrlsRef.current = [];
+    };
+  }, [results]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, []);
+
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative">
@@ -61,7 +87,7 @@ export default function SearchBar() {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder="Buscar productos..."
-          className="w-full pl-12 pr-4 py-3 rounded-full border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          className="w-full h-14 pl-12 pr-4 text-base rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
           aria-label="Buscar productos"
           aria-autocomplete="list"
           aria-controls="search-results"
@@ -74,8 +100,8 @@ export default function SearchBar() {
           results={results}
           isLoading={isLoading}
           error={error}
-          activeIndex={activeIndex}
           onSelect={handleSelect}
+          activeIndex={activeIndex}
           onMouseEnter={handleMouseEnter}
         />
       )}

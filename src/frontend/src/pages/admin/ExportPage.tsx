@@ -42,10 +42,22 @@ export default function ExportPage() {
         return;
       }
 
-      // Build ordered export object (categories first, then products)
+      // Build ordered export object with per-store inventory flags
       const orderedExport = {
         categories: exportData.categories,
-        products: exportData.products,
+        products: exportData.products.map((product) => ({
+          barcode: product.barcode,
+          name: product.name,
+          categoryId: Number(product.categoryId),
+          description: product.description,
+          price: product.price,
+          inStock: product.inStock,
+          isFeatured: product.isFeatured,
+          createdDate: product.createdDate.toString(),
+          lastUpdatedDate: product.lastUpdatedDate.toString(),
+          store1InStock: product.store1InStock,
+          store2InStock: product.store2InStock,
+        })),
         exportTimestamp: exportData.exportTimestamp.toString(),
         itemCounts: {
           categories: Number(exportData.itemCounts.categories),

@@ -1,29 +1,77 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T22:43:37.081Z",
-  "summary": "Implemented static public sitemap.xml and robots.txt files and added a custom React-based head-tag manager (SeoHead) with per-route SEO presets applied to Home, Contacto, and Privacy pages. However, the diff also shows additional non-SEO behavioral logic added to PrivacyPage that may violate the “no behavior/UI changes outside head management” constraint.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-15T23:43:15.716Z",
+  "summary": "Diff implements a new blob-URL hook, updates public product image components to use blob URLs and (in some places) `object-contain`, and adjusts homepage search selection to pass a precomputed blob URL into the product modal. However, backend `searchHomepageProducts` changes are not evidenced, `object-contain` coverage across all required public images is not fully evidenced, and blob URL cleanup in `SearchBar` appears to revoke URLs on search result changes potentially while still in use by the open modal. The diff also includes unrelated backend/admin user-management functionality not requested.",
+  "missing_requirements": [
     {
-      "description": "Added non-SEO behavior to PrivacyPage (actor stabilization, simulated initial loading delay, and new loading/error UI states) beyond head-tag management.",
-      "reason": "BuildRequest constraints/non-goals specify no changes to existing page behavior or UI content outside of head tag management and the two new static public files. The diff shows additional effects/state and conditional rendering logic unrelated to SEO tags.",
+      "id": "REQ-1",
+      "requirement": "Apply Tailwind `object-contain` to every public-facing product-photo <img> (including fallbacks) while preserving other classes/layout (homepage cards, category cards, modal, product page).",
+      "reason": "Only some public <img> updates are evidenced. `ProductCard` and `ProductPage` show `object-contain`, but the `ProductDetailsModal` <img> is truncated before showing its `className`, and there is no evidence for category page product cards.",
       "evidence": [
-        "frontend/src/pages/public/PrivacyPage.tsx"
+        "frontend/src/components/public/products/ProductCard.tsx",
+        "frontend/src/pages/public/ProductPage.tsx",
+        "frontend/src/components/public/product/ProductDetailsModal.tsx"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Fix backend `searchHomepageProducts` to return full product data including binary `photo` (`?[Nat8]`), remove any constructed image URL string field, and keep max 10 results with required non-photo fields preserved.",
+      "reason": "The diff summary shows `backend/main.mo` changes but the relevant `searchHomepageProducts` function implementation is not present in the provided truncated excerpt, so compliance (photo field included, no URL field, max 10) cannot be verified from the evidence.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Manage blob URL lifecycle: revoke created blob URLs when no longer needed, and do not revoke blob URLs while still in use by a visible image (e.g., modal image).",
+      "reason": "`SearchBar` tracks created blob URLs and revokes them in an effect cleanup keyed on `[results]`. Selecting an item clears the query, which likely changes `results`; that cleanup can revoke the selected product’s blob URL while the modal is still open and using it via `precomputedBlobUrl`, violating the requirement to not revoke URLs still in use.",
+      "evidence": [
+        "frontend/src/components/public/home/search/SearchBar.tsx",
+        "frontend/src/stores/productModalStore.ts",
+        "frontend/src/components/public/product/ProductDetailsModal.tsx"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Maintain existing modal-opening behavior from non-search entry points (homepage/category grids) while aligning public image sources to binary photo → blob URL → display with fallback.",
+      "reason": "Homepage card flow appears updated (`ProductCard` uses blob URL hook), but there is no evidence in the diff summary for category grid/card components or their modal-opening pathways, so end-to-end non-search entry point parity across homepage+category cannot be confirmed.",
+      "evidence": [
+        "frontend/src/components/public/products/ProductCard.tsx"
       ]
     }
   ],
-  "confidence": 0.64,
+  "hallucinated_features": [
+    {
+      "description": "Backend admin/user-management functionality (listing managed users, promoting/demoting admins, user profiles).",
+      "reason": "Not requested in BuildRequest (non-goals include avoiding unrelated user-facing features; requirements are specifically about product images and search-to-modal behavior). The backend diff excerpt shows multiple admin/user management methods unrelated to `searchHomepageProducts` or product photo search behavior.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Changes/notes indicating addition of admin routes/pages (e.g., `/admin/user-management`, admin dashboard cards, admin verification hooks) in repository summary artifacts.",
+      "reason": "Not requested in BuildRequest; appears unrelated to product images/search-to-modal. Evidence is in modified summary artifact(s), not in the core requested areas.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    }
+  ],
+  "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/public/robots.txt",
-    "frontend/public/sitemap.xml",
-    "frontend/src/components/seo/SeoHead.tsx",
-    "frontend/src/components/seo/seoPresets.ts",
-    "frontend/src/pages/public/ContactoPage.tsx",
-    "frontend/src/pages/public/HomePage.tsx",
-    "frontend/src/pages/public/PrivacyPage.tsx",
+    "frontend/src/components/public/home/search/AutocompleteDropdown.tsx",
+    "frontend/src/components/public/home/search/SearchBar.tsx",
+    "frontend/src/components/public/home/search/SearchResultItem.tsx",
+    "frontend/src/components/public/product/ProductDetailsModal.tsx",
+    "frontend/src/components/public/products/ProductCard.tsx",
+    "frontend/src/hooks/useProductModalNavigation.ts",
+    "frontend/src/hooks/useProductPhotoBlobUrl.ts",
+    "frontend/src/pages/public/ProductPage.tsx",
+    "frontend/src/stores/productModalStore.ts",
+    "frontend/src/utils/productImage.ts",
     "project_state.json"
   ]
 }

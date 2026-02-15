@@ -39,12 +39,12 @@ export interface CategorizedProductWithSale {
 }
 export interface HomepageSearchResult {
     categoryId: bigint;
-    productImageUrl?: string;
     categoryName: string;
     name: string;
     salePercentage?: number;
     barcode: string;
     salePrice?: number;
+    photo?: Uint8Array;
     price?: number;
     saleIsActive: boolean;
 }
@@ -58,8 +58,10 @@ export interface ProductV2 {
     isFeatured: boolean;
     barcode: string;
     lastUpdatedDate: bigint;
+    store1InStock: boolean;
     photo?: Uint8Array;
     price?: number;
+    store2InStock: boolean;
 }
 export interface StoreDetails {
     storeId: bigint;
@@ -117,7 +119,9 @@ export interface ExportProduct {
     isFeatured: boolean;
     barcode: string;
     lastUpdatedDate: bigint;
+    store1InStock: boolean;
     price?: number;
+    store2InStock: boolean;
 }
 export interface ProductWithSale {
     isOnSale: boolean;
@@ -138,8 +142,10 @@ export interface Product {
     isFeatured: boolean;
     barcode: string;
     lastUpdatedDate: bigint;
+    store1InStock: boolean;
     photo?: Uint8Array;
     price?: number;
+    store2InStock: boolean;
 }
 export interface UserProfile {
     name: string;
@@ -153,7 +159,7 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     batchImportData(importData: ImportData): Promise<ImportResult>;
     createCategory(name: string, order: bigint): Promise<Category>;
-    createProduct(barcode: string, name: string, categoryId: bigint, description: string | null, price: number | null, inStock: boolean, isFeatured: boolean, photo: Uint8Array | null): Promise<Product>;
+    createProduct(barcode: string, name: string, categoryId: bigint, description: string | null, price: number | null, inStock: boolean, isFeatured: boolean, photo: Uint8Array | null, store1InStock: boolean, store2InStock: boolean): Promise<Product>;
     createSaleItem(productBarcode: string, salePrice: number, startDate: bigint, endDate: bigint): Promise<SaleItem>;
     deleteCategory(categoryId: bigint): Promise<boolean>;
     deleteProduct(barcode: string, password: string): Promise<void>;
@@ -190,7 +196,7 @@ export interface backendInterface {
     toggleProductInStock(barcode: string): Promise<boolean>;
     toggleSaleItemActiveStatus(saleId: bigint): Promise<boolean>;
     updateCategory(categoryId: bigint, name: string, order: bigint): Promise<Category>;
-    updateProduct(barcode: string, name: string, categoryId: bigint, description: string | null, price: number | null, inStock: boolean, isFeatured: boolean, photo: Uint8Array | null): Promise<Product>;
+    updateProduct(barcode: string, name: string, categoryId: bigint, description: string | null, price: number | null, inStock: boolean, isFeatured: boolean, photo: Uint8Array | null, store1InStock: boolean, store2InStock: boolean): Promise<Product>;
     updateSaleItem(saleId: bigint, salePrice: number, startDate: bigint, endDate: bigint): Promise<SaleItem>;
     updateStoreDetails(storeId: bigint, details: StoreDetails): Promise<void>;
     uploadProductPhoto(barcode: string, photo: Uint8Array): Promise<Product>;

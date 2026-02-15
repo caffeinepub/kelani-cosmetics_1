@@ -1,146 +1,50 @@
+import { useEffect } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Star, Share2 } from 'lucide-react';
-import { useGetProduct } from '../../hooks/useProductQueries';
-import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
-import { Button } from '../../components/ui/button';
-import CopyToClipboardButton from '../../components/public/product/CopyToClipboardButton';
-import StoreSelector from '../../components/public/product/StoreSelector';
-
-const DEFAULT_IMAGE_URL = 'https://i.imgur.com/pNccXMT.png';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useGetProduct } from '@/hooks/useProductQueries';
+import { useBothStoreDetails } from '@/hooks/useBothStoreDetails';
+import { formatPriceForDisplay } from '@/utils/NumericConverter';
+import { useProductPhotoBlobUrl } from '@/hooks/useProductPhotoBlobUrl';
+import { DEFAULT_PRODUCT_IMAGE_URL } from '@/utils/productImage';
+import StoreSelector from '@/components/public/product/StoreSelector';
+import ShareProductButton from '@/components/public/product/ShareProductButton';
+import StockStatusIndicators from '@/components/public/products/StockStatusIndicators';
+import SeoHead from '@/components/seo/SeoHead';
 
 export default function ProductPage() {
   const { barcode } = useParams({ from: '/public/product/$barcode' });
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [imageSrc, setImageSrc] = useState<string>(DEFAULT_IMAGE_URL);
-  const [imageError, setImageError] = useState(false);
-
-  // Fetch store details for WhatsApp contact
+  const { data: product, isInitialLoading, isFetched, error } = useGetProduct(barcode);
   const { data: storeDetailsArray } = useBothStoreDetails();
 
-  // Validate and normalize barcode
-  const normalizedBarcode = barcode?.trim() || '';
-  const isValidBarcode = normalizedBarcode.length > 0;
+  const imageUrl = useProductPhotoBlobUrl(product?.photo);
 
-  // Fetch product data with sale-aware fields
-  const { data: product, isLoading, error, refetch } = useGetProduct(
-    normalizedBarcode
-  );
-
-  // Handle product image
   useEffect(() => {
-    if (!product || !product.photo || product.photo.length === 0) {
-      setImageSrc(DEFAULT_IMAGE_URL);
-      setImageError(false);
-      return;
-    }
+    window.scrollTo(0, 0);
+  }, [barcode]);
 
-    try {
-      const blob = new Blob([new Uint8Array(product.photo)], { type: 'image/jpeg' });
-      const blobUrl = URL.createObjectURL(blob);
-      setImageSrc(blobUrl);
-      setImageError(false);
-
-      return () => {
-        URL.revokeObjectURL(blobUrl);
-      };
-    } catch (err) {
-      console.error('Error creating blob URL:', err);
-      setImageSrc(DEFAULT_IMAGE_URL);
-      setImageError(true);
-    }
-  }, [product?.photo]);
-
-  // Update document title and meta description
-  useEffect(() => {
-    if (product) {
-      document.title = `${product.name} - Kelani Cosmetics`;
-
-      // Update or create meta description
-      let metaDescription = document.querySelector('meta[name="description"]');
-      if (!metaDescription) {
-        metaDescription = document.createElement('meta');
-        metaDescription.setAttribute('name', 'description');
-        document.head.appendChild(metaDescription);
-      }
-
-      const description = product.description
-        ? product.description.replace(/<[^>]*>/g, '').substring(0, 160)
-        : `${product.name} - Disponible en Kelani Cosmetics`;
-
-      metaDescription.setAttribute('content', description);
-    }
-
-    return () => {
-      document.title = 'Kelani Cosmetics';
-    };
-  }, [product]);
-
-  // Clear cache on unmount
-  useEffect(() => {
-    return () => {
-      queryClient.removeQueries({ queryKey: ['product'], exact: false });
-    };
-  }, [queryClient]);
-
-  // Format price in Spanish EUR format
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(price);
-  };
-
-  // Handle share URL
-  const handleShareUrl = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-  };
-
-  // Handle image error
-  const handleImageError = () => {
-    if (!imageError) {
-      setImageSrc(DEFAULT_IMAGE_URL);
-      setImageError(true);
-    }
-  };
-
-  // Loading state
-  if (isLoading) {
+  // Show loading spinner during initial actor initialization and first fetch
+  if (isInitialLoading || !isFetched) {
     return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Cargando producto...</p>
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <div className="flex min-h-[400px] flex-col items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Cargando producto...</p>
+        </div>
       </div>
     );
   }
 
-  // Invalid barcode
-  if (!isValidBarcode) {
+  // Only show error/not-found after initial loading completes
+  if (error || !product) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-4">
-        <p className="text-lg text-muted-foreground">Producto no encontrado</p>
-        <Button onClick={() => navigate({ to: '/' })} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver al inicio
-        </Button>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-4">
-        <p className="text-lg text-destructive">Error al cargar el producto</p>
-        <div className="flex gap-3">
-          <Button onClick={() => refetch()} variant="outline">
-            Reintentar
-          </Button>
-          <Button onClick={() => navigate({ to: '/' })} variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+          <p className="text-muted-foreground">Producto no encontrado</p>
+          <Button onClick={() => navigate({ to: '/' })}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al inicio
           </Button>
         </div>
@@ -148,147 +52,103 @@ export default function ProductPage() {
     );
   }
 
-  // Product not found
-  if (!product) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-4">
-        <p className="text-lg text-muted-foreground">Producto no encontrado</p>
-        <Button onClick={() => navigate({ to: '/' })} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver al inicio
-        </Button>
-      </div>
-    );
-  }
-
-  // Sale-aware pricing - strict backend-driven logic
-  const showSalePrice = product.isOnSale && product.salePrice !== undefined && product.salePrice !== null;
+  const displayPrice = product.isOnSale && product.salePrice !== undefined
+    ? product.salePrice
+    : product.price;
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Back Link */}
-      <div>
-        <button
+    <>
+      <SeoHead
+        meta={{
+          title: `${product.name} - Kelani Cosmetics`,
+          description: product.description || `Compra ${product.name} en Kelani Cosmetics`,
+          keywords: `${product.name}, cosmética, belleza, productos de belleza`,
+          canonical: `https://kelanicosmetics.es/producto/${product.barcode}`,
+          ogTitle: `${product.name} - Kelani Cosmetics`,
+          ogDescription: product.description || `Compra ${product.name} en Kelani Cosmetics`,
+          ogUrl: `https://kelanicosmetics.es/producto/${product.barcode}`,
+          ogType: 'product',
+          ogLocale: 'es_ES',
+          ogSiteName: 'Kelani Cosmetics',
+          twitterCard: 'summary_large_image',
+          twitterTitle: `${product.name} - Kelani Cosmetics`,
+          twitterDescription: product.description || `Compra ${product.name} en Kelani Cosmetics`,
+        }}
+      />
+
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <Button
+          variant="ghost"
           onClick={() => navigate({ to: '/' })}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Volver al inicio"
+          className="mb-6 gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Volver al inicio</span>
-        </button>
-      </div>
+          Volver
+        </Button>
 
-      {/* Product Details Container */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-        {/* Image Section - Left Column (60% on desktop) */}
-        <div className="md:col-span-3">
-          <div className="w-full aspect-square bg-muted rounded-lg overflow-hidden">
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
             <img
-              src={imageSrc}
+              src={imageUrl || DEFAULT_PRODUCT_IMAGE_URL}
               alt={product.name}
-              onError={handleImageError}
-              className="w-full h-full object-contain"
+              className="h-full w-full object-contain"
             />
+
+            {product.isOnSale && product.discountPercentage !== undefined && (
+              <Badge className="absolute left-4 top-4 bg-destructive text-destructive-foreground">
+                -{Math.round(product.discountPercentage)}%
+              </Badge>
+            )}
+
+            {product.isFeatured && (
+              <Badge className="absolute right-4 top-4 bg-warning text-warning-foreground">
+                ⭐ Destacado
+              </Badge>
+            )}
           </div>
-        </div>
 
-        {/* Information Section - Right Column (40% on desktop) */}
-        <div className="md:col-span-2 space-y-6">
-          {/* Product Header */}
-          <div className="space-y-3">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">{product.name}</h1>
-
-            {/* Stock Status Badge */}
+          <div className="flex flex-col gap-4">
             <div>
-              {product.inStock ? (
-                <span className="inline-block px-4 py-2 text-sm font-bold bg-green-500 text-white rounded-lg">
-                  EN STOCK
-                </span>
-              ) : (
-                <span className="inline-block px-4 py-2 text-sm font-bold bg-red-500 text-white rounded-lg">
-                  SIN STOCK
-                </span>
-              )}
+              <h1 className="text-3xl font-bold text-foreground">{product.name}</h1>
             </div>
-          </div>
 
-          {/* Price Display with Sale Support */}
-          {product.price !== undefined && product.price !== null && (
-            <div className="space-y-2">
-              {showSalePrice ? (
-                <>
-                  {/* On Sale Badge */}
-                  <div className="inline-block px-3 py-1 text-sm font-bold bg-primary text-primary-foreground rounded">
-                    On Sale
-                  </div>
-                  {/* Sale Price */}
-                  <div className="text-3xl font-bold text-primary">
-                    {formatPrice(product.salePrice!)}
-                  </div>
-                  {/* Original Price with Strikethrough */}
-                  <div className="text-xl text-muted-foreground line-through">
-                    {formatPrice(product.price)}
-                  </div>
-                  {/* Discount Percentage */}
-                  {product.discountPercentage !== undefined && product.discountPercentage !== null && (
-                    <div className="text-base font-semibold text-primary">
-                      Save {Math.round(product.discountPercentage)}%
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-3xl font-bold text-foreground">
-                  {formatPrice(product.price)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Featured Indicator */}
-          {product.isFeatured && (
-            <div className="flex items-center gap-2 text-yellow-600">
-              <Star className="h-5 w-5 fill-current" />
-              <span className="font-semibold">Producto Destacado</span>
-            </div>
-          )}
-
-          {/* Barcode Display */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Código de barras</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 px-3 py-2 bg-muted rounded text-sm font-mono">
-                {product.barcode}
-              </code>
-              <CopyToClipboardButton textToCopy={product.barcode} />
-            </div>
-          </div>
-
-          {/* Description */}
-          {product.description && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Descripción</p>
-              <div
-                className="text-sm text-foreground prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: product.description }}
-              />
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="space-y-3 pt-4">
-            <StoreSelector
-              productName={product.name}
-              barcode={product.barcode}
+            <StockStatusIndicators
+              store1InStock={product.store1InStock}
+              store2InStock={product.store2InStock}
               storeDetails={storeDetailsArray || []}
             />
 
-            <Button onClick={handleShareUrl} variant="outline" className="w-full" size="lg">
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartir enlace
-            </Button>
+            {displayPrice !== undefined && (
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl font-bold text-foreground">
+                  {formatPriceForDisplay(displayPrice)}
+                </span>
+                {product.isOnSale && product.price !== undefined && (
+                  <span className="text-xl text-muted-foreground line-through">
+                    {formatPriceForDisplay(product.price)}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {product.description && (
+              <p className="text-muted-foreground">{product.description}</p>
+            )}
+
+            <div className="space-y-3 mt-auto pt-4">
+              {storeDetailsArray && storeDetailsArray.length > 0 && (
+                <StoreSelector
+                  productName={product.name}
+                  barcode={product.barcode}
+                  storeDetails={storeDetailsArray}
+                />
+              )}
+
+              <ShareProductButton productBarcode={product.barcode} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

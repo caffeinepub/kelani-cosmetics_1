@@ -17,7 +17,7 @@ export function useBothStoreDetails() {
     }
   }, [rawActor, stableActor]);
 
-  return useQuery<StoreDetails[]>({
+  const query = useQuery<StoreDetails[]>({
     queryKey: ['store-details'],
     queryFn: async ({ signal }) => {
       if (!stableActor) throw new Error('Actor not available');
@@ -30,11 +30,19 @@ export function useBothStoreDetails() {
       // Backend guarantees Store 1 first, Store 2 second
       return bothStores.map(([_storeId, details]) => details);
     },
-    enabled: Boolean(stableActor) && !actorFetching,
+    enabled: Boolean(stableActor),
     staleTime: 30 * 60 * 1000, // 30 minutes - longer for shared footer/contact data
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  // Return custom state that properly reflects actor dependency
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
+    isFetched: !!stableActor && query.isFetched,
+  };
 }

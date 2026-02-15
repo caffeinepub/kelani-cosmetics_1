@@ -70,23 +70,18 @@ export default function ContactoPage() {
     };
   }, []);
 
-  // Fetch store details using shared hook
-  const { data: storeDetailsData, isLoading, error, refetch } = useBothStoreDetails();
+  // Fetch store details using shared hook with stable actor pattern
+  const { data: storeDetailsArray, isInitialLoading, isFetched, error, refetch } = useBothStoreDetails();
 
-  // Clear cache on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      queryClient.removeQueries({ queryKey: ['store-details'], exact: false });
+      queryClient.removeQueries({ queryKey: ['store-details'] });
     };
   }, [queryClient]);
 
-  const handleEnableMaps = () => {
-    setConsent('accepted');
-    setShowMaps(true);
-  };
-
-  // Show loading spinner during initial load
-  if (isLoading) {
+  // Show loading spinner during initial actor initialization and first fetch
+  if (isInitialLoading || !isFetched) {
     return (
       <>
         <SeoHead meta={contactoPageSeo} />
@@ -98,13 +93,13 @@ export default function ContactoPage() {
     );
   }
 
-  // Error state with retry
+  // Only show error after initial loading completes
   if (error) {
     return (
       <>
         <SeoHead meta={contactoPageSeo} />
-        <div className="text-center py-12 space-y-4">
-          <p className="text-destructive">Error al cargar la información de contacto</p>
+        <div className="flex flex-col items-center justify-center py-24 space-y-4">
+          <p className="text-lg text-destructive">Error al cargar la información de contacto</p>
           <Button onClick={() => refetch()} variant="outline">
             Reintentar
           </Button>
@@ -113,208 +108,188 @@ export default function ContactoPage() {
     );
   }
 
-  // Empty state
-  if (!storeDetailsData || storeDetailsData.length === 0) {
+  // Only show empty state after initial loading completes
+  if (!storeDetailsArray || storeDetailsArray.length === 0) {
     return (
       <>
         <SeoHead meta={contactoPageSeo} />
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No hay información de contacto disponible</p>
+        <div className="flex flex-col items-center justify-center py-24">
+          <p className="text-lg text-muted-foreground">No hay información de contacto disponible</p>
         </div>
       </>
     );
   }
 
+  const handleAcceptCookies = () => {
+    setConsent('accepted');
+    setShowMaps(true);
+    window.dispatchEvent(new Event('cookie-consent-changed'));
+  };
+
   return (
     <>
       <SeoHead meta={contactoPageSeo} />
-      <div className="space-y-12 pb-12">
-        {/* Page Header */}
+
+      <div className="space-y-12">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Contacto</h1>
-          <p className="text-lg text-muted-foreground">
-            Visítanos en cualquiera de nuestras dos tiendas
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Contacto</h1>
+          <p className="text-muted-foreground">Visítanos en nuestras tiendas o contáctanos</p>
         </div>
 
-        {/* Store Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {storeDetailsData.map((store) => {
+        <div className="grid gap-8 md:grid-cols-2">
+          {storeDetailsArray.map((store, index) => {
+            const storeNumber = index + 1;
             const coords = parseCoordinates(store.coordinates);
-            const directionsUrl = coords ? getDirectionsUrl(coords) : null;
-            const mapEmbedUrl = coords ? getMapEmbedUrl(coords) : null;
 
             return (
-              <div
-                key={store.storeId}
-                className="bg-card border border-border rounded-lg p-6 space-y-6"
-              >
-                {/* Store Name */}
-                <h2 className="text-2xl font-bold text-foreground">{store.name}</h2>
+              <div key={store.storeId.toString()} className="space-y-6">
+                <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+                  <h2 className="text-2xl font-bold text-foreground">
+                    Tienda {storeNumber}
+                  </h2>
 
-                {/* Contact Information */}
-                <div className="space-y-4">
-                  {/* Address */}
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Dirección</p>
-                      <p className="text-muted-foreground">{store.address}</p>
-                    </div>
-                  </div>
-
-                  {/* Phone */}
-                  <div className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Teléfono</p>
-                      <a
-                        href={`tel:${store.phone}`}
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {store.phone}
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* WhatsApp */}
-                  <div className="flex items-start gap-3">
-                    <MessageCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">WhatsApp (Para pedidos)</p>
-                      <a
-                        href={`https://wa.me/${formatWhatsAppApiNumber(store.whatsapp)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {store.whatsapp}
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div className="flex items-start gap-3">
-                    <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Email</p>
-                      <a
-                        href={`mailto:${store.email}`}
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {store.email}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Store Hours */}
-                <div className="pt-4 border-t border-border">
-                  <h3 className="font-semibold text-foreground mb-3">Horario</h3>
-                  <div className="space-y-2">
-                    {store.storeHours.map(([day, hours]) => (
-                      <div key={day} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{translateDayToSpanish(day)}</span>
-                        <span className="text-foreground font-medium">{hours}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Social Links */}
-                {(store.facebook || store.instagram || store.website) && (
-                  <div className="pt-4 border-t border-border">
-                    <h3 className="font-semibold text-foreground mb-3">Redes Sociales</h3>
-                    <div className="flex gap-3">
-                      {store.facebook && (
-                        <a
-                          href={`https://facebook.com${store.facebook}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                          aria-label="Facebook"
-                        >
-                          <SiFacebook className="h-6 w-6" />
-                        </a>
-                      )}
-                      {store.instagram && (
-                        <a
-                          href={`https://instagram.com/${store.instagram}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                          aria-label="Instagram"
-                        >
-                          <SiInstagram className="h-6 w-6" />
-                        </a>
-                      )}
-                      {store.website && (
-                        <a
-                          href={store.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                          aria-label="Sitio Web"
-                        >
-                          <Globe className="h-6 w-6" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Map Section - Conditional Rendering */}
-                {mapEmbedUrl && (
-                  <div className="pt-4 border-t border-border space-y-3">
-                    <h3 className="font-semibold text-foreground">Ubicación</h3>
-
-                    {showMaps ? (
-                      <>
-                        <div className="relative w-full h-64 bg-muted rounded-lg overflow-hidden">
-                          <iframe
-                            src={mapEmbedUrl}
-                            width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
-                            allowFullScreen
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                            title={`Mapa de ${store.name}`}
-                          />
-                        </div>
-                        {directionsUrl && (
-                          <Button asChild variant="outline" className="w-full">
-                            <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
-                              <Navigation className="h-4 w-4 mr-2" />
-                              Cómo llegar
-                            </a>
-                          </Button>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">Dirección</p>
+                        <p className="text-sm text-muted-foreground">{store.address}</p>
+                        {coords && (
+                          <a
+                            href={getDirectionsUrl(coords)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-1"
+                          >
+                            <Navigation className="h-4 w-4" />
+                            Cómo llegar
+                          </a>
                         )}
-                      </>
-                    ) : (
-                      <div className="bg-muted rounded-lg p-6 space-y-4 text-center">
-                        <MapIcon className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Los mapas requieren cookies para funcionar.
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Acepta las cookies para ver el mapa integrado.
-                          </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">Teléfono</p>
+                        <a
+                          href={`tel:${store.phone}`}
+                          className="text-sm text-muted-foreground hover:text-primary"
+                        >
+                          {store.phone}
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <MessageCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">WhatsApp (Para pedidos)</p>
+                        <a
+                          href={`https://wa.me/${formatWhatsAppApiNumber(store.whatsapp)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-muted-foreground hover:text-primary"
+                        >
+                          {store.whatsapp}
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">Email</p>
+                        <a
+                          href={`mailto:${store.email}`}
+                          className="text-sm text-muted-foreground hover:text-primary"
+                        >
+                          {store.email}
+                        </a>
+                      </div>
+                    </div>
+
+                    {store.storeHours && store.storeHours.length > 0 && (
+                      <div className="pt-2 border-t border-border">
+                        <p className="font-medium text-foreground mb-2">Horario</p>
+                        <div className="space-y-1">
+                          {store.storeHours.map(([day, hours]) => (
+                            <div key={day} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                {translateDayToSpanish(day)}:
+                              </span>
+                              <span className="text-foreground font-medium">{hours}</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                          <Button onClick={handleEnableMaps} size="sm" variant="default">
-                            Aceptar cookies
-                          </Button>
-                          {directionsUrl && (
-                            <Button asChild size="sm" variant="outline">
-                              <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
-                                <Navigation className="h-4 w-4 mr-2" />
-                                Ver en Google Maps
-                              </a>
-                            </Button>
+                      </div>
+                    )}
+
+                    {(store.facebook || store.instagram || store.website) && (
+                      <div className="pt-2 border-t border-border">
+                        <p className="font-medium text-foreground mb-2">Redes Sociales</p>
+                        <div className="flex gap-3">
+                          {store.facebook && (
+                            <a
+                              href={store.facebook}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              aria-label="Facebook"
+                            >
+                              <SiFacebook className="h-5 w-5" />
+                            </a>
+                          )}
+                          {store.instagram && (
+                            <a
+                              href={store.instagram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              aria-label="Instagram"
+                            >
+                              <SiInstagram className="h-5 w-5" />
+                            </a>
+                          )}
+                          {store.website && (
+                            <a
+                              href={store.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              aria-label="Sitio web"
+                            >
+                              <Globe className="h-5 w-5" />
+                            </a>
                           )}
                         </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {coords && (
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    {showMaps ? (
+                      <iframe
+                        title={`Mapa de Tienda ${storeNumber}`}
+                        src={getMapEmbedUrl(coords)}
+                        width="100%"
+                        height="300"
+                        style={{ border: 0 }}
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    ) : (
+                      <div className="h-[300px] flex flex-col items-center justify-center gap-4 p-6 text-center">
+                        <MapIcon className="h-12 w-12 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Para ver el mapa, necesitamos tu consentimiento para usar Google Maps
+                        </p>
+                        <Button onClick={handleAcceptCookies} size="sm">
+                          Aceptar y mostrar mapa
+                        </Button>
                       </div>
                     )}
                   </div>

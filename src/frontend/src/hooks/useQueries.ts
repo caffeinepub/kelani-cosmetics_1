@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 import type { Category as BackendCategory } from '../backend';
-import { numberToBigInt, bigIntToNumber, convertReorderArrayToBigInt } from '../utils/categoryNumeric';
+import { numberToBigInt, bigIntToNumber } from '../utils/categoryNumeric';
 
 // UI Category type with number fields for easier manipulation
 export interface Category {
@@ -98,7 +98,7 @@ export function useGetCategoryById(categoryId: number | null) {
     }
   }, [rawActor, stableActor]);
 
-  return useQuery<Category | null>({
+  const query = useQuery<Category | null>({
     queryKey: QUERY_KEYS.category(categoryId ?? 0),
     queryFn: async ({ signal }) => {
       if (!stableActor || categoryId === null) return null;
@@ -116,13 +116,21 @@ export function useGetCategoryById(categoryId: number | null) {
         throw error;
       }
     },
-    enabled: Boolean(stableActor) && !actorFetching && categoryId !== null,
+    enabled: Boolean(stableActor) && categoryId !== null,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  // Return custom state that properly reflects actor dependency
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
+    isFetched: !!stableActor && query.isFetched,
+  };
 }
 
 // ============================================================================
@@ -140,19 +148,15 @@ export function useCreateCategory() {
     mutationFn: async ({ name, order }: { name: string; order: number }) => {
       if (!actor) throw new Error('Actor not available');
       
-      const backendCategory = await actor.createCategory(name, numberToBigInt(order));
-      return backendCategoryToUI(backendCategory);
+      const backendCat = await actor.createCategory(name, numberToBigInt(order));
+      return backendCategoryToUI(backendCat);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
       reportSuccessWithToast('Categoría creada exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(
-        error,
-        'Error al crear la categoría',
-        { operation: 'createCategory' }
-      );
+      reportErrorWithToast(error, 'Error al crear la categoría');
     },
   });
 }
@@ -176,40 +180,21 @@ export function useUpdateCategory() {
     }) => {
       if (!actor) throw new Error('Actor not available');
       
-      const backendCategory = await actor.updateCategory(
+      const backendCat = await actor.updateCategory(
         numberToBigInt(categoryId),
         name,
         numberToBigInt(order)
       );
-      return backendCategoryToUI(backendCategory);
+      return backendCategoryToUI(backendCat);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.category(variables.categoryId) });
       reportSuccessWithToast('Categoría actualizada exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(
-        error,
-        'Error al actualizar la categoría',
-        { operation: 'updateCategory' }
-      );
+      reportErrorWithToast(error, 'Error al actualizar la categoría');
     },
   });
-}
-
-/**
- * Extract Spanish error message from backend trap
- */
-function extractBackendErrorMessage(error: unknown): string | null {
-  if (error && typeof error === 'object' && 'message' in error) {
-    const message = String(error.message);
-    // Check if the message contains the specific Spanish error about products
-    if (message.includes('No se puede eliminar') || message.includes('productos asociados')) {
-      return message;
-    }
-  }
-  return null;
 }
 
 /**
@@ -222,38 +207,22 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: async (categoryId: number) => {
       if (!actor) throw new Error('Actor not available');
-      
-      return await actor.deleteCategory(numberToBigInt(categoryId));
+      return actor.deleteCategory(numberToBigInt(categoryId));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
       reportSuccessWithToast('Categoría eliminada exitosamente');
     },
-    onError: (error) => {
-      // Try to extract the backend's Spanish error message
-      const backendMessage = extractBackendErrorMessage(error);
-      
-      if (backendMessage) {
-        // Display the exact backend error message
-        reportErrorWithToast(
-          error,
-          backendMessage,
-          { operation: 'deleteCategory' }
-        );
-      } else {
-        // Fallback to generic error
-        reportErrorWithToast(
-          error,
-          'Error al eliminar la categoría',
-          { operation: 'deleteCategory' }
-        );
-      }
+    onError: (error: any) => {
+      // Extract Spanish error message from backend if available
+      const errorMessage = error?.message || 'Error al eliminar la categoría';
+      reportErrorWithToast(error, errorMessage);
     },
   });
 }
 
 /**
- * Reorder multiple categories
+ * Reorder categories
  */
 export function useReorderCategories() {
   const { actor } = useActor();
@@ -263,19 +232,20 @@ export function useReorderCategories() {
     mutationFn: async (newOrder: Array<[number, number]>) => {
       if (!actor) throw new Error('Actor not available');
       
-      const bigIntOrder = convertReorderArrayToBigInt(newOrder);
-      return await actor.reorderCategories(bigIntOrder);
+      // Convert [number, number][] to [bigint, bigint][] for backend
+      const bigIntOrder: Array<[bigint, bigint]> = newOrder.map(([id, order]) => [
+        numberToBigInt(id),
+        numberToBigInt(order),
+      ]);
+      
+      return actor.reorderCategories(bigIntOrder);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
       reportSuccessWithToast('Orden actualizado exitosamente');
     },
     onError: (error) => {
-      reportErrorWithToast(
-        error,
-        'Error al reordenar las categorías',
-        { operation: 'reorderCategories' }
-      );
+      reportErrorWithToast(error, 'Error al reordenar las categorías');
     },
   });
 }

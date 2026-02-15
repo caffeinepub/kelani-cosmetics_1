@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Product as BackendProduct, PaginatedResponse, ProductV2, ProductWithSale } from '../backend';
@@ -16,6 +17,8 @@ export interface Product {
   photoUrl?: string;
   createdDate: bigint;
   lastUpdatedDate: bigint;
+  store1InStock: boolean;
+  store2InStock: boolean;
   // Sale-aware fields
   salePrice?: number;
   discountPercentage?: number;
@@ -36,6 +39,8 @@ function mapBackendProduct(backendProduct: BackendProduct, categoryName?: string
     photoUrl,
     createdDate: backendProduct.createdDate,
     lastUpdatedDate: backendProduct.lastUpdatedDate,
+    store1InStock: backendProduct.store1InStock,
+    store2InStock: backendProduct.store2InStock,
     // Default sale fields - backend doesn't provide these for single product
     salePrice: undefined,
     discountPercentage: undefined,
@@ -57,6 +62,8 @@ function mapProductWithSaleToProduct(productWithSale: ProductWithSale): Product 
     photoUrl: undefined,
     createdDate: productWithSale.product.createdDate,
     lastUpdatedDate: productWithSale.product.lastUpdatedDate,
+    store1InStock: productWithSale.product.store1InStock,
+    store2InStock: productWithSale.product.store2InStock,
     // Map sale fields from backend
     salePrice: productWithSale.salePrice,
     discountPercentage: productWithSale.discountPercentage,
@@ -78,6 +85,8 @@ function mapProductV2ToProduct(productV2: ProductV2): Product {
     photoUrl: undefined,
     createdDate: productV2.createdDate,
     lastUpdatedDate: productV2.lastUpdatedDate,
+    store1InStock: productV2.store1InStock,
+    store2InStock: productV2.store2InStock,
     // Default sale fields
     salePrice: undefined,
     discountPercentage: undefined,
@@ -117,19 +126,36 @@ export function useGetProductsPage(
 }
 
 export function useGetProduct(barcode: string) {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor: rawActor, isFetching: actorFetching } = useActor();
+  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
 
-  return useQuery<Product>({
+  // Stabilize actor reference
+  useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
+
+  const query = useQuery<Product>({
     queryKey: ['product', barcode],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      const productWithSale = await actor.getProduct(barcode);
+      if (!stableActor) throw new Error('Actor not available');
+      const productWithSale = await stableActor.getProduct(barcode);
       return mapProductWithSaleToProduct(productWithSale);
     },
-    enabled: !!actor && !actorFetching && !!barcode,
+    enabled: !!stableActor && !!barcode,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
+    retry: 1,
   });
+
+  // Return custom state that properly reflects actor dependency
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
+    isFetched: !!stableActor && query.isFetched,
+  };
 }
 
 export function useCreateProduct() {
@@ -143,11 +169,15 @@ export function useCreateProduct() {
       categoryId: number;
       description?: string;
       price?: number;
-      inStock: boolean;
+      store1InStock: boolean;
+      store2InStock: boolean;
       isFeatured: boolean;
       photo?: Uint8Array;
     }) => {
       if (!actor) throw new Error('Actor not available');
+
+      // Derive legacy inStock from store flags for transition compatibility
+      const inStock = product.store1InStock || product.store2InStock;
 
       const backendProduct = await actor.createProduct(
         product.barcode,
@@ -155,9 +185,11 @@ export function useCreateProduct() {
         BigInt(product.categoryId),
         product.description ?? null,
         product.price ?? null,
-        product.inStock,
+        inStock,
         product.isFeatured,
-        product.photo ?? null
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
       );
 
       return mapBackendProduct(backendProduct);
@@ -183,11 +215,15 @@ export function useUpdateProduct() {
       categoryId: number;
       description?: string;
       price?: number;
-      inStock: boolean;
+      store1InStock: boolean;
+      store2InStock: boolean;
       isFeatured: boolean;
       photo?: Uint8Array;
     }) => {
       if (!actor) throw new Error('Actor not available');
+
+      // Derive legacy inStock from store flags for transition compatibility
+      const inStock = product.store1InStock || product.store2InStock;
 
       const backendProduct = await actor.updateProduct(
         product.barcode,
@@ -195,9 +231,11 @@ export function useUpdateProduct() {
         BigInt(product.categoryId),
         product.description ?? null,
         product.price ?? null,
-        product.inStock,
+        inStock,
         product.isFeatured,
-        product.photo ?? null
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
       );
 
       return mapBackendProduct(backendProduct);
@@ -231,14 +269,41 @@ export function useDeleteProduct() {
   });
 }
 
-export function useToggleProductInStock() {
+export function useToggleStoreStock() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (barcode: string) => {
+    mutationFn: async ({
+      product,
+      storeNumber,
+    }: {
+      product: Product;
+      storeNumber: 1 | 2;
+    }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.toggleProductInStock(barcode);
+
+      // Toggle the specific store's stock
+      const newStore1InStock = storeNumber === 1 ? !product.store1InStock : product.store1InStock;
+      const newStore2InStock = storeNumber === 2 ? !product.store2InStock : product.store2InStock;
+
+      // Derive legacy inStock from store flags
+      const inStock = newStore1InStock || newStore2InStock;
+
+      const backendProduct = await actor.updateProduct(
+        product.barcode,
+        product.name,
+        BigInt(product.categoryId),
+        product.description ?? null,
+        product.price ?? null,
+        inStock,
+        product.isFeatured,
+        product.photo ?? null,
+        newStore1InStock,
+        newStore2InStock
+      );
+
+      return mapBackendProduct(backendProduct);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -256,6 +321,9 @@ export function useToggleProductFeatured() {
   return useMutation({
     mutationFn: async (product: Product) => {
       if (!actor) throw new Error('Actor not available');
+
+      // Derive legacy inStock from store flags
+      const inStock = product.store1InStock || product.store2InStock;
       
       // Toggle the featured status by updating the product
       const backendProduct = await actor.updateProduct(
@@ -264,9 +332,11 @@ export function useToggleProductFeatured() {
         BigInt(product.categoryId),
         product.description ?? null,
         product.price ?? null,
-        product.inStock,
+        inStock,
         !product.isFeatured, // Toggle featured status
-        product.photo ?? null
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
       );
 
       return mapBackendProduct(backendProduct);

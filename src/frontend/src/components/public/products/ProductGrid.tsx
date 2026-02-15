@@ -1,5 +1,5 @@
-import React from 'react';
-import { useProductModalStore } from '../../../stores/productModalStore';
+import { memo } from 'react';
+import { useProductModalNavigation } from '../../../hooks/useProductModalNavigation';
 import ProductCard from './ProductCard';
 import type { ProductWithSale, StoreDetails } from '../../../backend';
 
@@ -8,26 +8,21 @@ interface ProductGridProps {
   storeDetails: StoreDetails[];
 }
 
-const ProductGrid = React.memo(({ products, storeDetails }: ProductGridProps) => {
-  const openModal = useProductModalStore((state) => state.openModal);
-
-  const handleProductClick = (product: ProductWithSale) => {
-    openModal(product, storeDetails);
-  };
+function ProductGrid({ products, storeDetails }: ProductGridProps) {
+  const { openModalWithHistory } = useProductModalNavigation();
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-      {products.map((productWithSale) => (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {products.map((product) => (
         <ProductCard
-          key={productWithSale.product.barcode}
-          productWithSale={productWithSale}
-          onClick={() => handleProductClick(productWithSale)}
+          key={product.product.barcode}
+          product={product}
+          storeDetails={storeDetails}
+          onClick={() => openModalWithHistory(product, storeDetails, 'category-page')}
         />
       ))}
     </div>
   );
-});
+}
 
-ProductGrid.displayName = 'ProductGrid';
-
-export default ProductGrid;
+export default memo(ProductGrid);

@@ -29,8 +29,10 @@ export const Product = IDL.Record({
   'isFeatured' : IDL.Bool,
   'barcode' : IDL.Text,
   'lastUpdatedDate' : IDL.Int,
+  'store1InStock' : IDL.Bool,
   'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   'price' : IDL.Opt(IDL.Float64),
+  'store2InStock' : IDL.Bool,
 });
 export const ImportData = IDL.Record({
   'categories' : IDL.Vec(Category),
@@ -68,7 +70,9 @@ export const ExportProduct = IDL.Record({
   'isFeatured' : IDL.Bool,
   'barcode' : IDL.Text,
   'lastUpdatedDate' : IDL.Int,
+  'store1InStock' : IDL.Bool,
   'price' : IDL.Opt(IDL.Float64),
+  'store2InStock' : IDL.Bool,
 });
 export const ExportPayload = IDL.Record({
   'categories' : IDL.Vec(Category),
@@ -119,8 +123,10 @@ export const ProductV2 = IDL.Record({
   'isFeatured' : IDL.Bool,
   'barcode' : IDL.Text,
   'lastUpdatedDate' : IDL.Int,
+  'store1InStock' : IDL.Bool,
   'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   'price' : IDL.Opt(IDL.Float64),
+  'store2InStock' : IDL.Bool,
 });
 export const PaginatedResponse = IDL.Record({
   'totalCount' : IDL.Nat,
@@ -136,12 +142,12 @@ export const AppUser = IDL.Record({
 });
 export const HomepageSearchResult = IDL.Record({
   'categoryId' : IDL.Nat,
-  'productImageUrl' : IDL.Opt(IDL.Text),
   'categoryName' : IDL.Text,
   'name' : IDL.Text,
   'salePercentage' : IDL.Opt(IDL.Float64),
   'barcode' : IDL.Text,
   'salePrice' : IDL.Opt(IDL.Float64),
+  'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   'price' : IDL.Opt(IDL.Float64),
   'saleIsActive' : IDL.Bool,
 });
@@ -161,6 +167,8 @@ export const idlService = IDL.Service({
         IDL.Bool,
         IDL.Bool,
         IDL.Opt(IDL.Vec(IDL.Nat8)),
+        IDL.Bool,
+        IDL.Bool,
       ],
       [Product],
       [],
@@ -221,9 +229,9 @@ export const idlService = IDL.Service({
   'getSaleItemsPage' : IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
       [SaleItemArray],
-      ['query'],
+      [],
     ),
-  'getStoreDetails' : IDL.Func([IDL.Nat], [StoreDetails], []),
+  'getStoreDetails' : IDL.Func([IDL.Nat], [StoreDetails], ['query']),
   'getTotalProductCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -257,6 +265,8 @@ export const idlService = IDL.Service({
         IDL.Bool,
         IDL.Bool,
         IDL.Opt(IDL.Vec(IDL.Nat8)),
+        IDL.Bool,
+        IDL.Bool,
       ],
       [Product],
       [],
@@ -294,8 +304,10 @@ export const idlFactory = ({ IDL }) => {
     'isFeatured' : IDL.Bool,
     'barcode' : IDL.Text,
     'lastUpdatedDate' : IDL.Int,
+    'store1InStock' : IDL.Bool,
     'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'price' : IDL.Opt(IDL.Float64),
+    'store2InStock' : IDL.Bool,
   });
   const ImportData = IDL.Record({
     'categories' : IDL.Vec(Category),
@@ -333,7 +345,9 @@ export const idlFactory = ({ IDL }) => {
     'isFeatured' : IDL.Bool,
     'barcode' : IDL.Text,
     'lastUpdatedDate' : IDL.Int,
+    'store1InStock' : IDL.Bool,
     'price' : IDL.Opt(IDL.Float64),
+    'store2InStock' : IDL.Bool,
   });
   const ExportPayload = IDL.Record({
     'categories' : IDL.Vec(Category),
@@ -384,8 +398,10 @@ export const idlFactory = ({ IDL }) => {
     'isFeatured' : IDL.Bool,
     'barcode' : IDL.Text,
     'lastUpdatedDate' : IDL.Int,
+    'store1InStock' : IDL.Bool,
     'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'price' : IDL.Opt(IDL.Float64),
+    'store2InStock' : IDL.Bool,
   });
   const PaginatedResponse = IDL.Record({
     'totalCount' : IDL.Nat,
@@ -401,12 +417,12 @@ export const idlFactory = ({ IDL }) => {
   });
   const HomepageSearchResult = IDL.Record({
     'categoryId' : IDL.Nat,
-    'productImageUrl' : IDL.Opt(IDL.Text),
     'categoryName' : IDL.Text,
     'name' : IDL.Text,
     'salePercentage' : IDL.Opt(IDL.Float64),
     'barcode' : IDL.Text,
     'salePrice' : IDL.Opt(IDL.Float64),
+    'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'price' : IDL.Opt(IDL.Float64),
     'saleIsActive' : IDL.Bool,
   });
@@ -426,6 +442,8 @@ export const idlFactory = ({ IDL }) => {
           IDL.Bool,
           IDL.Bool,
           IDL.Opt(IDL.Vec(IDL.Nat8)),
+          IDL.Bool,
+          IDL.Bool,
         ],
         [Product],
         [],
@@ -486,9 +504,9 @@ export const idlFactory = ({ IDL }) => {
     'getSaleItemsPage' : IDL.Func(
         [IDL.Text, IDL.Nat, IDL.Nat, IDL.Bool],
         [SaleItemArray],
-        ['query'],
+        [],
       ),
-    'getStoreDetails' : IDL.Func([IDL.Nat], [StoreDetails], []),
+    'getStoreDetails' : IDL.Func([IDL.Nat], [StoreDetails], ['query']),
     'getTotalProductCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -522,6 +540,8 @@ export const idlFactory = ({ IDL }) => {
           IDL.Bool,
           IDL.Bool,
           IDL.Opt(IDL.Vec(IDL.Nat8)),
+          IDL.Bool,
+          IDL.Bool,
         ],
         [Product],
         [],

@@ -1,13 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Add static SEO discovery files (sitemap.xml, robots.txt) and page-level SEO `<head>` meta tags for the public static pages on kelanicosmetics.es.
+**Goal:** Make public product photos render consistently without cropping and fix the homepage search-to-product-modal image flow by using binary photo data + blob URLs (with cleanup), while keeping the autocomplete dropdown text-only.
 
 **Planned changes:**
-- Add a static `frontend/public/sitemap.xml` that matches the user-provided XML exactly and is served at `/sitemap.xml` (only `/`, `/contacto`, `/privacy`).
-- Add a static `frontend/public/robots.txt` that matches the user-provided text exactly, including `Sitemap: https://kelanicosmetics.es/sitemap.xml`, and is served at `/robots.txt`.
-- Implement a frontend-only per-route `<head>` management approach (e.g., React Helmet or equivalent) to set/override title and meta tags when navigating between `/`, `/contacto`, and `/privacy`.
-- Update `HomePage.tsx`, `ContactoPage.tsx`, and `PrivacyPage.tsx` to use the exact user-provided Spanish SEO values (title, meta tags, canonical, Open Graph, Twitter where specified), using production-domain URLs and preserving accents/special characters; keep privacy page as `noindex, follow`.
-- Ensure no existing page behavior is changed and do not modify the `:root` CSS custom properties block in `frontend/src/index.css` (append-only below if ever needed).
+- Add Tailwind `object-contain` to every public-facing `<img>` that renders a product photo (including fallback/default images) without altering other existing classes or layout behavior.
+- Update backend `searchHomepageProducts` to return full product data including the binary `photo` field (`?[Nat8]` or null), remove any image URL string construction, and keep results capped at 10.
+- Ensure the homepage autocomplete dropdown renders text-only items (no `<img>`, no blob URLs, no binary-to-image conversion).
+- When opening the product details modal from a homepage search selection, generate a blob URL from the selected product’s binary `photo` (if present), store/pass it with modal state, and have the modal prefer this blob URL (otherwise use the existing fallback image) without any extra API calls.
+- Implement blob URL lifecycle management for created product-photo blob URLs, revoking them on appropriate cleanup events (e.g., modal close and/or active modal product change) without revoking URLs still in use.
+- Preserve existing modal-opening behavior from non-search entry points (homepage/category product cards) while aligning public product image sourcing to the binary photo → blob URL → image display pattern with correct fallback handling.
 
-**User-visible outcome:** Search engines can discover the site via `/sitemap.xml` and `/robots.txt`, and each static public page shows the correct Spanish title/meta/canonical/OG (and Twitter where required) tags when visited or navigated to, without any UI/behavior changes.
+**User-visible outcome:** Product photos across the public UI no longer appear cropped, homepage search still shows text-only suggestions, and selecting a search result opens the product details modal with the correct image (or fallback) without extra photo-fetch calls or blob URL memory leaks.

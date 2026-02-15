@@ -14,6 +14,9 @@ export function useToggleProductFeatured() {
       // Toggle the featured status
       const newFeaturedStatus = !product.isFeatured;
 
+      // Derive legacy inStock from store flags
+      const inStock = product.store1InStock || product.store2InStock;
+
       // Call updateProduct with all existing fields, only changing isFeatured
       const updatedProduct = await actor.updateProduct(
         product.barcode,
@@ -21,9 +24,11 @@ export function useToggleProductFeatured() {
         BigInt(product.categoryId),
         product.description ?? null,
         product.price ?? null,
-        product.inStock,
+        inStock,
         newFeaturedStatus,
-        product.photo ?? null
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
       );
 
       return updatedProduct;

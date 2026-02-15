@@ -25,12 +25,14 @@ export default function CategoryPage() {
   const categoryIdNum = id ? Number(id) : 0;
   const isValidCategoryId = Boolean(id && id !== '0');
 
-  const { data: category } = useGetCategoryById(categoryIdNum);
+  const { data: category, isInitialLoading: categoryLoading, isFetched: categoryFetched } = useGetCategoryById(categoryIdNum);
 
   const {
     products: currentPageProducts,
     totalCount: fetchedTotalCount,
     isLoading,
+    isInitialLoading,
+    isFetched,
     error,
     refetch,
   } = useGetCategoryProductsPaginated(categoryIdNum, page, pageSize);
@@ -132,8 +134,8 @@ export default function CategoryPage() {
     );
   }
 
-  // Initial loading state (page 0, no accumulated products yet)
-  if (isLoading && page === 0 && accumulatedProducts.length === 0) {
+  // Initial loading state - show spinner until actor is ready and first fetch completes
+  if (isInitialLoading || !isFetched || categoryLoading || !categoryFetched) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -142,6 +144,7 @@ export default function CategoryPage() {
     );
   }
 
+  // Only show error after initial loading completes
   if (error && accumulatedProducts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 space-y-4">
