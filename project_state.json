@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Kelani Cosmetics - e-commerce app with public category page infinite scroll. Fixing rendering issue where previously loaded products disappear during pagination by removing complex buffering pattern and implementing immediate product appending with decoupled spinner timing.",
+  "architectural_notes": [
+    "Infinite scroll uses immediate product appending (no buffering): products added to grid as soon as API responds using functional state update with barcode-based deduplication",
+    "isLoadingMore controls only the spinner UI with its own minimum-duration timer, decoupled from when products appear",
+    "processedPagesRef prevents duplicate page processing; barcode-based deduplication on append"
+  ],
+  "known_issues": [],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-remove-the-complex-buffering-pattern-from-categorypage-infinite-scroll-eliminate-pendingproductsref-apifetchdoneref-timerdoneref-and-all-associated-conditional-logic-that-defers-product-rendering",
+      "title": "Remove the complex buffering pattern from CategoryPage infinite scroll: eliminate `pendingProductsRef`, `apiFetchDoneRef`, `timerDoneRef`, and all associated conditional logic that defers product rendering.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-refactor-the-product-accumulation-logic-in-categorypage-so-that-products-are-appended-immediately-when-the-api-responds-using-a-functional-state-update-with-barcode-based-deduplication-remove-the-page-0-vs-page-1-branching-always-use-append-logic-regardless-of-page-number",
+      "title": "Refactor the product accumulation logic in CategoryPage so that products are appended immediately when the API responds, using a functional state update with barcode-based deduplication. Remove the page 0 vs page 1+ branching — always use append logic regardless of page number.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-decouple-the-loading-spinner-isloadingmore-from-product-visibility-in-categorypage-the-spinner-should-start-when-a-page-load-is-triggered-run-for-a-minimum-display-duration-on-its-own-independent-timer-and-hide-only-after-that-timer-expires-regardless-of-when-the-api-response-arrives-or-when-products-are-rendered",
+      "title": "Decouple the loading spinner (`isLoadingMore`) from product visibility in CategoryPage. The spinner should start when a page load is triggered, run for a minimum display duration on its own independent timer, and hide only after that timer expires — regardless of when the API response arrives or when products are rendered.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-retain-processedpagesref-in-categorypage-to-prevent-the-same-page-from-being-processed-twice-and-ensure-stable-product-keys-in-productgrid-keyed-by-barcode",
+      "title": "Retain `processedPagesRef` in CategoryPage to prevent the same page from being processed twice, and ensure stable product keys in ProductGrid (keyed by barcode).",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-all-spanish-language-interface-messages-in-categorypage-loading-text-error-messages-empty-state-messages-exactly-as-they-currently-appear-do-not-modify-frontend-src-index-css-only-add-new-css-classes-if-strictly-necessary",
+      "title": "Preserve all Spanish-language interface messages in CategoryPage (loading text, error messages, empty state messages) exactly as they currently appear. Do not modify `frontend/src/index.css` — only add new CSS classes if strictly necessary.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [],
+  "gameProjectType": "none",
+  "projectName": "Kelani Cosmetics",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

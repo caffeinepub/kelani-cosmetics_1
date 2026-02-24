@@ -1,0 +1,124 @@
+{
+  "kind": "build_request",
+  "title": "Fix CategoryPage infinite scroll product disappearing during pagination",
+  "projectName": "Kelani Cosmetics",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Remove the complex buffering pattern from CategoryPage infinite scroll: eliminate `pendingProductsRef`, `apiFetchDoneRef`, `timerDoneRef`, and all associated conditional logic that defers product rendering.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Remove Complex Buffering: Eliminate the pending products buffer pattern",
+          "Remove pendingProductsRef, apiFetchDoneRef, timerDoneRef, and related logic"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`pendingProductsRef`, `apiFetchDoneRef`, and `timerDoneRef` refs are removed from CategoryPage",
+        "No conditional logic gates product rendering behind timer or API completion flags",
+        "Component compiles and renders without errors after removal"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Refactor the product accumulation logic in CategoryPage so that products are appended immediately when the API responds, using a functional state update with barcode-based deduplication. Remove the page 0 vs page 1+ branching — always use append logic regardless of page number.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Always append products immediately regardless of page number",
+          "Use functional update to safely append to existing array",
+          "Remove page-based conditional logic"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a new page of products is fetched, they are immediately appended to `accumulatedProducts` without waiting for any timer",
+        "Page 0 and page 1+ use the same append code path",
+        "Barcode-based deduplication prevents duplicate products from appearing in the grid",
+        "Existing products never disappear or reset during pagination"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Decouple the loading spinner (`isLoadingMore`) from product visibility in CategoryPage. The spinner should start when a page load is triggered, run for a minimum display duration on its own independent timer, and hide only after that timer expires — regardless of when the API response arrives or when products are rendered.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Track minimum display timer separately",
+          "Only hide spinner when timer expires",
+          "Products visible during spinner display period",
+          "Loading spinner visible for minimum duration even if products already showing"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`isLoadingMore` is set to `true` when a load-more is triggered and only set to `false` after the minimum duration timer expires",
+        "Products are visible in the grid while the spinner is still showing",
+        "Spinner does not block or delay product rendering",
+        "Spinner remains visible for the full minimum duration even if the API responds quickly"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Retain `processedPagesRef` in CategoryPage to prevent the same page from being processed twice, and ensure stable product keys in ProductGrid (keyed by barcode).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Maintain processedPagesRef to prevent processing same page twice",
+          "Ensure stable product keys in ProductGrid"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`processedPagesRef` is still present and prevents duplicate page processing on re-renders",
+        "ProductGrid renders each product with a stable key based on its barcode",
+        "Scrolling through multiple pages does not produce duplicate product cards"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Preserve all Spanish-language interface messages in CategoryPage (loading text, error messages, empty state messages) exactly as they currently appear. Do not modify `frontend/src/index.css` — only add new CSS classes if strictly necessary.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Spanish interface messages preserved",
+          "Frontend-only change",
+          "Do not modify index.css styles/classes, only add new ones if necessary"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All user-visible text in CategoryPage remains in Spanish",
+        "No existing CSS classes in `frontend/src/index.css` are modified or removed",
+        "New CSS classes may only be added if required by the refactored component structure"
+      ]
+    }
+  ],
+  "constraints": [
+    "This is a frontend-only change — do not modify backend/main.mo or any backend files",
+    "Do not modify frontend/src/index.css — only add new CSS classes if strictly necessary",
+    "Do not modify files listed in frontend.immutablePaths"
+  ],
+  "nonGoals": [
+    "Changes to any admin pages or admin product management",
+    "Changes to the homepage infinite scroll (HomepageCategoriesSection)",
+    "Backend data model or API changes",
+    "Any new product features or UI redesign"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

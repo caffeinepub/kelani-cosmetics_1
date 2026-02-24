@@ -1,0 +1,89 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix CategoryPage infinite scroll product disappearing during pagination",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Remove the complex buffering pattern from CategoryPage infinite scroll",
+      "acceptanceCriteria": [
+        "`pendingProductsRef`, `apiFetchDoneRef`, and `timerDoneRef` refs are removed from CategoryPage",
+        "No conditional logic gates product rendering behind timer or API completion flags",
+        "Component compiles and renders without errors after removal"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "operation": "modify",
+          "description": "Remove `pendingProductsRef`, `apiFetchDoneRef`, and `timerDoneRef` from the component. Eliminate all conditional logic that checks these refs before rendering products. Remove the `useEffect` hooks that coordinate buffer state transitions. Keep Spanish-language messages unchanged."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Refactor product accumulation logic to append immediately with barcode-based deduplication",
+      "acceptanceCriteria": [
+        "When a new page of products is fetched, they are immediately appended to `accumulatedProducts` without waiting for any timer",
+        "Page 0 and page 1+ use the same append code path",
+        "Barcode-based deduplication prevents duplicate products from appearing in the grid",
+        "Existing products never disappear or reset during pagination"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "operation": "modify",
+          "description": "Refactor the query `onSuccess` callback to immediately append new products to `accumulatedProducts` using a functional state update `setAccumulatedProducts(prev => ...)`. Implement barcode-based deduplication by creating a Set of existing barcodes and filtering incoming products. Remove all page-number-based branching (e.g., `page === 0` vs `page > 0` conditions). Ensure products are added to state as soon as the API responds, not deferred to a timer or buffer."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Decouple loading spinner from product visibility using an independent minimum display timer",
+      "acceptanceCriteria": [
+        "`isLoadingMore` is set to `true` when a load-more is triggered and only set to `false` after the minimum duration timer expires",
+        "Products are visible in the grid while the spinner is still showing",
+        "Spinner does not block or delay product rendering",
+        "Spinner remains visible for the full minimum duration even if the API responds quickly"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "operation": "modify",
+          "description": "Decouple `isLoadingMore` state from product rendering logic. When a new page load starts, set `isLoadingMore` to true and start an independent timer (e.g., 800ms). Set `isLoadingMore` to false only when this timer expires, regardless of when the API responds. Products should render immediately when available, even if the spinner is still visible. Remove any logic that blocks product visibility based on spinner state."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Retain processedPagesRef and stable product keys",
+      "acceptanceCriteria": [
+        "`processedPagesRef` is still present and prevents duplicate page processing on re-renders",
+        "ProductGrid renders each product with a stable key based on its barcode",
+        "Scrolling through multiple pages does not produce duplicate product cards"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "operation": "modify",
+          "description": "Ensure `processedPagesRef` remains in the component and is correctly checked before processing a new page result. Verify that ProductGrid receives a key prop based on product barcode (e.g., `key={product.barcode}`) to maintain stable identity across renders."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Preserve Spanish-language interface messages and avoid modifying index.css",
+      "acceptanceCriteria": [
+        "All user-visible text in CategoryPage remains in Spanish",
+        "No existing CSS classes in `frontend/src/index.css` are modified or removed",
+        "New CSS classes may only be added if required by the refactored component structure"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "operation": "modify",
+          "description": "Preserve all Spanish strings for loading messages, error messages, and empty state text. Do not alter any user-facing text during the refactor. If new CSS classes are required for spinner positioning or layout, add them inline or to a scoped styles object; do not modify `frontend/src/index.css`."
+        }
+      ]
+    }
+  ]
+}

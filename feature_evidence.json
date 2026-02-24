@@ -1,0 +1,100 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-remove-the-complex-buffering-pattern-from-categorypage-infinite-scroll-eliminate-pendingproductsref-apifetchdoneref-timerdoneref-and-all-associated-conditional-logic-that-defers-product-rendering",
+      "featureTitle": "Remove the complex buffering pattern from CategoryPage infinite scroll: eliminate `pendingProductsRef`, `apiFetchDoneRef`, `timerDoneRef`, and all associated conditional logic that defers product rendering.",
+      "files": [
+        "frontend/src/pages/public/CategoryPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-refactor-the-product-accumulation-logic-in-categorypage-so-that-products-are-appended-immediately-when-the-api-responds-using-a-functional-state-update-with-barcode-based-deduplication-remove-the-page-0-vs-page-1-branching-always-use-append-logic-regardless-of-page-number",
+      "featureTitle": "Refactor the product accumulation logic in CategoryPage so that products are appended immediately when the API responds, using a functional state update with barcode-based deduplication. Remove the page 0 vs page 1+ branching — always use append logic regardless of page number.",
+      "files": [
+        "frontend/src/pages/public/CategoryPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-decouple-the-loading-spinner-isloadingmore-from-product-visibility-in-categorypage-the-spinner-should-start-when-a-page-load-is-triggered-run-for-a-minimum-display-duration-on-its-own-independent-timer-and-hide-only-after-that-timer-expires-regardless-of-when-the-api-response-arrives-or-when-products-are-rendered",
+      "featureTitle": "Decouple the loading spinner (`isLoadingMore`) from product visibility in CategoryPage. The spinner should start when a page load is triggered, run for a minimum display duration on its own independent timer, and hide only after that timer expires — regardless of when the API response arrives or when products are rendered.",
+      "files": [
+        "frontend/src/pages/public/CategoryPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-retain-processedpagesref-in-categorypage-to-prevent-the-same-page-from-being-processed-twice-and-ensure-stable-product-keys-in-productgrid-keyed-by-barcode",
+      "featureTitle": "Retain `processedPagesRef` in CategoryPage to prevent the same page from being processed twice, and ensure stable product keys in ProductGrid (keyed by barcode).",
+      "files": [
+        "frontend/src/pages/public/CategoryPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-preserve-all-spanish-language-interface-messages-in-categorypage-loading-text-error-messages-empty-state-messages-exactly-as-they-currently-appear-do-not-modify-frontend-src-index-css-only-add-new-css-classes-if-strictly-necessary",
+      "featureTitle": "Preserve all Spanish-language interface messages in CategoryPage (loading text, error messages, empty state messages) exactly as they currently appear. Do not modify `frontend/src/index.css` — only add new CSS classes if strictly necessary.",
+      "files": [
+        "frontend/src/pages/public/CategoryPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
