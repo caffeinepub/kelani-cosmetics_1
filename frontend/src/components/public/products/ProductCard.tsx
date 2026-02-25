@@ -1,85 +1,82 @@
-import { memo } from 'react';
-import { Badge } from '../../ui/badge';
-import { formatPriceForDisplay } from '../../../utils/NumericConverter';
-import { useProductPhotoBlobUrl } from '../../../hooks/useProductPhotoBlobUrl';
-import { DEFAULT_PRODUCT_IMAGE_URL } from '../../../utils/productImage';
+import React from 'react';
+import type { ProductWithSale, StoreDetails } from '@/backend';
+import { formatPriceForDisplay } from '@/utils/NumericConverter';
 import StockStatusIndicators from './StockStatusIndicators';
-import type { ProductWithSale, StoreDetails } from '../../../backend';
+import LazyProductImage from './LazyProductImage';
 
 interface ProductCardProps {
-  product: ProductWithSale;
-  storeDetails: StoreDetails[];
-  onClick: () => void;
+  productWithSale: ProductWithSale;
+  storeDetails?: StoreDetails[];
+  onOpenModal?: (productWithSale: ProductWithSale) => void;
 }
 
-function ProductCard({ product, storeDetails, onClick }: ProductCardProps) {
-  const { product: productData, salePrice, discountPercentage, isOnSale } = product;
-  const imageUrl = useProductPhotoBlobUrl(productData.photo);
+export default function ProductCard({ productWithSale, storeDetails, onOpenModal }: ProductCardProps) {
+  const { product, salePrice, discountPercentage, isOnSale } = productWithSale;
 
-  const displayPrice = isOnSale && salePrice !== undefined ? salePrice : productData.price;
+  const displayPrice = isOnSale && salePrice != null ? salePrice : product.price;
+  const originalPrice = isOnSale && salePrice != null ? product.price : undefined;
+
+  const handleClick = () => {
+    if (onOpenModal) {
+      onOpenModal(productWithSale);
+    }
+  };
 
   return (
     <div
-      onClick={onClick}
-      className="group cursor-pointer rounded-lg border border-border bg-card overflow-hidden transition-all hover:shadow-lg hover:border-primary/50"
+      className="bg-card border border-border rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200 flex flex-col"
+      onClick={handleClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      aria-label={`Ver detalles de ${productData.name}`}
+      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+      aria-label={`Ver detalles de ${product.name}`}
     >
-      <div className="relative aspect-square overflow-hidden bg-muted">
-        <img
-          src={imageUrl || DEFAULT_PRODUCT_IMAGE_URL}
-          alt={productData.name}
-          className="h-full w-full object-contain transition-transform group-hover:scale-105"
-          loading="lazy"
+      {/* Image */}
+      <div className="relative aspect-square bg-muted">
+        <LazyProductImage
+          barcode={product.barcode}
+          className="absolute inset-0 w-full h-full"
+          alt={product.name}
         />
-
-        {isOnSale && discountPercentage !== undefined && (
-          <Badge className="absolute left-2 top-2 bg-destructive text-destructive-foreground text-xs">
+        {isOnSale && discountPercentage != null && (
+          <div className="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full z-10">
             -{Math.round(discountPercentage)}%
-          </Badge>
-        )}
-
-        {productData.isFeatured && (
-          <Badge className="absolute right-2 top-2 bg-warning text-warning-foreground text-xs">
-            ⭐
-          </Badge>
+          </div>
         )}
       </div>
 
-      <div className="p-3 space-y-2">
-        <h3 className="font-semibold text-sm line-clamp-2 text-foreground min-h-[2.5rem]">
-          {productData.name}
+      {/* Content */}
+      <div className="p-3 flex flex-col gap-1 flex-1">
+        <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">
+          {product.name}
         </h3>
 
+        {/* Price */}
+        <div className="flex items-center gap-2 mt-auto pt-1">
+          {displayPrice != null ? (
+            <>
+              <span className={`text-sm font-bold ${isOnSale ? 'text-destructive' : 'text-foreground'}`}>
+                {formatPriceForDisplay(displayPrice)}€
+              </span>
+              {originalPrice != null && (
+                <span className="text-xs text-muted-foreground line-through">
+                  {formatPriceForDisplay(originalPrice)}€
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">Sin precio</span>
+          )}
+        </div>
+
+        {/* Stock */}
         <StockStatusIndicators
-          store1InStock={productData.store1InStock}
-          store2InStock={productData.store2InStock}
-          storeDetails={storeDetails}
+          store1InStock={product.store1InStock}
+          store2InStock={product.store2InStock}
+          storeDetails={storeDetails ?? []}
           variant="compact"
         />
-
-        {displayPrice !== undefined && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-foreground">
-              {formatPriceForDisplay(displayPrice)}
-            </span>
-            {isOnSale && productData.price !== undefined && (
-              <span className="text-xs text-muted-foreground line-through">
-                {formatPriceForDisplay(productData.price)}
-              </span>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
 }
-
-export default memo(ProductCard);

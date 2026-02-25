@@ -1,6 +1,6 @@
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useStableActorQuery } from './useStableActorQuery';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 import type { AppUser } from '../backend';
 
@@ -17,27 +17,10 @@ const QUERY_KEYS = {
  * Fetch all managed users (excluding caller)
  */
 export function useGetAllUserRoles() {
-  const actorState = useActor();
-  const rawActor = actorState.actor;
-  const actorFetching = actorState.isFetching;
-
-  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
-
-  // Stabilize actor reference
-  React.useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
-
-  return useQuery<AppUser[]>({
-    queryKey: QUERY_KEYS.userRoles,
-    queryFn: async ({ signal }) => {
-      if (!stableActor) throw new Error('Actor not available');
-      if (signal?.aborted) throw new Error('Query aborted');
-
+  return useStableActorQuery<AppUser[]>(
+    async (actor) => {
       try {
-        return await stableActor.listManagedUsersForAdmin();
+        return await actor.listManagedUsersForAdmin();
       } catch (error) {
         reportErrorWithToast(error, 'No se pudieron cargar los usuarios', {
           operation: 'listManagedUsersForAdmin',
@@ -45,13 +28,15 @@ export function useGetAllUserRoles() {
         throw error;
       }
     },
-    enabled: Boolean(stableActor) && !actorFetching,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+    QUERY_KEYS.userRoles,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    }
+  );
 }
 
 // ============================================================================

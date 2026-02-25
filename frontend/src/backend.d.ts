@@ -48,20 +48,14 @@ export interface HomepageSearchResult {
     price?: number;
     saleIsActive: boolean;
 }
-export interface ProductV2 {
-    categoryId: bigint;
-    categoryName: string;
-    inStock: boolean;
-    name: string;
-    createdDate: bigint;
-    description?: string;
-    isFeatured: boolean;
-    barcode: string;
-    lastUpdatedDate: bigint;
-    store1InStock: boolean;
-    photo?: Uint8Array;
-    price?: number;
-    store2InStock: boolean;
+export interface ExportPayload {
+    categories: Array<Category>;
+    itemCounts: {
+        categories: bigint;
+        products: bigint;
+    };
+    products: Array<ExportProduct>;
+    exportTimestamp: bigint;
 }
 export interface StoreDetails {
     storeId: bigint;
@@ -81,22 +75,13 @@ export interface StoreDetails {
 }
 export interface PaginatedResponse {
     totalCount: bigint;
-    items: Array<ProductV2>;
+    items: Array<ProductV2Light>;
 }
 export interface ImportResult {
     importedCategoryCount: bigint;
     importedProductCount: bigint;
     errorMessages: Array<string>;
     success: boolean;
-}
-export interface ExportPayload {
-    categories: Array<Category>;
-    itemCounts: {
-        categories: bigint;
-        products: bigint;
-    };
-    products: Array<ExportProduct>;
-    exportTimestamp: bigint;
 }
 export interface HomepageCategoriesResult {
     categories: Array<CategorizedProductWithSale>;
@@ -109,6 +94,20 @@ export interface AppUser {
 export interface SaleItemArray {
     totalCount: bigint;
     items: Array<SaleItem>;
+}
+export interface ProductV2Light {
+    categoryId: bigint;
+    categoryName: string;
+    inStock: boolean;
+    name: string;
+    createdDate: bigint;
+    description?: string;
+    isFeatured: boolean;
+    barcode: string;
+    lastUpdatedDate: bigint;
+    store1InStock: boolean;
+    price?: number;
+    store2InStock: boolean;
 }
 export interface ExportProduct {
     categoryId: bigint;

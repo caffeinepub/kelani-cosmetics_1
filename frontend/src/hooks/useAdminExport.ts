@@ -1,6 +1,6 @@
-import React from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useStableActorQuery } from './useStableActorQuery';
 import { reportErrorWithToast } from '../utils/reportErrorWithToast';
 import type { ExportPayload } from '../backend';
 
@@ -18,36 +18,19 @@ const QUERY_KEYS = {
  * Fetch export statistics (counts)
  */
 export function useExportStatistics() {
-  const actorState = useActor();
-  const rawActor = actorState.actor;
-  const actorFetching = actorState.isFetching;
-
-  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
-
-  // Stabilize actor reference
-  React.useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
-
-  return useQuery<{
+  return useStableActorQuery<{
     categories: number;
     products: number;
     featured: number;
     onSale: number;
-  }>({
-    queryKey: QUERY_KEYS.exportStatistics,
-    queryFn: async ({ signal }) => {
-      if (!stableActor) throw new Error('Actor not available');
-      if (signal?.aborted) throw new Error('Query aborted');
-
+  }>(
+    async (actor) => {
       try {
         const [categories, totalProducts, featuredProducts, activeSales] = await Promise.all([
-          stableActor.getAllCategories(),
-          stableActor.getTotalProductCount(),
-          stableActor.getFeaturedProducts(),
-          stableActor.getActiveSales(),
+          actor.getAllCategories(),
+          actor.getTotalProductCount(),
+          actor.getFeaturedProducts(),
+          actor.getActiveSales(),
         ]);
 
         return {
@@ -63,13 +46,15 @@ export function useExportStatistics() {
         throw error;
       }
     },
-    enabled: Boolean(stableActor) && !actorFetching,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+    QUERY_KEYS.exportStatistics,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    }
+  );
 }
 
 // ============================================================================

@@ -3,19 +3,44 @@ import { Search } from 'lucide-react';
 import { useHomepageAutocomplete } from '../../../../hooks/useHomepageAutocomplete';
 import { useProductModalNavigation } from '../../../../hooks/useProductModalNavigation';
 import AutocompleteDropdown from './AutocompleteDropdown';
-import type { HomepageSearchResult, StoreDetails } from '../../../../backend';
+import type { HomepageSearchResult, StoreDetails, ProductWithSale } from '../../../../backend';
 
 interface SearchBarProps {
   storeDetails: StoreDetails[];
 }
 
-export default function SearchBar({ storeDetails }: SearchBarProps) {
+/**
+ * Convert a HomepageSearchResult into a ProductWithSale shape so it can be
+ * passed to openModalWithHistory which now only accepts ProductWithSale.
+ */
+function toProductWithSale(result: HomepageSearchResult): ProductWithSale {
+  return {
+    isOnSale: result.saleIsActive,
+    salePrice: result.salePrice,
+    discountPercentage: result.salePercentage,
+    product: {
+      barcode: result.barcode,
+      name: result.name,
+      categoryId: result.categoryId,
+      description: undefined,
+      price: result.price,
+      inStock: true,
+      isFeatured: false,
+      photo: undefined,
+      createdDate: 0n,
+      lastUpdatedDate: 0n,
+      store1InStock: true,
+      store2InStock: true,
+    },
+  };
+}
+
+export default function SearchBar({ storeDetails: _storeDetails }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const blobUrlsRef = useRef<string[]>([]);
 
   const { results, isLoading, error } = useHomepageAutocomplete(query);
   const { openModalWithHistory } = useProductModalNavigation();
@@ -28,14 +53,10 @@ export default function SearchBar({ storeDetails }: SearchBarProps) {
     setActiveIndex(-1);
     inputRef.current?.blur();
 
-    // Generate blob URL if photo exists
-    let blobUrl: string | null = null;
-    if (result.photo && result.photo.length > 0) {
-      blobUrl = URL.createObjectURL(new Blob([new Uint8Array(result.photo)], { type: 'image/jpeg' }));
-      blobUrlsRef.current.push(blobUrl);
-    }
-
-    openModalWithHistory(result, storeDetails, 'homepage-search', blobUrl);
+    // Pass product data only — no pre-loaded photo URL.
+    // The modal will lazily fetch the photo via getProductPhoto.
+    const productWithSale = toProductWithSale(result);
+    openModalWithHistory(productWithSale, undefined, 'homepage-search', undefined);
   };
 
   const handleMouseEnter = (index: number) => {
@@ -60,21 +81,6 @@ export default function SearchBar({ storeDetails }: SearchBarProps) {
   useEffect(() => {
     setActiveIndex(-1);
   }, [results]);
-
-  // Cleanup blob URLs when new search results arrive
-  useEffect(() => {
-    return () => {
-      blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-      blobUrlsRef.current = [];
-    };
-  }, [results]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, []);
 
   return (
     <div ref={containerRef} className="relative w-full">

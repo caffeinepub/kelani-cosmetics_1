@@ -1,6 +1,5 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useActor } from './useActor';
+import { useStableActorQuery } from './useStableActorQuery';
+import { useStableActor } from './useStableActor';
 import type { ProductWithSale } from '../backend';
 
 interface UseCategoryProductsPaginatedResult {
@@ -23,51 +22,42 @@ export function useGetCategoryProductsPaginated(
   page: number,
   pageSize: number
 ): UseCategoryProductsPaginatedResult {
-  const { actor: rawActor, isFetching: actorFetching } = useActor();
-  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+  const { isActorFetching } = useStableActor();
 
-  // Stabilize actor reference
-  React.useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
-
-  const query = useQuery({
-    queryKey: ['category-products', categoryId, page, pageSize],
-    queryFn: async ({ signal }) => {
-      if (!stableActor || categoryId === null) {
-        throw new Error('Actor or category ID not available');
+  const query = useStableActorQuery<{ products: ProductWithSale[]; totalCount: number }>(
+    async (actor) => {
+      if (categoryId === null) {
+        throw new Error('Category ID not available');
       }
-      if (signal?.aborted) throw new Error('Query aborted');
-
-      const response = await stableActor.getProductsPageFeaturedFirst(
+      const response = await actor.getProductsPageFeaturedFirst(
         '',
         BigInt(categoryId),
         BigInt(page),
         BigInt(pageSize)
       );
 
-      // Backend now returns ProductWithSale items with sale info already attached
       return {
         products: response.items,
         totalCount: Number(response.totalCount),
       };
     },
-    enabled: Boolean(stableActor) && categoryId !== null,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+    ['category-products', categoryId, page, pageSize] as const,
+    {
+      enabled: categoryId !== null,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    }
+  );
 
   return {
     products: query.data?.products ?? [],
     totalCount: query.data?.totalCount ?? 0,
     isLoading: query.isLoading,
-    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
-    isFetched: !!stableActor && query.isFetched,
+    isInitialLoading: isActorFetching || query.isLoading,
+    isFetched: query.isFetched,
     error: query.error as Error | null,
     refetch: query.refetch,
   };

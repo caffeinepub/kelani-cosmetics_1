@@ -70,7 +70,7 @@ export interface ImportResult {
 }
 export interface PaginatedResponse {
   'totalCount' : bigint,
-  'items' : Array<ProductV2>,
+  'items' : Array<ProductV2Light>,
 }
 export interface Product {
   'categoryId' : bigint,
@@ -86,7 +86,7 @@ export interface Product {
   'price' : [] | [number],
   'store2InStock' : boolean,
 }
-export interface ProductV2 {
+export interface ProductV2Light {
   'categoryId' : bigint,
   'categoryName' : string,
   'inStock' : boolean,
@@ -97,7 +97,6 @@ export interface ProductV2 {
   'barcode' : string,
   'lastUpdatedDate' : bigint,
   'store1InStock' : boolean,
-  'photo' : [] | [Uint8Array],
   'price' : [] | [number],
   'store2InStock' : boolean,
 }

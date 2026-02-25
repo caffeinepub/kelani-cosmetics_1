@@ -130,20 +130,14 @@ export interface HomepageSearchResult {
     price?: number;
     saleIsActive: boolean;
 }
-export interface ProductV2 {
-    categoryId: bigint;
-    categoryName: string;
-    inStock: boolean;
-    name: string;
-    createdDate: bigint;
-    description?: string;
-    isFeatured: boolean;
-    barcode: string;
-    lastUpdatedDate: bigint;
-    store1InStock: boolean;
-    photo?: Uint8Array;
-    price?: number;
-    store2InStock: boolean;
+export interface ExportPayload {
+    categories: Array<Category>;
+    itemCounts: {
+        categories: bigint;
+        products: bigint;
+    };
+    products: Array<ExportProduct>;
+    exportTimestamp: bigint;
 }
 export interface StoreDetails {
     storeId: bigint;
@@ -163,22 +157,13 @@ export interface StoreDetails {
 }
 export interface PaginatedResponse {
     totalCount: bigint;
-    items: Array<ProductV2>;
+    items: Array<ProductV2Light>;
 }
 export interface ImportResult {
     importedCategoryCount: bigint;
     importedProductCount: bigint;
     errorMessages: Array<string>;
     success: boolean;
-}
-export interface ExportPayload {
-    categories: Array<Category>;
-    itemCounts: {
-        categories: bigint;
-        products: bigint;
-    };
-    products: Array<ExportProduct>;
-    exportTimestamp: bigint;
 }
 export interface HomepageCategoriesResult {
     categories: Array<CategorizedProductWithSale>;
@@ -191,6 +176,20 @@ export interface AppUser {
 export interface SaleItemArray {
     totalCount: bigint;
     items: Array<SaleItem>;
+}
+export interface ProductV2Light {
+    categoryId: bigint;
+    categoryName: string;
+    inStock: boolean;
+    name: string;
+    createdDate: bigint;
+    description?: string;
+    isFeatured: boolean;
+    barcode: string;
+    lastUpdatedDate: bigint;
+    store1InStock: boolean;
+    price?: number;
+    store2InStock: boolean;
 }
 export interface ExportProduct {
     categoryId: bigint;
@@ -284,7 +283,7 @@ export interface backendInterface {
     updateStoreDetails(storeId: bigint, details: StoreDetails): Promise<void>;
     uploadProductPhoto(barcode: string, photo: Uint8Array): Promise<Product>;
 }
-import type { AppUser as _AppUser, CategorizedProductWithSale as _CategorizedProductWithSale, Category as _Category, ExportPayload as _ExportPayload, ExportProduct as _ExportProduct, HomepageCategoriesResult as _HomepageCategoriesResult, HomepageSearchResult as _HomepageSearchResult, ImportData as _ImportData, PaginatedResponse as _PaginatedResponse, Product as _Product, ProductV2 as _ProductV2, ProductWithSale as _ProductWithSale, SaleItem as _SaleItem, SaleItemArray as _SaleItemArray, StoreDetails as _StoreDetails, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { AppUser as _AppUser, CategorizedProductWithSale as _CategorizedProductWithSale, Category as _Category, ExportPayload as _ExportPayload, ExportProduct as _ExportProduct, HomepageCategoriesResult as _HomepageCategoriesResult, HomepageSearchResult as _HomepageSearchResult, ImportData as _ImportData, PaginatedResponse as _PaginatedResponse, Product as _Product, ProductV2Light as _ProductV2Light, ProductWithSale as _ProductWithSale, SaleItem as _SaleItem, SaleItemArray as _SaleItemArray, StoreDetails as _StoreDetails, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -900,7 +899,7 @@ function from_candid_HomepageSearchResult_n54(_uploadFile: (file: ExternalBlob) 
 function from_candid_PaginatedResponse_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PaginatedResponse): PaginatedResponse {
     return from_candid_record_n43(_uploadFile, _downloadFile, value);
 }
-function from_candid_ProductV2_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ProductV2): ProductV2 {
+function from_candid_ProductV2Light_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ProductV2Light): ProductV2Light {
     return from_candid_record_n46(_uploadFile, _downloadFile, value);
 }
 function from_candid_ProductWithSale_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ProductWithSale): ProductWithSale {
@@ -1190,10 +1189,10 @@ function from_candid_record_n40(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }
 function from_candid_record_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     totalCount: bigint;
-    items: Array<_ProductV2>;
+    items: Array<_ProductV2Light>;
 }): {
     totalCount: bigint;
-    items: Array<ProductV2>;
+    items: Array<ProductV2Light>;
 } {
     return {
         totalCount: value.totalCount,
@@ -1211,7 +1210,6 @@ function from_candid_record_n46(_uploadFile: (file: ExternalBlob) => Promise<Uin
     barcode: string;
     lastUpdatedDate: bigint;
     store1InStock: boolean;
-    photo: [] | [Uint8Array];
     price: [] | [number];
     store2InStock: boolean;
 }): {
@@ -1225,7 +1223,6 @@ function from_candid_record_n46(_uploadFile: (file: ExternalBlob) => Promise<Uin
     barcode: string;
     lastUpdatedDate: bigint;
     store1InStock: boolean;
-    photo?: Uint8Array;
     price?: number;
     store2InStock: boolean;
 } {
@@ -1240,7 +1237,6 @@ function from_candid_record_n46(_uploadFile: (file: ExternalBlob) => Promise<Uin
         barcode: value.barcode,
         lastUpdatedDate: value.lastUpdatedDate,
         store1InStock: value.store1InStock,
-        photo: record_opt_to_undefined(from_candid_opt_n14(_uploadFile, _downloadFile, value.photo)),
         price: record_opt_to_undefined(from_candid_opt_n15(_uploadFile, _downloadFile, value.price)),
         store2InStock: value.store2InStock
     };
@@ -1347,8 +1343,8 @@ function from_candid_vec_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function from_candid_vec_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ProductWithSale>): Array<ProductWithSale> {
     return value.map((x)=>from_candid_ProductWithSale_n39(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ProductV2>): Array<ProductV2> {
-    return value.map((x)=>from_candid_ProductV2_n45(_uploadFile, _downloadFile, x));
+function from_candid_vec_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ProductV2Light>): Array<ProductV2Light> {
+    return value.map((x)=>from_candid_ProductV2Light_n45(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_AppUser>): Array<AppUser> {
     return value.map((x)=>from_candid_AppUser_n51(_uploadFile, _downloadFile, x));

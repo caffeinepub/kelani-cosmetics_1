@@ -1,64 +1,60 @@
 import { useMemo } from 'react';
 import {
-  SafeSelect,
+  Select,
+  SelectContent,
   SelectGroup,
   SelectItem,
   SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SENTINEL_VALUES,
-  convertSentinelToNull,
-} from '../../SafeSelect';
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useGetAllCategories } from '../../../hooks/useQueries';
 
 interface CategoryFilterSelectProps {
-  value: string;
-  onValueChange: (value: string | null) => void;
+  value: number | null;
+  onChange: (value: number | null) => void;
   disabled?: boolean;
   className?: string;
 }
 
-export default function CategoryFilterSelect({
+export function CategoryFilterSelect({
   value,
-  onValueChange,
+  onChange,
   disabled,
   className,
 }: CategoryFilterSelectProps) {
   const { data: categories = [], isLoading } = useGetAllCategories();
 
+  const selectValue = value !== null ? String(value) : 'all';
+
   const handleChange = (newValue: string) => {
-    const converted = convertSentinelToNull(newValue);
-    onValueChange(converted);
+    if (newValue === 'all') {
+      onChange(null);
+    } else {
+      onChange(Number(newValue));
+    }
   };
 
-  const displayValue = useMemo(() => {
-    if (value === SENTINEL_VALUES.ALL || !value) {
-      return SENTINEL_VALUES.ALL;
-    }
-    return value;
-  }, [value]);
-
   return (
-    <SafeSelect
-      value={displayValue}
+    <Select
+      value={selectValue}
       onValueChange={handleChange}
       disabled={disabled || isLoading}
-      placeholder="All categories"
-      className={className}
-      sentinelValue={SENTINEL_VALUES.ALL}
-      contentClassName="admin-category-select-content"
     >
-      <SelectScrollUpButton />
-      <SelectGroup>
-        <SelectLabel>Filter by category</SelectLabel>
-        <SelectItem value={SENTINEL_VALUES.ALL}>All categories</SelectItem>
-        {categories.map((category) => (
-          <SelectItem key={category.categoryId} value={category.categoryId.toString()}>
-            {category.name}
-          </SelectItem>
-        ))}
-      </SelectGroup>
-      <SelectScrollDownButton />
-    </SafeSelect>
+      <SelectTrigger className={className ?? 'w-[200px]'}>
+        <SelectValue placeholder="Todas las categorías" />
+      </SelectTrigger>
+      <SelectContent className="admin-category-select-content">
+        <SelectGroup>
+          <SelectLabel>Filtrar por categoría</SelectLabel>
+          <SelectItem value="all">Todas las categorías</SelectItem>
+          {categories.map((category) => (
+            <SelectItem key={String(category.categoryId)} value={String(category.categoryId)}>
+              {category.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }

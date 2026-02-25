@@ -1,169 +1,196 @@
-import { useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Dialog, DialogContent, DialogClose } from '../../ui/dialog';
-import { Badge } from '../../ui/badge';
-import { useProductModalStore } from '../../../stores/productModalStore';
-import { useProductModalNavigation } from '../../../hooks/useProductModalNavigation';
-import { formatPriceForDisplay } from '../../../utils/NumericConverter';
-import { useProductPhotoBlobUrl } from '../../../hooks/useProductPhotoBlobUrl';
-import { DEFAULT_PRODUCT_IMAGE_URL } from '../../../utils/productImage';
+import React, { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useProductModalStore } from '@/stores/productModalStore';
+import { formatPriceForDisplay } from '@/utils/NumericConverter';
+import StockStatusIndicators from '@/components/public/products/StockStatusIndicators';
+import { useBothStoreDetails } from '@/hooks/useBothStoreDetails';
 import StoreSelector from './StoreSelector';
 import ShareProductButton from './ShareProductButton';
-import StockStatusIndicators from '../products/StockStatusIndicators';
-import type { ProductWithSale, HomepageSearchResult } from '../../../backend';
+import { DEFAULT_PRODUCT_IMAGE_URL } from '@/utils/productImage';
+import { useActor } from '@/hooks/useActor';
 
-function isProductWithSale(data: ProductWithSale | HomepageSearchResult): data is ProductWithSale {
-  return 'product' in data;
-}
+const DEFAULT_IMAGE = DEFAULT_PRODUCT_IMAGE_URL;
+
+// Module-level in-memory cache for lazily-fetched photos (barcode → blob URL)
+const lazyPhotoCache = new Map<string, string>();
 
 export default function ProductDetailsModal() {
-  const { isOpen, productData, storeDetails, precomputedBlobUrl } = useProductModalStore();
-  const { closeModalViaUI } = useProductModalNavigation();
+  const { isOpen, product: productWithSale, photoBlobUrl, closeModal } = useProductModalStore();
+  const { data: storeDetailsData } = useBothStoreDetails();
+  const { actor } = useActor();
 
-  // Extract photo data before early return to satisfy React Hooks rules
-  let photo: Uint8Array | undefined;
-  if (productData) {
-    if (isProductWithSale(productData)) {
-      photo = productData.product.photo;
-    } else {
-      photo = productData.photo;
-    }
-  }
+  const [imageUrl, setImageUrl] = useState<string>(DEFAULT_IMAGE);
+  const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
 
-  // Call hook unconditionally at top level
-  const generatedBlobUrl = useProductPhotoBlobUrl(photo);
+  // Track the barcode for which we last started a fetch to avoid duplicate fetches
+  const fetchingBarcodeRef = useRef<string | null>(null);
+
+  // storeDetailsData is StoreDetails[] (mapped from tuples in useBothStoreDetails)
+  const storeDetails = storeDetailsData ?? [];
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    if (!isOpen || !productWithSale) {
+      setImageUrl(DEFAULT_IMAGE);
+      setIsLoadingPhoto(false);
+      fetchingBarcodeRef.current = null;
+      return;
     }
 
-    return () => {
-      document.body.style.overflow = '';
+    const barcode = productWithSale.product.barcode;
+
+    // Card-click flow: pre-loaded photo URL is available — use it immediately
+    if (photoBlobUrl) {
+      setImageUrl(photoBlobUrl);
+      setIsLoadingPhoto(false);
+      return;
+    }
+
+    // Search-result flow: no pre-loaded photo — check cache first
+    const cached = lazyPhotoCache.get(barcode);
+    if (cached) {
+      setImageUrl(cached);
+      setIsLoadingPhoto(false);
+      return;
+    }
+
+    // Not cached — fetch lazily
+    if (!actor) {
+      // Actor not ready yet; show default image without spinner until actor is available
+      setImageUrl(DEFAULT_IMAGE);
+      setIsLoadingPhoto(false);
+      return;
+    }
+
+    // Prevent duplicate fetches for the same barcode
+    if (fetchingBarcodeRef.current === barcode) {
+      return;
+    }
+
+    fetchingBarcodeRef.current = barcode;
+    setImageUrl(DEFAULT_IMAGE);
+    setIsLoadingPhoto(true);
+
+    actor
+      .getProductPhoto(barcode)
+      .then((photoBytes) => {
+        if (photoBytes && photoBytes.length > 0) {
+          const blob = new Blob([new Uint8Array(photoBytes)], { type: 'image/webp' });
+          const url = URL.createObjectURL(blob);
+          lazyPhotoCache.set(barcode, url);
+          // Only update if the modal is still showing the same product
+          setImageUrl(url);
+        }
+      })
+      .catch(() => {
+        // No photo or fetch failed — keep default image
+      })
+      .finally(() => {
+        setIsLoadingPhoto(false);
+        if (fetchingBarcodeRef.current === barcode) {
+          fetchingBarcodeRef.current = null;
+        }
+      });
+  }, [isOpen, productWithSale, photoBlobUrl, actor]);
+
+  // Handle back button closing the modal
+  useEffect(() => {
+    const handlePopstate = () => {
+      if (isOpen) {
+        closeModal();
+      }
     };
-  }, [isOpen]);
+    window.addEventListener('popstate', handlePopstate);
+    return () => window.removeEventListener('popstate', handlePopstate);
+  }, [isOpen, closeModal]);
 
-  if (!productData) return null;
+  if (!productWithSale) return null;
 
-  let barcode: string;
-  let name: string;
-  let price: number | undefined;
-  let salePrice: number | undefined;
-  let discountPercentage: number | undefined;
-  let isOnSale: boolean;
-  let isFeatured: boolean;
-  let description: string | undefined;
-  let store1InStock: boolean;
-  let store2InStock: boolean;
+  const { product, salePrice, discountPercentage, isOnSale } = productWithSale;
+  const displayPrice = isOnSale && salePrice != null ? salePrice : product.price;
+  const originalPrice = isOnSale && salePrice != null ? product.price : undefined;
 
-  if (isProductWithSale(productData)) {
-    const { product } = productData;
-    barcode = product.barcode;
-    name = product.name;
-    price = product.price;
-    salePrice = productData.salePrice;
-    discountPercentage = productData.discountPercentage;
-    isOnSale = productData.isOnSale;
-    isFeatured = product.isFeatured;
-    description = product.description;
-    store1InStock = product.store1InStock;
-    store2InStock = product.store2InStock;
-  } else {
-    barcode = productData.barcode;
-    name = productData.name;
-    price = productData.price;
-    salePrice = productData.salePrice;
-    discountPercentage = productData.salePercentage;
-    isOnSale = productData.saleIsActive;
-    isFeatured = false;
-    description = undefined;
-    store1InStock = true;
-    store2InStock = true;
-  }
-
-  // Use precomputed blob URL if available (from search), otherwise use generated blob URL
-  const imageUrl = precomputedBlobUrl || generatedBlobUrl || DEFAULT_PRODUCT_IMAGE_URL;
-
-  const displayPrice = isOnSale && salePrice !== undefined ? salePrice : price;
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      closeModal();
+      // Go back in history if we pushed a state
+      if (window.history.state?.modalOpen) {
+        window.history.back();
+      }
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={closeModalViaUI}>
-      <DialogContent className="max-w-2xl p-0 gap-0 max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogClose className="absolute right-4 top-4 z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-background/80 backdrop-blur-sm p-1">
-          <X className="h-5 w-5" />
-          <span className="sr-only">Cerrar</span>
-        </DialogClose>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto p-0">
+        <DialogTitle className="sr-only">{product.name}</DialogTitle>
 
-        <div className="flex flex-col overflow-y-auto overflow-x-hidden">
-          <div className="relative aspect-square overflow-hidden bg-muted shrink-0">
-            <img
-              src={imageUrl}
-              alt={name}
-              className="h-full w-full object-contain"
-            />
+        {/* Image */}
+        <div className="relative aspect-square bg-muted w-full">
+          <img
+            src={imageUrl}
+            alt={product.name}
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+            }}
+          />
+          {/* Loading spinner overlay — only shown during lazy fetch */}
+          {isLoadingPhoto && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/40 pointer-events-none">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+          )}
+          {isOnSale && discountPercentage != null && (
+            <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-sm font-bold px-3 py-1 rounded-full z-10">
+              -{Math.round(discountPercentage)}%
+            </div>
+          )}
+        </div>
 
-            {isOnSale && discountPercentage !== undefined && (
-              <Badge className="absolute left-4 top-4 bg-destructive text-destructive-foreground">
-                -{Math.round(discountPercentage)}%
-              </Badge>
+        {/* Content */}
+        <div className="p-4 flex flex-col gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground leading-tight">{product.name}</h2>
+            {product.description && (
+              <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
             )}
           </div>
 
-          <div className="p-6 space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">{name}</h2>
-            </div>
-
-            <StockStatusIndicators
-              store1InStock={store1InStock}
-              store2InStock={store2InStock}
-              storeDetails={storeDetails || []}
-            />
-
-            {displayPrice !== undefined && (
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-3xl font-bold text-foreground">
-                  {formatPriceForDisplay(displayPrice)}
+          {/* Price */}
+          <div className="flex items-center gap-3">
+            {displayPrice != null ? (
+              <>
+                <span className={`text-2xl font-bold ${isOnSale ? 'text-destructive' : 'text-foreground'}`}>
+                  {formatPriceForDisplay(displayPrice)}€
                 </span>
-                {isOnSale && price !== undefined && (
-                  <span className="text-xl text-muted-foreground line-through">
-                    {formatPriceForDisplay(price)}
+                {originalPrice != null && (
+                  <span className="text-base text-muted-foreground line-through">
+                    {formatPriceForDisplay(originalPrice)}€
                   </span>
                 )}
-                {isFeatured && (
-                  <Badge className="bg-warning text-warning-foreground">
-                    ⭐ Destacado
-                  </Badge>
-                )}
-              </div>
+              </>
+            ) : (
+              <span className="text-muted-foreground">Precio no disponible</span>
             )}
-
-            {!displayPrice && isFeatured && (
-              <div>
-                <Badge className="bg-warning text-warning-foreground">
-                  ⭐ Destacado
-                </Badge>
-              </div>
-            )}
-
-            {description && (
-              <p className="text-muted-foreground">{description}</p>
-            )}
-
-            <div className="space-y-3 pt-2">
-              {storeDetails && storeDetails.length > 0 && (
-                <StoreSelector
-                  productName={name}
-                  barcode={barcode}
-                  storeDetails={storeDetails}
-                />
-              )}
-
-              <ShareProductButton productBarcode={barcode} />
-            </div>
           </div>
+
+          {/* Stock */}
+          <StockStatusIndicators
+            store1InStock={product.store1InStock}
+            store2InStock={product.store2InStock}
+            storeDetails={storeDetails}
+          />
+
+          {/* WhatsApp */}
+          <StoreSelector
+            productName={product.name}
+            barcode={product.barcode}
+            storeDetails={storeDetails.length > 0 ? storeDetails : null}
+          />
+
+          {/* Share */}
+          <ShareProductButton productBarcode={product.barcode} />
         </div>
       </DialogContent>
     </Dialog>

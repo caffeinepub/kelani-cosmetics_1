@@ -1,6 +1,6 @@
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useStableActorQuery } from './useStableActorQuery';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 import type { StoreDetails as BackendStoreDetails } from '../backend';
 import { numberToBigInt, bigIntToNumber } from '../utils/categoryNumeric';
@@ -108,35 +108,20 @@ const QUERY_KEYS = {
  * Fetch store details by ID
  */
 export function useGetStoreDetails(storeId: 1 | 2) {
-  const actorState = useActor();
-  const rawActor = actorState.actor;
-  const actorFetching = actorState.isFetching;
-
-  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
-
-  // Stabilize actor reference
-  React.useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
-
-  return useQuery<StoreDetails>({
-    queryKey: QUERY_KEYS.storeDetails(storeId),
-    queryFn: async ({ signal }) => {
-      if (!stableActor) throw new Error('Actor not available');
-      if (signal?.aborted) throw new Error('Query aborted');
-
-      const backendStore = await stableActor.getStoreDetails(numberToBigInt(storeId));
+  return useStableActorQuery<StoreDetails>(
+    async (actor) => {
+      const backendStore = await actor.getStoreDetails(numberToBigInt(storeId));
       return backendStoreDetailsToUI(backendStore);
     },
-    enabled: Boolean(stableActor) && !actorFetching,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+    QUERY_KEYS.storeDetails(storeId),
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    }
+  );
 }
 
 // ============================================================================

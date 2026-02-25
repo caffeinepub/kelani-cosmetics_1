@@ -3,12 +3,14 @@ import AccessControl "authorization/access-control";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Time "mo:core/Time";
 import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
 import Iter "mo:core/Iter";
+import Time "mo:core/Time";
+
+
 
 actor {
   let accessControlState = AccessControl.initState();
@@ -213,7 +215,7 @@ actor {
     store2InStock : Bool;
   };
 
-  type ProductV2 = {
+  public type ProductV2Light = {
     barcode : Text;
     name : Text;
     categoryId : Nat;
@@ -222,7 +224,6 @@ actor {
     price : ?Float;
     inStock : Bool;
     isFeatured : Bool;
-    photo : ?[Nat8];
     createdDate : Int;
     lastUpdatedDate : Int;
     store1InStock : Bool;
@@ -232,7 +233,7 @@ actor {
   let products = Map.empty<Text, Product>();
 
   public type PaginatedResponse = {
-    items : [ProductV2];
+    items : [ProductV2Light];
     totalCount : Nat;
   };
 
@@ -289,7 +290,7 @@ actor {
     search.chars().all(numericCheck);
   };
 
-  func safeSlice(array : [ProductV2], start : Nat, end : Nat) : [ProductV2] {
+  func safeSlice(array : [ProductV2Light], start : Nat, end : Nat) : [ProductV2Light] {
     if (start >= array.size()) {
       return [];
     } else if (end > array.size()) {
@@ -299,25 +300,25 @@ actor {
     };
   };
 
+  func mapProductToProductV2Light(product : Product) : ProductV2Light {
+    {
+      product with
+      categoryName = switch (categories.get(product.categoryId)) {
+        case (null) { "Uncategorized" };
+        case (?category) { category.name };
+      };
+    };
+  };
+
   public query ({ caller }) func getProductsPage(search : Text, categoryId : ?Nat, page : Nat, pageSize : Nat) : async PaginatedResponse {
     let filteredProducts = filterProducts(search, categoryId);
 
-    let productV2Array = filteredProducts.map(
-      func(product) : ProductV2 {
-        {
-          product with
-          categoryName = switch (categories.get(product.categoryId)) {
-            case (null) { "Uncategorized" };
-            case (?category) { category.name };
-          };
-        };
-      }
-    );
+    let productV2LightArray = filteredProducts.map(mapProductToProductV2Light);
 
-    let totalCount = productV2Array.size();
+    let totalCount = productV2LightArray.size();
     let start = page * pageSize;
     let end = start + pageSize;
-    let pageItems = safeSlice(productV2Array, start, end);
+    let pageItems = safeSlice(productV2LightArray, start, end);
 
     {
       items = pageItems;
@@ -476,10 +477,17 @@ actor {
     filterProducts("", null).size();
   };
 
+  func productWithoutPhoto(p : Product) : Product {
+    {
+      p with
+      photo = null;
+    };
+  };
+
   public query ({ caller }) func getFeaturedProducts() : async [Product] {
     filterProducts("", null).filter(
       func(product) { product.isFeatured }
-    );
+    ).map(productWithoutPhoto);
   };
 
   public type SaleItem = {
@@ -672,7 +680,7 @@ actor {
           case (_) { true };
         };
       }
-    );
+    ).map(func(product) { productWithoutPhoto(product) });
   };
 
   //------------------------------------
@@ -981,7 +989,7 @@ actor {
           salePrice;
           salePercentage;
           saleIsActive;
-          photo = product.photo;
+          photo = null;
         };
 
         results := results.concat([result]);
@@ -1026,6 +1034,13 @@ actor {
         (categoryId, productCount);
       }
     );
+  };
+
+  func removePhotoFromProductWithSale(productWithSale : ProductWithSale) : ProductWithSale {
+    {
+      productWithSale with
+      product = productWithoutPhoto(productWithSale.product);
+    };
   };
 
   public query ({ caller }) func getHomepageCategories(page : Nat, pageSize : Nat) : async HomepageCategoriesResult {
@@ -1081,7 +1096,7 @@ actor {
           categoryId = category.categoryId;
           categoryName = category.name;
           totalProducts = allCategoryProducts.size();
-          products = productsWithSale;
+          products = productsWithSale.map(removePhotoFromProductWithSale);
         };
       }
     );
@@ -1266,7 +1281,14 @@ actor {
       [];
     };
 
-    let items = pagedProducts.map(getProductWithSaleInfo);
+    let items = pagedProducts.map(getProductWithSaleInfo).map(
+      func(productWithSale) {
+        {
+          productWithSale with
+          product = productWithoutPhoto(productWithSale.product);
+        };
+      }
+    );
 
     { items; totalCount = filteredProducts.size() };
   };
@@ -1274,7 +1296,14 @@ actor {
   public query ({ caller }) func getProduct(barcode : Text) : async ProductWithSale {
     switch (products.get(barcode)) {
       case (null) { Runtime.trap("Product not found") };
-      case (?product) { getProductWithSaleInfo(product) };
+      case (?product) {
+        let productWithSale = getProductWithSaleInfo(product);
+        {
+          productWithSale with
+          product = productWithoutPhoto(productWithSale.product);
+        };
+      };
     };
   };
 };
+

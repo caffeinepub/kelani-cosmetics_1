@@ -11,18 +11,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useDeleteProduct, type Product } from '../../../hooks/useProductQueries';
+import { useDeleteProduct, type UIProduct } from '../../../hooks/useProductQueries';
 
 interface DeleteProductDialogProps {
-  product: Product | null;
-  onOpenChange: (open: boolean) => void;
+  product: UIProduct | null;
+  onClose: () => void;
 }
 
 const REQUIRED_PASSWORD = 'DeleteIsUnsafe';
 
-export default function DeleteProductDialog({
+export function DeleteProductDialog({
   product,
-  onOpenChange,
+  onClose,
 }: DeleteProductDialogProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,16 +32,16 @@ export default function DeleteProductDialog({
     if (!product) return;
 
     if (password !== REQUIRED_PASSWORD) {
-      setError('Incorrect password. Please try again.');
+      setError('Contraseña incorrecta. Por favor, inténtalo de nuevo.');
       return;
     }
 
     try {
       await deleteMutation.mutateAsync({ barcode: product.barcode, password });
-      onOpenChange(false);
       setPassword('');
       setError('');
-    } catch (error) {
+      onClose();
+    } catch {
       // Error handling is done in the mutation
     }
   };
@@ -50,24 +50,23 @@ export default function DeleteProductDialog({
     if (!open) {
       setPassword('');
       setError('');
+      onClose();
     }
-    onOpenChange(open);
   };
 
   return (
     <AlertDialog open={!!product} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+          <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. The product "{product?.name}" will be permanently
-            deleted.
+            Esta acción no se puede deshacer. El producto &quot;{product?.name}&quot; será eliminado permanentemente.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className="space-y-2 py-4">
           <Label htmlFor="delete-password">
-            Enter password to confirm deletion:
+            Introduce la contraseña para confirmar la eliminación:
           </Label>
           <Input
             id="delete-password"
@@ -77,23 +76,23 @@ export default function DeleteProductDialog({
               setPassword(e.target.value);
               setError('');
             }}
-            placeholder="Enter password"
+            placeholder="Contraseña"
             className={error ? 'border-destructive' : ''}
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <p className="text-xs text-muted-foreground">
-            Password is case-sensitive
+            La contraseña distingue entre mayúsculas y minúsculas
           </p>
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={deleteMutation.isPending || !password}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

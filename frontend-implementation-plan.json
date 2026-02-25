@@ -1,46 +1,167 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix category page infinite scroll by extracting useCategoryProductsInfinite hook",
+  "title": "Stable Actor Pattern Refactor for All GET Query Hooks",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Create a new custom hook `useCategoryProductsInfinite` that encapsulates all pagination logic for category products, managing accumulated products, page state, loading states, and error handling internally",
+      "summary": "Create a `useStableActor` hook that stabilizes the raw actor reference from `useActor()` using `useRef`, preventing downstream React Query effects from re-running due to actor reference changes",
       "acceptanceCriteria": [
-        "Hook file exists at `frontend/src/hooks/useCategoryProductsInfinite.ts`",
-        "Hook returns `{ products, isLoading, isLoadingMore, error, hasMore, loadMore, totalCount }`",
-        "Calling `loadMore` appends next page products to the accumulated array without clearing existing ones",
-        "Changing `categoryId` resets accumulated products and page to initial state",
-        "Duplicate fetches are prevented when a fetch is already in flight",
-        "Hook cleans up timers/state on unmount"
+        "Hook is created at `frontend/src/hooks/useStableActor.ts`",
+        "Stable actor reference does not change after initial assignment even if raw actor reference changes",
+        "Returns `{ stableActor, isActorFetching }` with correct types",
+        "Does not modify `useActor` hook or any protected files"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useCategoryProductsInfinite.ts",
+          "path": "frontend/src/hooks/useStableActor.ts",
           "operation": "create",
-          "description": "Create a custom hook that mirrors the architectural pattern of `useHomepageCategoriesInfinite`. The hook must: accept `categoryId` (string) and `pageSize` (number) parameters; internally manage an accumulated products array, current page number (starting at 1), initial loading state, load-more loading state, hasMore flag, and totalCount; use `useCategoryProductsPaginated` as the underlying data fetcher; implement an in-flight guard using a ref to prevent duplicate concurrent fetches; expose `{ products, isLoading, isLoadingMore, error, hasMore, loadMore, totalCount }` return interface; reset all internal state (products array, page, flags) when `categoryId` or `pageSize` changes using a useEffect dependency; clean up any pending state or refs on unmount. The `loadMore` callback must check the in-flight guard, increment the page, fetch the next page via the paginated hook with `refetch()`, and append results to the accumulated array. Include proper error handling and ensure `hasMore` is false when accumulated products count equals totalCount."
+          "description": "Create a hook that accepts the raw actor from useActor(), uses useRef to stabilize the reference (updating only once when actor first becomes available), and returns both the stable actor instance and an isActorFetching boolean. The hook must ensure the stable reference never changes after initial assignment, even if the raw actor reference changes, to prevent downstream effect re-runs."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Refactor CategoryPage to use the new `useCategoryProductsInfinite` hook, removing all manual pagination state management and timer-based logic while preserving Spanish UI text",
+      "summary": "Create a generic `useStableActorQuery` hook that wraps React Query's `useQuery` with stable actor integration, merging actor initialization state with query loading state",
       "acceptanceCriteria": [
-        "CategoryPage no longer contains `accumulatedProducts` state, manual `page` state, or `useEffect`-based accumulation logic",
-        "Initial load shows a centered spinner; product grid renders once products are available",
-        "Scrolling to the bottom triggers `loadMore` and shows a spinner below the existing product grid without hiding it",
-        "Previously loaded products remain fully visible during a paginated fetch",
-        "New products append below existing products without any flicker or grid reset",
-        "Spinner disappears after the paginated fetch completes",
-        "End-of-results message appears in Spanish when all products are loaded",
-        "Desktop loads 10 products per page; mobile loads 5 products per page",
-        "`index.css` is not modified"
+        "Hook is created at `frontend/src/hooks/useStableActorQuery.ts`",
+        "Query does not fire when stable actor is not yet available",
+        "Returned `isLoading` is `true` while actor is initializing even if React Query itself considers loading complete",
+        "Accepts and forwards all standard React Query `useQuery` options (staleTime, gcTime, retry, etc.)",
+        "TypeScript generics are used so return data type is inferred from the selector function"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/public/CategoryPage.tsx",
+          "path": "frontend/src/hooks/useStableActorQuery.ts",
+          "operation": "create",
+          "description": "Create a generic hook wrapping React Query's useQuery that: accepts a selector function (actor) => Promise<T>, a queryKey array, and optional useQuery options; uses useStableActor internally; enables the query only when stableActor is available (enabled: !!stableActor); merges isActorFetching with the query's isLoading so the returned isLoading is true during both actor initialization and query fetching; and returns the full React Query result object with the enhanced isLoading. Use TypeScript generics to infer return data type from the selector."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Refactor all public page GET query hooks to use `useStableActorQuery` while maintaining identical external interfaces for backward compatibility",
+      "acceptanceCriteria": [
+        "All listed public page GET hooks no longer call `useActor()` directly for enabling queries",
+        "Each hook defines a dedicated named selector function (e.g., `selectAllCategories`)",
+        "`useCategoryProductsInfinite` and `useHomepageCategoriesInfinite` correctly adapt the pattern for `useInfiniteQuery` (stable actor gating via enabled flag using `useStableActor`)",
+        "Components consuming these hooks require zero changes",
+        "No duplicate API calls on component re-renders (verifiable via network tab)",
+        "All Spanish error messages remain unchanged",
+        "Cache invalidation continues to work as before"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Refactor the component to use the new `useCategoryProductsInfinite` hook and remove all manual pagination state management. Remove: `page` state, `accumulatedProducts` state, and any `useEffect` hooks that manually accumulate products or manage timers. Replace with: a single call to `useCategoryProductsInfinite(categoryId, pageSize)` where `pageSize` is determined by `useIsMobile()` (5 for mobile, 10 for desktop). Use `useInfiniteScroll` with a throttled scroll handler (500px threshold from bottom) to trigger the `loadMore` callback. Add a sentinel ref using `useIntersectionObserver` as a secondary trigger. Render structure: (1) Initial full-screen centered spinner shown only when `isLoading` is true and products array is empty; (2) ProductGrid rendered whenever `products.length > 0`, always visible during pagination; (3) A separate loading spinner div rendered below the grid when `isLoadingMore` is true; (4) An end-of-results message in Spanish ('No hay más productos en esta categoría') when `hasMore` is false and `products.length > 0`. Preserve all existing Spanish UI text including the category heading and breadcrumb navigation. Do not modify any global styles or `index.css`. Ensure the product grid never unmounts or resets during pagination, maintaining scroll position and visual continuity."
+          "description": "Refactor useGetAllCategories and useGetHomepageCategories to use useStableActorQuery instead of direct useActor() + enabled: !!actor pattern. Define named selector functions (e.g., selectAllCategories, selectHomepageCategories). Preserve all existing query keys, staleTime, gcTime, retry settings, error handling, and Spanish error messages. Maintain identical external hook interfaces for backward compatibility."
+        },
+        {
+          "path": "frontend/src/hooks/useHomepageAutocomplete.ts",
+          "operation": "modify",
+          "description": "Refactor useHomepageAutocomplete to use useStableActorQuery instead of direct useActor() + enabled: !!actor pattern. Define a named selector function for searchHomepageProducts. Preserve the existing debouncing behavior, query key with search query parameter, staleTime, gcTime, error handling, and Spanish error messages. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Refactor useGetCategoryById to use useStableActorQuery instead of direct useActor() + enabled: !!actor pattern. Define a named selector function (e.g., selectCategoryById). Preserve existing query key with categoryId parameter, staleTime, gcTime, error handling, and Spanish error messages. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useCategoryProductsInfinite.ts",
+          "operation": "modify",
+          "description": "Adapt useCategoryProductsInfinite for the stable actor pattern using useStableActor to gate the enabled option on useInfiniteQuery (since useStableActorQuery wraps useQuery only). Obtain the stable actor reference via useStableActor, pass it directly into the queryFn, and enable the query only when !!stableActor. Preserve all existing pagination behavior, getNextPageParam, flattened page data, fetchNextPage, and Spanish error messages. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useProductQueries.ts",
+          "operation": "modify",
+          "description": "Refactor useGetProduct and useGetProductPhoto (public GET hooks only) to use useStableActorQuery instead of direct useActor() + enabled: !!actor pattern. Define named selector functions (e.g., selectProduct, selectProductPhoto). Preserve existing query keys with barcode parameter, staleTime, gcTime, error handling, and Spanish error messages. Do not modify mutation hooks. Maintain identical external hook interfaces."
+        },
+        {
+          "path": "frontend/src/hooks/useBothStoreDetails.ts",
+          "operation": "modify",
+          "description": "Refactor useGetBothStoreDetails and useBothStoreDetails to use useStableActorQuery instead of direct useActor() + enabled: !!actor pattern. Define a named selector function (e.g., selectBothStoreDetails). Preserve existing query key, staleTime, gcTime, error handling, coordinate parsing, Spanish error messages, and the ordered array return structure. Maintain identical external hook interfaces."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Refactor all admin page GET query hooks to use the `useStableActorQuery` pattern while maintaining identical external interfaces",
+      "acceptanceCriteria": [
+        "All GET query hooks in admin hook files use `useStableActorQuery` or stable actor gating",
+        "Mutation hooks (create, update, delete) are not modified",
+        "Admin pages (CategoriesPage, ProductsPage, OnSaleProductsPage, StoreDetailsPage, UserManagementPage, ExportPage) continue to function identically",
+        "No duplicate API calls in admin pages",
+        "All Spanish error messages preserved",
+        "Cache invalidation after mutations continues to work correctly"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Refactor admin category GET hooks (useGetCategories, useGetCategoryById if not already refactored in REQ-3) to use useStableActorQuery. Define named selector functions. Preserve all query keys, cache settings, error handling, and Spanish error messages. Do not modify mutation hooks (useCreateCategory, useUpdateCategory, useDeleteCategory, useReorderCategories). Maintain identical external hook interfaces."
+        },
+        {
+          "path": "frontend/src/hooks/useProductQueries.ts",
+          "operation": "modify",
+          "description": "Refactor admin product GET hooks (useGetProductsPage if present) to use useStableActorQuery. Define named selector functions. Preserve all query keys, cache settings, error handling, and Spanish error messages. Do not modify mutation hooks (useCreateProduct, useUpdateProduct, useDeleteProduct, useUploadProductPhoto, useToggleProductInStock, useToggleProductFeatured). Maintain identical external hook interfaces."
+        },
+        {
+          "path": "frontend/src/hooks/useSaleItemQueries.ts",
+          "operation": "modify",
+          "description": "Refactor sale item GET hooks (useGetSaleItemsPage, useGetActiveSales if present) to use useStableActorQuery. Define named selector functions. Preserve all query keys, cache settings, error handling, Spanish error messages, and sale status calculation logic. Do not modify mutation hooks (useCreateSaleItem, useUpdateSaleItem, useDeleteSaleItem, useToggleSaleItemActiveStatus). Maintain identical external hook interfaces."
+        },
+        {
+          "path": "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "operation": "modify",
+          "description": "Refactor store details GET hooks (useGetStoreDetails if present) to use useStableActorQuery. Define named selector functions. Preserve all query keys, cache settings, error handling, Spanish error messages, and coordinate JSON parsing. Do not modify mutation hooks (useUpdateStoreDetails). Maintain identical external hook interfaces."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminUserManagement.ts",
+          "operation": "modify",
+          "description": "Refactor useListManagedUsersForAdmin (user list GET hook) to use useStableActorQuery. Define a named selector function (e.g., selectManagedUsers). Preserve existing query key, cache settings, error handling, and Spanish error messages. Do not modify mutation hooks (usePromoteToAdmin, useDemoteToUser). Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useAdminExport.ts",
+          "operation": "modify",
+          "description": "Refactor export stats GET hook (useGetExportStats or similar) to use useStableActorQuery. Define a named selector function (e.g., selectExportStats). Preserve existing query key, cache settings, error handling, and Spanish error messages. Do not modify the export mutation hook. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/usePublicCategories.ts",
+          "operation": "modify",
+          "description": "Refactor GET hook for public categories (if distinct from useGetAllCategories) to use useStableActorQuery. Define a named selector function. Preserve the conditional query enabling based on side panel open state, query key, cache settings, error handling, and Spanish error messages. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useCategoryProductsPaginated.ts",
+          "operation": "modify",
+          "description": "Refactor useCategoryProductsPaginated to use useStableActorQuery. Define a named selector function for featured-first paginated products. Preserve existing query key with page/pageSize/category parameters, cache settings, error handling, Spanish error messages, and manual refetch support. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useProductSearchForSales.ts",
+          "operation": "modify",
+          "description": "Refactor product search GET hook to use useStableActorQuery. Define a named selector function for filterProductsForSales. Preserve the existing debouncing behavior, query key with search parameter, filtering for products with prices, cache settings, error handling, and Spanish error messages. Maintain identical external hook interface."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Ensure `useHomepageCategoriesInfinite` and `useCategoryProductsInfinite` are adapted for the stable actor pattern using `useStableActor` to gate `useInfiniteQuery`",
+      "acceptanceCriteria": [
+        "Both infinite query hooks use `useStableActor` to stabilize actor reference",
+        "Infinite scroll pagination continues to work correctly",
+        "`fetchNextPage`, `hasNextPage`, and `isFetchingNextPage` remain functional",
+        "No duplicate API calls when component re-renders",
+        "Existing flattened page data structures are preserved"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
+          "operation": "modify",
+          "description": "Adapt useHomepageCategoriesInfinite for the stable actor pattern using useStableActor to gate the enabled option on useInfiniteQuery (since useStableActorQuery wraps useQuery only). Obtain the stable actor reference via useStableActor, pass it directly into the queryFn, and enable the query only when !!stableActor. Preserve all existing pagination behavior, getNextPageParam, flattened page data (categories array and totalCategories), fetchNextPage, hasNextPage, isFetchingNextPage, and Spanish error messages. Maintain identical external hook interface."
+        },
+        {
+          "path": "frontend/src/hooks/useCategoryProductsInfinite.ts",
+          "operation": "modify",
+          "description": "This file operation is covered in REQ-3 but is explicitly repeated here for clarity: Adapt useCategoryProductsInfinite for the stable actor pattern using useStableActor to gate the enabled option on useInfiniteQuery. Obtain the stable actor reference via useStableActor, pass it directly into the queryFn, and enable the query only when !!stableActor. Preserve all existing pagination behavior, getNextPageParam, flattened page data, fetchNextPage, hasNextPage, isFetchingNextPage, and Spanish error messages. Maintain identical external hook interface."
         }
       ]
     }

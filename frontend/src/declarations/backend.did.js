@@ -113,7 +113,7 @@ export const HomepageCategoriesResult = IDL.Record({
   'categories' : IDL.Vec(CategorizedProductWithSale),
   'totalCategories' : IDL.Nat,
 });
-export const ProductV2 = IDL.Record({
+export const ProductV2Light = IDL.Record({
   'categoryId' : IDL.Nat,
   'categoryName' : IDL.Text,
   'inStock' : IDL.Bool,
@@ -124,13 +124,12 @@ export const ProductV2 = IDL.Record({
   'barcode' : IDL.Text,
   'lastUpdatedDate' : IDL.Int,
   'store1InStock' : IDL.Bool,
-  'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   'price' : IDL.Opt(IDL.Float64),
   'store2InStock' : IDL.Bool,
 });
 export const PaginatedResponse = IDL.Record({
   'totalCount' : IDL.Nat,
-  'items' : IDL.Vec(ProductV2),
+  'items' : IDL.Vec(ProductV2Light),
 });
 export const SaleItemArray = IDL.Record({
   'totalCount' : IDL.Nat,
@@ -388,7 +387,7 @@ export const idlFactory = ({ IDL }) => {
     'categories' : IDL.Vec(CategorizedProductWithSale),
     'totalCategories' : IDL.Nat,
   });
-  const ProductV2 = IDL.Record({
+  const ProductV2Light = IDL.Record({
     'categoryId' : IDL.Nat,
     'categoryName' : IDL.Text,
     'inStock' : IDL.Bool,
@@ -399,13 +398,12 @@ export const idlFactory = ({ IDL }) => {
     'barcode' : IDL.Text,
     'lastUpdatedDate' : IDL.Int,
     'store1InStock' : IDL.Bool,
-    'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'price' : IDL.Opt(IDL.Float64),
     'store2InStock' : IDL.Bool,
   });
   const PaginatedResponse = IDL.Record({
     'totalCount' : IDL.Nat,
-    'items' : IDL.Vec(ProductV2),
+    'items' : IDL.Vec(ProductV2Light),
   });
   const SaleItemArray = IDL.Record({
     'totalCount' : IDL.Nat,

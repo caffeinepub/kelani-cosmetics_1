@@ -1,35 +1,96 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T23:55:50.666Z",
+  "generatedAt": "2026-02-25T20:45:07.964Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Create a new custom hook `useCategoryProductsInfinite` in `frontend/src/hooks/useCategoryProductsInfinite.ts` that encapsulates all pagination logic for category products. The hook must: accept `categoryId` (string) and `pageSize` (number) parameters; internally manage accumulated products array, current page, initial loading state, load-more loading state, hasMore flag, and totalCount; expose `{ products, isLoading, isLoadingMore, error, hasMore, loadMore, totalCount }`; use `useCategoryProductsPaginated` as the underlying data fetcher; prevent duplicate fetches with an in-flight guard; reset all state when `categoryId` or `pageSize` changes; and clean up on unmount. Mirror the architectural pattern of `useHomepageCategoriesInfinite`.",
+        "summary": "Create a `useStableActor` hook in `frontend/src/hooks/useStableActor.ts` that accepts the raw actor from `useActor()`, stabilizes the reference using `useRef` so it only updates once when the raw actor first becomes available, and returns both the stable actor instance and an `isActorFetching` boolean status. This prevents downstream React Query effects from re-running due to raw actor reference changes.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useCategoryProductsInfinite.ts"
+          "frontend/src/hooks/useStableActor.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useCategoryProductsInfinite.ts"
+          "frontend/src/hooks/useStableActor.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Refactor `frontend/src/pages/public/CategoryPage.tsx` to use the new `useCategoryProductsInfinite` hook and remove all manual pagination state management. The component must: remove `page`, `accumulatedProducts`, `useEffect`-based accumulation, and timer-based logic; use `useIsMobile` to set `pageSize` (5 mobile / 10 desktop); use `useInfiniteScroll` with a throttled scroll handler (500px threshold) and a sentinel ref via `useIntersectionObserver`; render the product grid at all times when products exist; render the load-more spinner separately below the grid (never replace the grid); show an initial full-screen spinner only on first load; show end-of-results message when `hasMore` is false and products exist; preserve all Spanish UI text; and not modify `index.css`.",
+        "summary": "Create a generic `useStableActorQuery` hook in `frontend/src/hooks/useStableActorQuery.ts` that wraps React Query's `useQuery`. It must: accept a selector function `(actor) => Promise<T>`, a `queryKey` array, and an optional `options` object; use `useStableActor` internally; only enable the query when the stable actor is available (`enabled: !!stableActor`); merge `isActorFetching` with the query's own `isLoading` so the returned `isLoading` is `true` during both actor initialization and query fetching; and return the full React Query result object with the enhanced `isLoading`.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
+          "frontend/src/hooks/useStableActorQuery.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
+          "frontend/src/hooks/useStableActorQuery.ts"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Refactor all public page GET query hooks to use `useStableActorQuery` while maintaining identical external interfaces. The affected hooks and their files are: `useGetAllCategories` and `useGetHomepageCategories` (homepage/side panel), `useHomepageAutocomplete` in `frontend/src/hooks/useHomepageAutocomplete.ts`, `useGetCategoryById` (category page), `useCategoryProductsInfinite` in `frontend/src/hooks/useCategoryProductsInfinite.ts` (note: uses `useInfiniteQuery` — adapt pattern accordingly), `useGetProduct` and `useGetProductPhoto` in `frontend/src/hooks/useProductQueries.ts`, and `useGetBothStoreDetails` / `useBothStoreDetails` in `frontend/src/hooks/useBothStoreDetails.ts`. For each hook: replace direct `useActor()` + `enabled: !!actor` pattern with `useStableActorQuery`; define a named selector function for the actor method; preserve all existing query keys, `staleTime`, `gcTime`, retry settings, and error handling; keep all Spanish-language error messages unchanged.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useHomepageAutocomplete.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useCategoryProductsInfinite.ts",
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useBothStoreDetails.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useHomepageAutocomplete.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useCategoryProductsInfinite.ts",
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useBothStoreDetails.ts"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Refactor all admin page GET query hooks to use the `useStableActorQuery` pattern while maintaining identical external interfaces. The affected files include: `frontend/src/hooks/useQueries.ts` (category CRUD get hooks), `frontend/src/hooks/useProductQueries.ts` (admin product get hooks), `frontend/src/hooks/useSaleItemQueries.ts` (sale item get hooks), `frontend/src/hooks/useStoreDetailsQueries.ts` (store details get hooks), `frontend/src/hooks/useAdminUserManagement.ts` (user list get hook), `frontend/src/hooks/useAdminExport.ts` (export stats get hook), `frontend/src/hooks/usePublicCategories.ts`, `frontend/src/hooks/useCategoryProductsPaginated.ts`, and `frontend/src/hooks/useProductSearchForSales.ts`. For each GET query hook in these files: replace the direct `useActor()` + `enabled: !!actor` pattern with `useStableActorQuery` (or stable actor gating for `useInfiniteQuery` variants); define named selector functions; preserve all query keys, cache settings, and Spanish error messages.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/usePublicCategories.ts",
+          "frontend/src/hooks/useCategoryProductsPaginated.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useProductQueries.ts",
+          "frontend/src/hooks/useSaleItemQueries.ts",
+          "frontend/src/hooks/useStoreDetailsQueries.ts",
+          "frontend/src/hooks/useAdminUserManagement.ts",
+          "frontend/src/hooks/useAdminExport.ts",
+          "frontend/src/hooks/usePublicCategories.ts",
+          "frontend/src/hooks/useCategoryProductsPaginated.ts",
+          "frontend/src/hooks/useProductSearchForSales.ts"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Ensure `useHomepageCategoriesInfinite` in `frontend/src/hooks/useHomepageCategoriesInfinite.ts` and `useCategoryProductsInfinite` in `frontend/src/hooks/useCategoryProductsInfinite.ts` are adapted for the stable actor pattern using `useStableActor` to gate the `enabled` option on `useInfiniteQuery`, since `useStableActorQuery` wraps `useQuery` only. The stable actor reference must be obtained via `useStableActor`, passed directly into the `queryFn`, and the query enabled only when `!!stableActor`. All existing pagination behavior, `getNextPageParam`, flattened page data, and `fetchNextPage` must be preserved.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
+          "frontend/src/hooks/useCategoryProductsInfinite.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
+          "frontend/src/hooks/useCategoryProductsInfinite.ts"
         ]
       }
     ]
@@ -39,8 +100,21 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/hooks/useAdminExport.ts",
+    "frontend/src/hooks/useAdminUserManagement.ts",
+    "frontend/src/hooks/useBothStoreDetails.ts",
     "frontend/src/hooks/useCategoryProductsInfinite.ts",
-    "frontend/src/pages/public/CategoryPage.tsx",
+    "frontend/src/hooks/useCategoryProductsPaginated.ts",
+    "frontend/src/hooks/useHomepageAutocomplete.ts",
+    "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
+    "frontend/src/hooks/useProductQueries.ts",
+    "frontend/src/hooks/useProductSearchForSales.ts",
+    "frontend/src/hooks/usePublicCategories.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useSaleItemQueries.ts",
+    "frontend/src/hooks/useStableActor.ts",
+    "frontend/src/hooks/useStableActorQuery.ts",
+    "frontend/src/hooks/useStoreDetailsQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

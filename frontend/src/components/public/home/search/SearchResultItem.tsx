@@ -1,39 +1,42 @@
-import { formatPriceForDisplay } from '@/utils/NumericConverter';
+import React from 'react';
 import type { HomepageSearchResult } from '@/backend';
+import { formatPriceForDisplay } from '@/utils/NumericConverter';
 
 interface SearchResultItemProps {
   result: HomepageSearchResult;
   isActive: boolean;
   onClick: () => void;
   onMouseEnter: () => void;
-  id: string;
 }
 
-export default function SearchResultItem({ result, isActive, onClick, onMouseEnter, id }: SearchResultItemProps) {
-  const displayPrice = result.saleIsActive && result.salePrice !== undefined
+export default function SearchResultItem({ result, isActive, onClick, onMouseEnter }: SearchResultItemProps) {
+  const displayPrice = result.saleIsActive && result.salePrice != null
     ? result.salePrice
     : result.price;
 
   return (
     <button
-      id={id}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
-        isActive ? 'bg-muted' : 'hover:bg-muted'
-      }`}
+      type="button"
       role="option"
       aria-selected={isActive}
+      className={`w-full text-left px-4 py-3 transition-colors flex flex-col gap-0.5 ${
+        isActive ? 'bg-accent' : 'hover:bg-accent'
+      }`}
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
     >
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-foreground truncate">{result.name}</div>
-        <div className="text-sm text-muted-foreground truncate">{result.categoryName}</div>
+      <span className="text-sm font-medium text-foreground line-clamp-1">{result.name}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">{result.categoryName}</span>
+        {displayPrice != null && (
+          <>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className={`text-xs font-medium ${result.saleIsActive ? 'text-destructive' : 'text-foreground'}`}>
+              {formatPriceForDisplay(displayPrice)}€
+            </span>
+          </>
+        )}
       </div>
-      {displayPrice !== undefined && (
-        <div className="text-sm font-semibold text-foreground whitespace-nowrap">
-          {formatPriceForDisplay(displayPrice)}
-        </div>
-      )}
     </button>
   );
 }

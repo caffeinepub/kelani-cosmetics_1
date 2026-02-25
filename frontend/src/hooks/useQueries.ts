@@ -1,6 +1,6 @@
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useStableActorQuery } from './useStableActorQuery';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 import type { Category as BackendCategory } from '../backend';
 import { numberToBigInt, bigIntToNumber } from '../utils/categoryNumeric';
@@ -41,27 +41,10 @@ const QUERY_KEYS = {
  * Fetch all categories sorted by order
  */
 export function useGetAllCategories() {
-  const actorState = useActor();
-  const rawActor = actorState.actor;
-  const actorFetching = actorState.isFetching;
-
-  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
-
-  // Stabilize actor reference
-  React.useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
-
-  return useQuery<Category[]>({
-    queryKey: QUERY_KEYS.categories,
-    queryFn: async ({ signal }) => {
-      if (!stableActor) throw new Error('Actor not available');
-      if (signal?.aborted) throw new Error('Query aborted');
-      
+  return useStableActorQuery<Category[]>(
+    async (actor) => {
       try {
-        const backendCategories = await stableActor.getAllCategories();
+        const backendCategories = await actor.getAllCategories();
         return backendCategories.map(backendCategoryToUI);
       } catch (error) {
         reportErrorWithToast(
@@ -72,40 +55,26 @@ export function useGetAllCategories() {
         throw error;
       }
     },
-    enabled: Boolean(stableActor) && !actorFetching,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+    QUERY_KEYS.categories,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    }
+  );
 }
 
 /**
  * Fetch single category by ID
  */
 export function useGetCategoryById(categoryId: number | null) {
-  const actorState = useActor();
-  const rawActor = actorState.actor;
-  const actorFetching = actorState.isFetching;
-
-  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
-
-  // Stabilize actor reference
-  React.useEffect(() => {
-    if (rawActor && !stableActor) {
-      setStableActor(rawActor);
-    }
-  }, [rawActor, stableActor]);
-
-  const query = useQuery<Category | null>({
-    queryKey: QUERY_KEYS.category(categoryId ?? 0),
-    queryFn: async ({ signal }) => {
-      if (!stableActor || categoryId === null) return null;
-      if (signal?.aborted) throw new Error('Query aborted');
-      
+  const query = useStableActorQuery<Category | null>(
+    async (actor) => {
+      if (categoryId === null) return null;
       try {
-        const result = await stableActor.getCategoryById(numberToBigInt(categoryId));
+        const result = await actor.getCategoryById(numberToBigInt(categoryId));
         return result ? backendCategoryToUI(result) : null;
       } catch (error) {
         reportErrorWithToast(
@@ -116,20 +85,20 @@ export function useGetCategoryById(categoryId: number | null) {
         throw error;
       }
     },
-    enabled: Boolean(stableActor) && categoryId !== null,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+    QUERY_KEYS.category(categoryId ?? 0),
+    {
+      enabled: categoryId !== null,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    }
+  );
 
-  // Return custom state that properly reflects actor dependency
   return {
     ...query,
-    isLoading: actorFetching || query.isLoading,
-    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
-    isFetched: !!stableActor && query.isFetched,
+    isInitialLoading: query.isLoading,
   };
 }
 

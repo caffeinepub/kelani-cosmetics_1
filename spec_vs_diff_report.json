@@ -1,63 +1,94 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T23:55:50.661Z",
-  "summary": "The diff adds a new `useCategoryProductsInfinite` hook and refactors `CategoryPage.tsx`. Most requirements are met, but there are notable deviations: the hook accepts `categoryId` as `number | null` instead of `string`, does not use `useCategoryProductsPaginated` as the underlying data fetcher (uses a direct actor call instead), and lacks an explicit in-flight guard ref. The `useIntersectionObserver` sentinel ref requirement is partially addressed via `useInfiniteScroll`.",
+  "generatedAt": "2026-02-25T20:45:07.960Z",
+  "summary": "The diff implements most of the required changes: useStableActor and useStableActorQuery hooks are created, and the majority of GET query hooks across public and admin pages are refactored. However, REQ-1 specifies using useRef for stabilization, but the implementation uses useState + useEffect instead. Additionally, named selector functions are not defined as separate named functions in most hooks — the selectors are inline anonymous async functions. The useGetBothStoreDetails public alias mentioned in REQ-3 is not visibly exported. Some files referenced in REQ-3 (the homepage categories hooks for useGetAllCategories and useGetHomepageCategories) are not shown in the diff.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Accept `categoryId` as string parameter (per spec)",
-      "reason": "The hook signature uses `categoryId: number | null` instead of `string` as specified in the requirement.",
+      "requirement": "Stabilize the actor reference using useRef so it only updates once when the raw actor first becomes available",
+      "reason": "The implementation in useStableActor.ts uses useState + useEffect instead of useRef as explicitly required. While functionally similar, the spec explicitly calls for useRef.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+        "frontend/src/hooks/useStableActor.ts"
       ]
     },
     {
-      "id": "REQ-1",
-      "requirement": "Use `useCategoryProductsPaginated` as the underlying data fetcher",
-      "reason": "The hook directly calls `stableActor.getProductsPageFeaturedFirst(...)` instead of using the `useCategoryProductsPaginated` hook as specified.",
+      "id": "REQ-3",
+      "requirement": "Each hook defines a dedicated named selector function (e.g., selectAllCategories)",
+      "reason": "In all refactored hooks, the selector functions are defined inline as anonymous async arrow functions rather than as dedicated named selector functions as required by the spec.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useProductQueries.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/hooks/useStoreDetailsQueries.ts",
+        "frontend/src/hooks/useAdminExport.ts",
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/hooks/useBothStoreDetails.ts",
+        "frontend/src/hooks/useHomepageAutocomplete.ts",
+        "frontend/src/hooks/useCategoryProductsPaginated.ts",
+        "frontend/src/hooks/usePublicCategories.ts",
+        "frontend/src/hooks/useProductSearchForSales.ts"
       ]
     },
     {
-      "id": "REQ-1",
-      "requirement": "Prevent duplicate fetches with an explicit in-flight guard",
-      "reason": "No explicit in-flight guard ref is present. The hook relies on react-query's `isFetching` flag in `loadMore`, which may not fully prevent race conditions in the same way an explicit ref guard would.",
+      "id": "REQ-3",
+      "requirement": "useGetBothStoreDetails export must be present in frontend/src/hooks/useBothStoreDetails.ts",
+      "reason": "REQ-3 specifically lists useGetBothStoreDetails / useBothStoreDetails as affected hooks. The diff only shows useBothStoreDetails exported; no useGetBothStoreDetails export is visible.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+        "frontend/src/hooks/useBothStoreDetails.ts"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Use `useIntersectionObserver` for a sentinel ref in CategoryPage",
-      "reason": "CategoryPage uses `useInfiniteScroll` but there is no explicit `useIntersectionObserver` import or sentinel ref visible in the diff as required by the spec.",
+      "id": "REQ-4",
+      "requirement": "Each GET query hook in admin hook files defines dedicated named selector functions",
+      "reason": "All selectors in admin hook files are inline anonymous functions rather than named selector functions as required.",
       "evidence": [
-        "frontend/src/pages/public/CategoryPage.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useProductQueries.ts",
+        "frontend/src/hooks/useSaleItemQueries.ts",
+        "frontend/src/hooks/useStoreDetailsQueries.ts",
+        "frontend/src/hooks/useAdminUserManagement.ts",
+        "frontend/src/hooks/useAdminExport.ts",
+        "frontend/src/hooks/usePublicCategories.ts",
+        "frontend/src/hooks/useCategoryProductsPaginated.ts",
+        "frontend/src/hooks/useProductSearchForSales.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Actor stabilization logic with `stableActor` state and a `useEffect` to set it only once",
-      "reason": "The spec does not mention stabilizing the actor reference as a feature of this hook. This pattern was added beyond what was specified.",
+      "description": "useStableActorQuery returns a modified isFetched field (!!stableActor && query.isFetched) in addition to the enhanced isLoading",
+      "reason": "REQ-2 only specifies merging isActorFetching into isLoading and returning the full React Query result. Modifying isFetched was not requested.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+        "frontend/src/hooks/useStableActorQuery.ts"
       ]
     },
     {
-      "description": "Deduplication of accumulated products by barcode inside the accumulation effect",
-      "reason": "The spec says to mirror `useHomepageCategoriesInfinite` and append pages, but does not specify barcode-based deduplication as a requirement for this hook.",
+      "description": "useCategoryProductsPaginated calls useStableActor directly to extract isActorFetching separately in addition to calling useStableActorQuery, resulting in two calls to useStableActor and an unrequested isInitialLoading alias",
+      "reason": "The requirement does not specify this double-call pattern or the isInitialLoading alias. useStableActorQuery already merges isActorFetching into isLoading.",
       "evidence": [
-        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+        "frontend/src/hooks/useCategoryProductsPaginated.ts"
       ]
     }
   ],
   "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/src/hooks/useAdminExport.ts",
+    "frontend/src/hooks/useAdminUserManagement.ts",
+    "frontend/src/hooks/useBothStoreDetails.ts",
     "frontend/src/hooks/useCategoryProductsInfinite.ts",
-    "frontend/src/pages/public/CategoryPage.tsx",
+    "frontend/src/hooks/useCategoryProductsPaginated.ts",
+    "frontend/src/hooks/useHomepageAutocomplete.ts",
+    "frontend/src/hooks/useHomepageCategoriesInfinite.ts",
+    "frontend/src/hooks/useProductQueries.ts",
+    "frontend/src/hooks/useProductSearchForSales.ts",
+    "frontend/src/hooks/usePublicCategories.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/hooks/useSaleItemQueries.ts",
+    "frontend/src/hooks/useStableActor.ts",
+    "frontend/src/hooks/useStableActorQuery.ts",
+    "frontend/src/hooks/useStoreDetailsQueries.ts",
     "project_state.json"
   ]
 }
