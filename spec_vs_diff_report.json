@@ -1,21 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T23:34:12.756Z",
-  "summary": "The diff shows CategoryPage.tsx has been refactored to implement the requirements. The truncated diff shows removal of the buffering pattern refs, introduction of processedPagesRef, minDurationTimerRef, and immediate product appending logic. Most requirements appear implemented based on the visible code, but some acceptance criteria cannot be fully verified due to truncation.",
+  "generatedAt": "2026-02-24T23:55:50.661Z",
+  "summary": "The diff adds a new `useCategoryProductsInfinite` hook and refactors `CategoryPage.tsx`. Most requirements are met, but there are notable deviations: the hook accepts `categoryId` as `number | null` instead of `string`, does not use `useCategoryProductsPaginated` as the underlying data fetcher (uses a direct actor call instead), and lacks an explicit in-flight guard ref. The `useIntersectionObserver` sentinel ref requirement is partially addressed via `useInfiniteScroll`.",
   "missing_requirements": [
     {
-      "requirement": "Ensure stable product keys in ProductGrid (keyed by barcode) — REQ-4 AC requires ProductGrid renders each product with a stable key based on its barcode",
-      "reason": "The diff does not show any changes to ProductGrid component. The truncated CategoryPage.tsx does not show the JSX render section where ProductGrid is used with keys. Without seeing the ProductGrid component diff or the render section of CategoryPage, it cannot be confirmed that stable barcode-based keys are being passed.",
+      "id": "REQ-1",
+      "requirement": "Accept `categoryId` as string parameter (per spec)",
+      "reason": "The hook signature uses `categoryId: number | null` instead of `string` as specified in the requirement.",
+      "evidence": [
+        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Use `useCategoryProductsPaginated` as the underlying data fetcher",
+      "reason": "The hook directly calls `stableActor.getProductsPageFeaturedFirst(...)` instead of using the `useCategoryProductsPaginated` hook as specified.",
+      "evidence": [
+        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Prevent duplicate fetches with an explicit in-flight guard",
+      "reason": "No explicit in-flight guard ref is present. The hook relies on react-query's `isFetching` flag in `loadMore`, which may not fully prevent race conditions in the same way an explicit ref guard would.",
+      "evidence": [
+        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Use `useIntersectionObserver` for a sentinel ref in CategoryPage",
+      "reason": "CategoryPage uses `useInfiniteScroll` but there is no explicit `useIntersectionObserver` import or sentinel ref visible in the diff as required by the spec.",
       "evidence": [
         "frontend/src/pages/public/CategoryPage.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.62,
+  "hallucinated_features": [
+    {
+      "description": "Actor stabilization logic with `stableActor` state and a `useEffect` to set it only once",
+      "reason": "The spec does not mention stabilizing the actor reference as a feature of this hook. This pattern was added beyond what was specified.",
+      "evidence": [
+        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+      ]
+    },
+    {
+      "description": "Deduplication of accumulated products by barcode inside the accumulation effect",
+      "reason": "The spec says to mirror `useHomepageCategoriesInfinite` and append pages, but does not specify barcode-based deduplication as a requirement for this hook.",
+      "evidence": [
+        "frontend/src/hooks/useCategoryProductsInfinite.ts"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/src/hooks/useCategoryProductsInfinite.ts",
     "frontend/src/pages/public/CategoryPage.tsx",
     "project_state.json"
   ]

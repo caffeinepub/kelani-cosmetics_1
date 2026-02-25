@@ -1,62 +1,29 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T23:34:12.760Z",
+  "generatedAt": "2026-02-24T23:55:50.666Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Remove the complex buffering pattern from CategoryPage infinite scroll: eliminate `pendingProductsRef`, `apiFetchDoneRef`, `timerDoneRef`, and all associated conditional logic that defers product rendering.",
+        "summary": "Create a new custom hook `useCategoryProductsInfinite` in `frontend/src/hooks/useCategoryProductsInfinite.ts` that encapsulates all pagination logic for category products. The hook must: accept `categoryId` (string) and `pageSize` (number) parameters; internally manage accumulated products array, current page, initial loading state, load-more loading state, hasMore flag, and totalCount; expose `{ products, isLoading, isLoadingMore, error, hasMore, loadMore, totalCount }`; use `useCategoryProductsPaginated` as the underlying data fetcher; prevent duplicate fetches with an in-flight guard; reset all state when `categoryId` or `pageSize` changes; and clean up on unmount. Mirror the architectural pattern of `useHomepageCategoriesInfinite`.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
+          "frontend/src/hooks/useCategoryProductsInfinite.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
+          "frontend/src/hooks/useCategoryProductsInfinite.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Refactor the product accumulation logic in CategoryPage so that products are appended immediately when the API responds, using a functional state update with barcode-based deduplication. Remove the page 0 vs page 1+ branching — always use append logic regardless of page number.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Decouple the loading spinner (`isLoadingMore`) from product visibility in CategoryPage. The spinner should start when a page load is triggered, run for a minimum display duration on its own independent timer, and hide only after that timer expires — regardless of when the API response arrives or when products are rendered.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Retain `processedPagesRef` in CategoryPage to prevent the same page from being processed twice, and ensure stable product keys in ProductGrid (keyed by barcode).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/public/CategoryPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Preserve all Spanish-language interface messages in CategoryPage (loading text, error messages, empty state messages) exactly as they currently appear. Do not modify `frontend/src/index.css` — only add new CSS classes if strictly necessary.",
+        "summary": "Refactor `frontend/src/pages/public/CategoryPage.tsx` to use the new `useCategoryProductsInfinite` hook and remove all manual pagination state management. The component must: remove `page`, `accumulatedProducts`, `useEffect`-based accumulation, and timer-based logic; use `useIsMobile` to set `pageSize` (5 mobile / 10 desktop); use `useInfiniteScroll` with a throttled scroll handler (500px threshold) and a sentinel ref via `useIntersectionObserver`; render the product grid at all times when products exist; render the load-more spinner separately below the grid (never replace the grid); show an initial full-screen spinner only on first load; show end-of-results message when `hasMore` is false and products exist; preserve all Spanish UI text; and not modify `index.css`.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/public/CategoryPage.tsx"
@@ -72,6 +39,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/hooks/useCategoryProductsInfinite.ts",
     "frontend/src/pages/public/CategoryPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
