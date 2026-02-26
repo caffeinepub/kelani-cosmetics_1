@@ -1,66 +1,84 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useStableActor } from './useStableActor';
-import type { CategorizedProductWithSale, HomepageCategoriesResult } from '../backend';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useActor } from './useActor';
+import type { HomepageCategoriesResult, CategorizedProductWithSale } from '../backend';
 
 interface UseHomepageCategoriesInfiniteResult {
   categories: CategorizedProductWithSale[];
   isLoading: boolean;
-  isFetchingNextPage: boolean;
-  hasNextPage: boolean;
+  isFetchingMore: boolean;
+  hasMore: boolean;
   totalCategories: number;
   error: Error | null;
-  fetchNextPage: () => void;
+  loadMore: () => void;
 }
 
 export function useHomepageCategoriesInfinite(
   pageSize: number
 ): UseHomepageCategoriesInfiniteResult {
-  const { stableActor, isActorFetching } = useStableActor();
+  const { actor: rawActor, isFetching: actorFetching } = useActor();
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+  const [currentPage, setCurrentPage] = React.useState(0);
+  const [allCategories, setAllCategories] = React.useState<CategorizedProductWithSale[]>([]);
+  const [totalCategories, setTotalCategories] = React.useState(0);
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    error,
-  } = useInfiniteQuery<HomepageCategoriesResult>({
-    queryKey: ['homepage-categories', pageSize],
-    queryFn: async ({ pageParam, signal }) => {
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
+
+  const { data, isLoading, isFetching, error } = useQuery<HomepageCategoriesResult>({
+    queryKey: ['category-products', currentPage, pageSize],
+    queryFn: async ({ signal }) => {
       if (!stableActor) throw new Error('Actor not available');
       if (signal?.aborted) throw new Error('Query aborted');
-      return stableActor.getHomepageCategories(BigInt(pageParam as number), BigInt(pageSize));
+      
+      return stableActor.getHomepageCategories(BigInt(currentPage), BigInt(pageSize));
     },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, pages) => {
-      const totalLoaded = pages.reduce(
-        (acc, page) => acc + page.categories.length,
-        0
-      );
-      const total = Number(lastPage.totalCategories);
-      if (totalLoaded >= total) return undefined;
-      return pages.length; // next page index
-    },
-    enabled: !!stableActor,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
   });
 
-  const categories = data?.pages.flatMap((page) => page.categories) ?? [];
-  const totalCategories = data?.pages[0]
-    ? Number(data.pages[0].totalCategories)
-    : 0;
+  // Accumulate categories as pages load
+  React.useEffect(() => {
+    if (data?.categories) {
+      setAllCategories((prev) => {
+        // Avoid duplicates by checking if we already have these categories
+        const existingIds = new Set(prev.map((c) => Number(c.categoryId)));
+        const newCategories = data.categories.filter(
+          (c) => !existingIds.has(Number(c.categoryId))
+        );
+        return [...prev, ...newCategories];
+      });
+      setTotalCategories(Number(data.totalCategories));
+    }
+  }, [data]);
+
+  const hasMore = allCategories.length < totalCategories;
+  const isFetchingMore = isFetching && currentPage > 0;
+
+  const loadMore = () => {
+    if (!isFetching && hasMore) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  // Return true for isLoading until stable actor is available and initial fetch completes
+  const isInitialLoading = !stableActor || actorFetching || (isLoading && currentPage === 0);
 
   return {
-    categories,
-    isLoading: isActorFetching || isLoading,
-    isFetchingNextPage,
-    hasNextPage: hasNextPage ?? false,
+    categories: allCategories,
+    isLoading: isInitialLoading,
+    isFetchingMore,
+    hasMore,
     totalCategories,
     error: error as Error | null,
-    fetchNextPage,
+    loadMore,
   };
 }

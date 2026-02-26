@@ -1,4 +1,7 @@
-import React, { memo } from 'react';
+import { useState } from 'react';
+import { Edit, Trash2, Copy, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -7,192 +10,180 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, Trash2, Loader2, Star } from 'lucide-react';
-import type { UIProduct } from '@/hooks/useProductQueries';
-import { useToggleStoreStock } from '@/hooks/useProductQueries';
-import { useToggleProductFeatured } from '@/hooks/useToggleProductFeatured';
+import { useToggleStoreStock, useToggleProductFeatured, type Product } from '../../../hooks/useProductQueries';
+import { formatPriceForDisplay } from '../../../utils/NumericConverter';
+import { reportSuccessWithToast } from '../../../utils/reportErrorWithToast';
 
 interface ProductsTableProps {
-  products: UIProduct[];
-  onEdit: (product: UIProduct) => void;
-  onDelete: (product: UIProduct) => void;
-  store1Name?: string;
-  store2Name?: string;
-}
-
-const ProductRow = memo(function ProductRow({
-  product,
-  onEdit,
-  onDelete,
-  store1Name,
-  store2Name,
-  onToggleStore,
-  isTogglingStore1,
-  isTogglingStore2,
-  onToggleFeatured,
-  isTogglingFeatured,
-}: {
-  product: UIProduct;
-  onEdit: (product: UIProduct) => void;
-  onDelete: (product: UIProduct) => void;
+  products: Product[];
+  onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
+  isLoading: boolean;
   store1Name: string;
   store2Name: string;
-  onToggleStore: (store: 1 | 2) => void;
-  isTogglingStore1: boolean;
-  isTogglingStore2: boolean;
-  onToggleFeatured: () => void;
-  isTogglingFeatured: boolean;
-}) {
-  return (
-    <TableRow>
-      <TableCell className="font-mono text-xs">{product.barcode}</TableCell>
-      <TableCell className="font-medium max-w-[200px] truncate">{product.name}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">{product.categoryName}</TableCell>
-      <TableCell>
-        {product.price !== undefined ? (
-          <span className="font-medium">
-            {product.price.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
-        )}
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          {isTogglingStore1 ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Checkbox
-              checked={product.store1InStock}
-              onCheckedChange={() => onToggleStore(1)}
-              aria-label={`${store1Name} en stock`}
-            />
-          )}
-          <span className="text-xs text-muted-foreground ml-1 hidden xl:inline">{store1Name}</span>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          {isTogglingStore2 ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Checkbox
-              checked={product.store2InStock}
-              onCheckedChange={() => onToggleStore(2)}
-              aria-label={`${store2Name} en stock`}
-            />
-          )}
-          <span className="text-xs text-muted-foreground ml-1 hidden xl:inline">{store2Name}</span>
-        </div>
-      </TableCell>
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggleFeatured}
-          disabled={isTogglingFeatured}
-          aria-label={product.isFeatured ? 'Quitar destacado' : 'Destacar'}
-          className={product.isFeatured ? 'text-yellow-500' : 'text-muted-foreground'}
-        >
-          {isTogglingFeatured ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Star className="w-4 h-4" fill={product.isFeatured ? 'currentColor' : 'none'} />
-          )}
-        </Button>
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit(product)}
-            aria-label="Editar producto"
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(product)}
-            aria-label="Eliminar producto"
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-});
+}
 
-export function ProductsTable({
+export default function ProductsTable({
   products,
   onEdit,
   onDelete,
-  store1Name = 'Tienda 1',
-  store2Name = 'Tienda 2',
+  isLoading,
+  store1Name,
+  store2Name,
 }: ProductsTableProps) {
-  const toggleStoreStock = useToggleStoreStock();
-  const toggleFeatured = useToggleProductFeatured();
-  const [togglingStore, setTogglingStore] = React.useState<{
-    barcode: string;
-    store: 1 | 2;
-  } | null>(null);
+  const toggleStoreStockMutation = useToggleStoreStock();
+  const toggleFeaturedMutation = useToggleProductFeatured();
+  const [pendingStockKey, setPendingStockKey] = useState<string | null>(null);
+  const [pendingFeaturedBarcode, setPendingFeaturedBarcode] = useState<string | null>(null);
+  const [copiedBarcode, setCopiedBarcode] = useState<string | null>(null);
 
-  const handleToggleStore = (product: UIProduct, store: 1 | 2) => {
-    setTogglingStore({ barcode: product.barcode, store });
-    toggleStoreStock.mutate(
-      { product, store },
-      { onSettled: () => setTogglingStore(null) }
-    );
+  const handleToggleStoreStock = async (product: Product, storeNumber: 1 | 2) => {
+    const key = `${product.barcode}-store${storeNumber}`;
+    setPendingStockKey(key);
+    try {
+      await toggleStoreStockMutation.mutateAsync({ product, storeNumber });
+    } finally {
+      setPendingStockKey(null);
+    }
   };
 
+  const handleToggleFeatured = async (product: Product) => {
+    setPendingFeaturedBarcode(product.barcode);
+    try {
+      await toggleFeaturedMutation.mutateAsync(product);
+    } finally {
+      setPendingFeaturedBarcode(null);
+    }
+  };
+
+  const handleCopyBarcode = async (barcode: string) => {
+    try {
+      await navigator.clipboard.writeText(barcode);
+      setCopiedBarcode(barcode);
+      reportSuccessWithToast('Código copiado al portapapeles');
+      setTimeout(() => setCopiedBarcode(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-12 text-center">
+        <p className="text-muted-foreground">Cargando productos...</p>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-12 text-center">
+        <p className="text-muted-foreground">No se encontraron productos</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[130px]">Código</TableHead>
+            <TableHead className="w-32">Código</TableHead>
             <TableHead>Nombre</TableHead>
             <TableHead>Categoría</TableHead>
-            <TableHead>Precio</TableHead>
-            <TableHead>{store1Name}</TableHead>
-            <TableHead>{store2Name}</TableHead>
-            <TableHead>Destacado</TableHead>
-            <TableHead className="w-[100px]">Acciones</TableHead>
+            <TableHead className="w-28">Precio</TableHead>
+            <TableHead className="w-24 text-center">{store1Name}</TableHead>
+            <TableHead className="w-24 text-center">{store2Name}</TableHead>
+            <TableHead className="w-28 text-center">Destacado</TableHead>
+            <TableHead className="w-32 text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                No se encontraron productos
-              </TableCell>
-            </TableRow>
-          ) : (
-            products.map((product) => (
-              <ProductRow
-                key={product.barcode}
-                product={product}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                store1Name={store1Name}
-                store2Name={store2Name}
-                onToggleStore={(store) => handleToggleStore(product, store)}
-                isTogglingStore1={
-                  togglingStore?.barcode === product.barcode && togglingStore?.store === 1
-                }
-                isTogglingStore2={
-                  togglingStore?.barcode === product.barcode && togglingStore?.store === 2
-                }
-                onToggleFeatured={() => toggleFeatured.toggleFeatured(product)}
-                isTogglingFeatured={toggleFeatured.loadingBarcode === product.barcode}
-              />
-            ))
-          )}
+          {products.map((product) => {
+            const isPendingStore1 = pendingStockKey === `${product.barcode}-store1`;
+            const isPendingStore2 = pendingStockKey === `${product.barcode}-store2`;
+            const isPendingFeatured = pendingFeaturedBarcode === product.barcode;
+            const isCopied = copiedBarcode === product.barcode;
+
+            return (
+              <TableRow key={product.barcode} className="hover:bg-muted/50">
+                <TableCell className="font-mono text-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="truncate">{product.barcode}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => handleCopyBarcode(product.barcode)}
+                    >
+                      {isCopied ? (
+                        <Check className="h-3 w-3 text-success" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                      <span className="sr-only">Copiar código</span>
+                    </Button>
+                  </div>
+                </TableCell>
+                <TableCell className="font-medium">{product.name}</TableCell>
+                <TableCell>{product.categoryName || 'Sin categoría'}</TableCell>
+                <TableCell>
+                  {product.price !== undefined ? formatPriceForDisplay(product.price) : 'N/A'}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Checkbox
+                      checked={product.store1InStock}
+                      onCheckedChange={() => handleToggleStoreStock(product, 1)}
+                      disabled={isPendingStore1}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Checkbox
+                      checked={product.store2InStock}
+                      onCheckedChange={() => handleToggleStoreStock(product, 2)}
+                      disabled={isPendingStore2}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center">
+                    <Checkbox
+                      checked={product.isFeatured}
+                      onCheckedChange={() => handleToggleFeatured(product)}
+                      disabled={isPendingFeatured}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => onEdit(product)}
+                      disabled={isPendingStore1 || isPendingStore2 || isPendingFeatured}
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span className="sr-only">Editar</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => onDelete(product)}
+                      disabled={isPendingStore1 || isPendingStore2 || isPendingFeatured}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Eliminar</span>
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

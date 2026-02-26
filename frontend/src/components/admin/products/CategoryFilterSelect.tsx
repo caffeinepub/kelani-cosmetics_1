@@ -1,60 +1,64 @@
 import { useMemo } from 'react';
 import {
-  Select,
-  SelectContent,
+  SafeSelect,
   SelectGroup,
   SelectItem,
   SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SENTINEL_VALUES,
+  convertSentinelToNull,
+} from '../../SafeSelect';
 import { useGetAllCategories } from '../../../hooks/useQueries';
 
 interface CategoryFilterSelectProps {
-  value: number | null;
-  onChange: (value: number | null) => void;
+  value: string;
+  onValueChange: (value: string | null) => void;
   disabled?: boolean;
   className?: string;
 }
 
-export function CategoryFilterSelect({
+export default function CategoryFilterSelect({
   value,
-  onChange,
+  onValueChange,
   disabled,
   className,
 }: CategoryFilterSelectProps) {
   const { data: categories = [], isLoading } = useGetAllCategories();
 
-  const selectValue = value !== null ? String(value) : 'all';
-
   const handleChange = (newValue: string) => {
-    if (newValue === 'all') {
-      onChange(null);
-    } else {
-      onChange(Number(newValue));
-    }
+    const converted = convertSentinelToNull(newValue);
+    onValueChange(converted);
   };
 
+  const displayValue = useMemo(() => {
+    if (value === SENTINEL_VALUES.ALL || !value) {
+      return SENTINEL_VALUES.ALL;
+    }
+    return value;
+  }, [value]);
+
   return (
-    <Select
-      value={selectValue}
+    <SafeSelect
+      value={displayValue}
       onValueChange={handleChange}
       disabled={disabled || isLoading}
+      placeholder="All categories"
+      className={className}
+      sentinelValue={SENTINEL_VALUES.ALL}
+      contentClassName="admin-category-select-content"
     >
-      <SelectTrigger className={className ?? 'w-[200px]'}>
-        <SelectValue placeholder="Todas las categorías" />
-      </SelectTrigger>
-      <SelectContent className="admin-category-select-content">
-        <SelectGroup>
-          <SelectLabel>Filtrar por categoría</SelectLabel>
-          <SelectItem value="all">Todas las categorías</SelectItem>
-          {categories.map((category) => (
-            <SelectItem key={String(category.categoryId)} value={String(category.categoryId)}>
-              {category.name}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+      <SelectScrollUpButton />
+      <SelectGroup>
+        <SelectLabel>Filter by category</SelectLabel>
+        <SelectItem value={SENTINEL_VALUES.ALL}>All categories</SelectItem>
+        {categories.map((category) => (
+          <SelectItem key={category.categoryId} value={category.categoryId.toString()}>
+            {category.name}
+          </SelectItem>
+        ))}
+      </SelectGroup>
+      <SelectScrollDownButton />
+    </SafeSelect>
   );
 }

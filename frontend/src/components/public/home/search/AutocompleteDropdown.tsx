@@ -48,6 +48,7 @@ export default function AutocompleteDropdown({
           {results.map((result, index) => (
             <SearchResultItem
               key={result.barcode}
+              id={`search-result-${index}`}
               result={result}
               isActive={index === activeIndex}
               onClick={() => onSelect(result)}

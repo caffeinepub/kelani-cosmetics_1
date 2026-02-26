@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useStableActorQuery } from './useStableActorQuery';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useActor } from './useActor';
 import type { HomepageSearchResult } from '../backend';
 
 interface UseHomepageAutocompleteResult {
@@ -9,10 +10,19 @@ interface UseHomepageAutocompleteResult {
 }
 
 export function useHomepageAutocomplete(query: string): UseHomepageAutocompleteResult {
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const { actor: rawActor, isFetching: actorFetching } = useActor();
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+  const [debouncedQuery, setDebouncedQuery] = React.useState('');
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   // Debounce query
-  useEffect(() => {
+  React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query.trim());
     }, 300);
@@ -23,21 +33,22 @@ export function useHomepageAutocomplete(query: string): UseHomepageAutocompleteR
   const trimmedQuery = debouncedQuery;
   const shouldFetch = trimmedQuery.length >= 2;
 
-  const { data, isLoading, error } = useStableActorQuery<HomepageSearchResult[]>(
-    async (actor) => {
-      const searchResults = await actor.searchHomepageProducts(trimmedQuery);
+  const { data, isLoading, error } = useQuery<HomepageSearchResult[]>({
+    queryKey: ['category-products', 'search', trimmedQuery],
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
+      
+      const searchResults = await stableActor.searchHomepageProducts(trimmedQuery);
       return searchResults.slice(0, 10);
     },
-    ['category-products', 'search', trimmedQuery] as const,
-    {
-      enabled: shouldFetch,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  );
+    enabled: Boolean(stableActor) && !actorFetching && shouldFetch,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 
   return {
     results: data ?? [],

@@ -1,60 +1,106 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { useActor } from './useActor';
-import { reportErrorWithToast } from '../utils/reportErrorWithToast';
-import type { UIProduct } from './useProductQueries';
+import type { Product } from './useProductQueries';
+import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 
-/**
- * Mutation hook for toggling a product's featured status.
- * Fetches the current photo before calling updateProduct to avoid clearing it.
- */
 export function useToggleProductFeatured() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
-  const [loadingBarcode, setLoadingBarcode] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async (product: UIProduct) => {
+  return useMutation({
+    mutationFn: async (product: Product) => {
       if (!actor) throw new Error('Actor not available');
 
-      // Fetch the current photo to preserve it during the update
-      let currentPhoto: Uint8Array | null = null;
-      try {
-        currentPhoto = await actor.getProductPhoto(product.barcode);
-      } catch {
-        currentPhoto = null;
-      }
+      // Toggle the featured status
+      const newFeaturedStatus = !product.isFeatured;
 
-      return actor.updateProduct(
+      // Derive legacy inStock from store flags
+      const inStock = product.store1InStock || product.store2InStock;
+
+      // Call updateProduct with all existing fields, only changing isFeatured
+      const updatedProduct = await actor.updateProduct(
         product.barcode,
         product.name,
         BigInt(product.categoryId),
         product.description ?? null,
         product.price ?? null,
-        product.inStock,
-        !product.isFeatured,
-        currentPhoto,
+        inStock,
+        newFeaturedStatus,
+        product.photo ?? null,
         product.store1InStock,
         product.store2InStock
       );
+
+      return updatedProduct;
     },
-    onMutate: (product: UIProduct) => {
-      setLoadingBarcode(product.barcode);
+    onMutate: async (product) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['products'] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['products']);
+
+      // Optimistically update to the new value
+      queryClient.setQueriesData({ queryKey: ['products'] }, (old: any) => {
+        if (!old) return old;
+        
+        // Handle paginated response structure
+        if (old.pages) {
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items.map((p: Product) =>
+                p.barcode === product.barcode
+                  ? { ...p, isFeatured: !p.isFeatured }
+                  : p
+              ),
+            })),
+          };
+        }
+
+        // Handle direct array or object with items
+        if (Array.isArray(old)) {
+          return old.map((p: Product) =>
+            p.barcode === product.barcode
+              ? { ...p, isFeatured: !p.isFeatured }
+              : p
+          );
+        }
+
+        if (old.items) {
+          return {
+            ...old,
+            items: old.items.map((p: Product) =>
+              p.barcode === product.barcode
+                ? { ...p, isFeatured: !p.isFeatured }
+                : p
+            ),
+          };
+        }
+
+        return old;
+      });
+
+      return { previousData };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+    onError: (error, product, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['products'], context.previousData);
+      }
+      reportErrorWithToast(error, 'Error al actualizar el estado destacado');
     },
-    onError: (error: unknown) => {
-      reportErrorWithToast(error, 'Error al cambiar estado destacado');
+    onSuccess: (data) => {
+      reportSuccessWithToast(
+        data.isFeatured
+          ? 'Producto marcado como destacado'
+          : 'Producto desmarcado como destacado'
+      );
     },
     onSettled: () => {
-      setLoadingBarcode(null);
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
-
-  return {
-    ...mutation,
-    loadingBarcode,
-    toggleFeatured: (product: UIProduct) => mutation.mutate(product),
-  };
 }

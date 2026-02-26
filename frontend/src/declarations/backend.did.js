@@ -113,7 +113,7 @@ export const HomepageCategoriesResult = IDL.Record({
   'categories' : IDL.Vec(CategorizedProductWithSale),
   'totalCategories' : IDL.Nat,
 });
-export const ProductV2Light = IDL.Record({
+export const ProductV2 = IDL.Record({
   'categoryId' : IDL.Nat,
   'categoryName' : IDL.Text,
   'inStock' : IDL.Bool,
@@ -124,12 +124,13 @@ export const ProductV2Light = IDL.Record({
   'barcode' : IDL.Text,
   'lastUpdatedDate' : IDL.Int,
   'store1InStock' : IDL.Bool,
+  'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   'price' : IDL.Opt(IDL.Float64),
   'store2InStock' : IDL.Bool,
 });
 export const PaginatedResponse = IDL.Record({
   'totalCount' : IDL.Nat,
-  'items' : IDL.Vec(ProductV2Light),
+  'items' : IDL.Vec(ProductV2),
 });
 export const SaleItemArray = IDL.Record({
   'totalCount' : IDL.Nat,
@@ -144,6 +145,7 @@ export const HomepageSearchResult = IDL.Record({
   'categoryName' : IDL.Text,
   'name' : IDL.Text,
   'salePercentage' : IDL.Opt(IDL.Float64),
+  'description' : IDL.Opt(IDL.Text),
   'barcode' : IDL.Text,
   'salePrice' : IDL.Opt(IDL.Float64),
   'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
@@ -387,7 +389,7 @@ export const idlFactory = ({ IDL }) => {
     'categories' : IDL.Vec(CategorizedProductWithSale),
     'totalCategories' : IDL.Nat,
   });
-  const ProductV2Light = IDL.Record({
+  const ProductV2 = IDL.Record({
     'categoryId' : IDL.Nat,
     'categoryName' : IDL.Text,
     'inStock' : IDL.Bool,
@@ -398,12 +400,13 @@ export const idlFactory = ({ IDL }) => {
     'barcode' : IDL.Text,
     'lastUpdatedDate' : IDL.Int,
     'store1InStock' : IDL.Bool,
+    'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'price' : IDL.Opt(IDL.Float64),
     'store2InStock' : IDL.Bool,
   });
   const PaginatedResponse = IDL.Record({
     'totalCount' : IDL.Nat,
-    'items' : IDL.Vec(ProductV2Light),
+    'items' : IDL.Vec(ProductV2),
   });
   const SaleItemArray = IDL.Record({
     'totalCount' : IDL.Nat,
@@ -418,6 +421,7 @@ export const idlFactory = ({ IDL }) => {
     'categoryName' : IDL.Text,
     'name' : IDL.Text,
     'salePercentage' : IDL.Opt(IDL.Float64),
+    'description' : IDL.Opt(IDL.Text),
     'barcode' : IDL.Text,
     'salePrice' : IDL.Opt(IDL.Float64),
     'photo' : IDL.Opt(IDL.Vec(IDL.Nat8)),

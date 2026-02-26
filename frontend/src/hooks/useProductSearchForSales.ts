@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useStableActorQuery } from './useStableActorQuery';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useActor } from './useActor';
 import { reportErrorWithToast } from '../utils/reportErrorWithToast';
 import type { Product as BackendProduct } from '../backend';
 import { bigIntToNumber } from '../utils/categoryNumeric';
@@ -39,10 +40,22 @@ const QUERY_KEYS = {
  * Search products for sale item creation/editing
  */
 export function useProductSearchForSales(searchQuery: string) {
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
 
   // Debounce search query
-  useEffect(() => {
+  React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, DEBOUNCE_MS);
@@ -52,10 +65,14 @@ export function useProductSearchForSales(searchQuery: string) {
 
   const shouldSearch = debouncedSearch.length >= MIN_SEARCH_LENGTH;
 
-  return useStableActorQuery<ProductSearchResult[]>(
-    async (actor) => {
+  return useQuery<ProductSearchResult[]>({
+    queryKey: QUERY_KEYS.productSearch(debouncedSearch),
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
+
       try {
-        const results = await actor.filterProductsForSales(debouncedSearch);
+        const results = await stableActor.filterProductsForSales(debouncedSearch);
         return results
           .map(backendProductToSearchResult)
           .filter((item): item is ProductSearchResult => item !== null);
@@ -66,14 +83,11 @@ export function useProductSearchForSales(searchQuery: string) {
         throw error;
       }
     },
-    QUERY_KEYS.productSearch(debouncedSearch),
-    {
-      enabled: shouldSearch,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  );
+    enabled: Boolean(stableActor) && !actorFetching && shouldSearch,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 }

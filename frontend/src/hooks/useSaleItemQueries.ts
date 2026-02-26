@@ -1,11 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useStableActorQuery } from './useStableActorQuery';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 import type { SaleItem as BackendSaleItem, SaleItemArray } from '../backend';
 import { numberToBigInt, bigIntToNumber } from '../utils/categoryNumeric';
 import { 
   dateStringToNanosecondsBigInt, 
+  timestampToDateString,
   getCurrentTimestampBigInt 
 } from '../utils/adminDate';
 
@@ -89,10 +90,27 @@ export function useGetSaleItemsPage(
   pageSize: number,
   includeInactive: boolean
 ) {
-  return useStableActorQuery<{ items: SaleItem[]; totalCount: number }>(
-    async (actor) => {
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
+
+  return useQuery<{ items: SaleItem[]; totalCount: number }>({
+    queryKey: QUERY_KEYS.saleItems(search, page, pageSize, includeInactive),
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
+
       try {
-        const response: SaleItemArray = await actor.getSaleItemsPage(
+        const response: SaleItemArray = await stableActor.getSaleItemsPage(
           search,
           BigInt(page),
           BigInt(pageSize),
@@ -112,15 +130,13 @@ export function useGetSaleItemsPage(
         throw error;
       }
     },
-    QUERY_KEYS.saleItems(search, page, pageSize, includeInactive),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  );
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 }
 
 // ============================================================================

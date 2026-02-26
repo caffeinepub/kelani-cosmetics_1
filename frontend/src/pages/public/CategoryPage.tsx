@@ -23,15 +23,13 @@ export default function CategoryPage() {
   const {
     products,
     isLoading,
-    isFetchingNextPage,
+    isLoadingMore,
     error,
-    hasNextPage,
-    fetchNextPage,
+    hasMore,
+    loadMore,
   } = useCategoryProductsInfinite(isValidCategoryId ? categoryIdNum : null, pageSize);
 
-  const { data: storeDetailsData } = useBothStoreDetails();
-  // storeDetailsData is StoreDetails[] (mapped from tuples in useBothStoreDetails)
-  const storeDetails = storeDetailsData ?? [];
+  const { data: storeDetailsArray } = useBothStoreDetails();
 
   const {
     data: category,
@@ -39,13 +37,15 @@ export default function CategoryPage() {
     isFetched: categoryFetched,
   } = useGetCategoryById(categoryIdNum ?? 0);
 
+  // Stable loadMore callback for the scroll hook
   const handleLoadMore = useCallback(() => {
-    fetchNextPage();
-  }, [fetchNextPage]);
+    loadMore();
+  }, [loadMore]);
 
+  // Infinite scroll sentinel
   const sentinelRef = useInfiniteScroll({
-    hasMore: hasNextPage,
-    isLoading: isLoading || isFetchingNextPage,
+    hasMore,
+    isLoading: isLoading || isLoadingMore,
     onLoadMore: handleLoadMore,
     enabled: isValidCategoryId && products.length > 0,
     threshold: 500,
@@ -63,10 +63,12 @@ export default function CategoryPage() {
     );
   }
 
+  // Initial loading — show full-page spinner until actor is ready and first fetch completes
   if (isLoading || categoryLoading || !categoryFetched) {
     return <LoadingSpinner message="Cargando productos..." />;
   }
 
+  // Error state — only shown when no products are loaded
   if (error && products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 space-y-4">
@@ -102,28 +104,32 @@ export default function CategoryPage() {
         </div>
       )}
 
-      {/* Empty state */}
-      {products.length === 0 && !isFetchingNextPage ? (
+      {/* Empty state — only shown when no products and not loading */}
+      {products.length === 0 && !isLoadingMore ? (
         <div className="flex flex-col items-center justify-center py-24">
           <p className="text-lg text-muted-foreground">No hay productos en esta categoría</p>
         </div>
       ) : (
         <>
+          {/* ProductGrid — always visible, never hidden during pagination */}
           <ProductGrid
             products={products}
-            storeDetails={storeDetails}
+            storeDetails={storeDetailsArray || []}
           />
 
-          {isFetchingNextPage && (
+          {/* Inline pagination loading spinner — appears below grid, never replaces it */}
+          {isLoadingMore && (
             <LoadingSpinner message="Cargando más productos..." size="md" inline />
           )}
 
-          {!hasNextPage && products.length > 0 && !isFetchingNextPage && (
+          {/* End of content message */}
+          {!hasMore && products.length > 0 && !isLoadingMore && (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No hay más productos en esta categoría</p>
             </div>
           )}
 
+          {/* Sentinel element for IntersectionObserver — always present */}
           <div ref={sentinelRef} className="h-1" aria-hidden="true" />
         </>
       )}

@@ -10,12 +10,12 @@ interface HomepageCategoriesSectionProps {
 }
 
 function HomepageCategoriesSection({ storeDetails }: HomepageCategoriesSectionProps) {
-  const { categories, hasNextPage, isLoading, isFetchingNextPage, fetchNextPage, totalCategories } = useHomepageCategoriesInfinite(3);
+  const { categories, hasMore, isLoading, isFetchingMore, loadMore, totalCategories } = useHomepageCategoriesInfinite(3);
 
   const sentinelRef = useInfiniteScroll({
-    hasMore: hasNextPage,
-    isLoading: isFetchingNextPage,
-    onLoadMore: fetchNextPage,
+    hasMore,
+    isLoading: isFetchingMore,
+    onLoadMore: loadMore,
     enabled: categories.length > 0,
     threshold: 500,
   });
@@ -40,12 +40,12 @@ function HomepageCategoriesSection({ storeDetails }: HomepageCategoriesSectionPr
       ))}
 
       {/* Infinite scroll loading indicator */}
-      {isFetchingNextPage && (
+      {isFetchingMore && (
         <LoadingSpinner message="Cargando más categorías..." size="md" inline />
       )}
 
       {/* End of content message */}
-      {!hasNextPage && categories.length > 0 && categories.length >= totalCategories && (
+      {!hasMore && categories.length > 0 && categories.length >= totalCategories && (
         <div className="text-center py-8">
           <p className="text-muted-foreground">No hay más categorías para mostrar</p>
         </div>

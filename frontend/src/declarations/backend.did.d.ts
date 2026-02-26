@@ -52,6 +52,7 @@ export interface HomepageSearchResult {
   'categoryName' : string,
   'name' : string,
   'salePercentage' : [] | [number],
+  'description' : [] | [string],
   'barcode' : string,
   'salePrice' : [] | [number],
   'photo' : [] | [Uint8Array],
@@ -70,7 +71,7 @@ export interface ImportResult {
 }
 export interface PaginatedResponse {
   'totalCount' : bigint,
-  'items' : Array<ProductV2Light>,
+  'items' : Array<ProductV2>,
 }
 export interface Product {
   'categoryId' : bigint,
@@ -86,7 +87,7 @@ export interface Product {
   'price' : [] | [number],
   'store2InStock' : boolean,
 }
-export interface ProductV2Light {
+export interface ProductV2 {
   'categoryId' : bigint,
   'categoryName' : string,
   'inStock' : boolean,
@@ -97,6 +98,7 @@ export interface ProductV2Light {
   'barcode' : string,
   'lastUpdatedDate' : bigint,
   'store1InStock' : boolean,
+  'photo' : [] | [Uint8Array],
   'price' : [] | [number],
   'store2InStock' : boolean,
 }

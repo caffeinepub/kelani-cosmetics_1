@@ -1,6 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import React from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useStableActorQuery } from './useStableActorQuery';
 import { reportErrorWithToast } from '../utils/reportErrorWithToast';
 import type { ExportPayload } from '../backend';
 
@@ -18,19 +18,36 @@ const QUERY_KEYS = {
  * Fetch export statistics (counts)
  */
 export function useExportStatistics() {
-  return useStableActorQuery<{
+  const actorState = useActor();
+  const rawActor = actorState.actor;
+  const actorFetching = actorState.isFetching;
+
+  const [stableActor, setStableActor] = React.useState<typeof rawActor>(null);
+
+  // Stabilize actor reference
+  React.useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
+
+  return useQuery<{
     categories: number;
     products: number;
     featured: number;
     onSale: number;
-  }>(
-    async (actor) => {
+  }>({
+    queryKey: QUERY_KEYS.exportStatistics,
+    queryFn: async ({ signal }) => {
+      if (!stableActor) throw new Error('Actor not available');
+      if (signal?.aborted) throw new Error('Query aborted');
+
       try {
         const [categories, totalProducts, featuredProducts, activeSales] = await Promise.all([
-          actor.getAllCategories(),
-          actor.getTotalProductCount(),
-          actor.getFeaturedProducts(),
-          actor.getActiveSales(),
+          stableActor.getAllCategories(),
+          stableActor.getTotalProductCount(),
+          stableActor.getFeaturedProducts(),
+          stableActor.getActiveSales(),
         ]);
 
         return {
@@ -46,15 +63,13 @@ export function useExportStatistics() {
         throw error;
       }
     },
-    QUERY_KEYS.exportStatistics,
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  );
+    enabled: Boolean(stableActor) && !actorFetching,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 }
 
 // ============================================================================

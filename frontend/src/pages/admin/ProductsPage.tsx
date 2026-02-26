@@ -1,171 +1,219 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Loader2, RefreshCw } from 'lucide-react';
-import { ProductsTable } from '@/components/admin/products/ProductsTable';
-import { ProductsCards } from '@/components/admin/products/ProductsCards';
-import ProductsPagination from '@/components/admin/products/ProductsPagination';
-import { ProductUpsertModal } from '@/components/admin/products/ProductUpsertModal';
-import { DeleteProductDialog } from '@/components/admin/products/DeleteProductDialog';
-import { CategoryFilterSelect } from '@/components/admin/products/CategoryFilterSelect';
-import { useGetProductsPage, type UIProduct } from '@/hooks/useProductQueries';
-import { useIsMobile } from '@/hooks/useMediaQuery';
-import { useBothStoreDetails } from '@/hooks/useBothStoreDetails';
-import { useDebounce } from 'react-use';
+import { useGetProductsPage, type Product } from '../../hooks/useProductQueries';
+import { useBothStoreDetails } from '../../hooks/useBothStoreDetails';
+import { useIsMobile } from '../../hooks/useMediaQuery';
+import ProductsTable from '../../components/admin/products/ProductsTable';
+import ProductsCards from '../../components/admin/products/ProductsCards';
+import ProductsPagination from '../../components/admin/products/ProductsPagination';
+import CategoryFilterSelect from '../../components/admin/products/CategoryFilterSelect';
+import ProductUpsertModal from '../../components/admin/products/ProductUpsertModal';
+import DeleteProductDialog from '../../components/admin/products/DeleteProductDialog';
+import { reportErrorWithToast } from '../../utils/reportErrorWithToast';
+
+const DEFAULT_PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 300;
+const MIN_SEARCH_LENGTH = 2;
 
 export default function ProductsPage() {
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(25);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
-  const [upsertOpen, setUpsertOpen] = useState(false);
-  const [editProduct, setEditProduct] = useState<UIProduct | null>(null);
-  const [deleteProduct, setDeleteProduct] = useState<UIProduct | null>(null);
+  // Fetch store details once at page level
+  const {
+    data: storeDetailsArray,
+    isLoading: storeDetailsLoading,
+    isError: storeDetailsError,
+    error: storeDetailsErrorObj,
+  } = useBothStoreDetails();
 
-  useDebounce(() => {
-    setDebouncedSearch(search);
-    setPage(0);
-  }, 400, [search]);
+  // Derive store names with loading and error fallbacks
+  const store1Name = storeDetailsLoading
+    ? 'Cargando...'
+    : storeDetailsError || !storeDetailsArray || storeDetailsArray.length < 1
+    ? 'Tienda 1'
+    : storeDetailsArray[0].name;
 
-  const { data, isLoading, isError, refetch } = useGetProductsPage(
+  const store2Name = storeDetailsLoading
+    ? 'Cargando...'
+    : storeDetailsError || !storeDetailsArray || storeDetailsArray.length < 2
+    ? 'Tienda 2'
+    : storeDetailsArray[1].name;
+
+  // Report store details error once
+  useEffect(() => {
+    if (storeDetailsError && storeDetailsErrorObj) {
+      console.error('Failed to load store details:', storeDetailsErrorObj);
+      reportErrorWithToast(
+        storeDetailsErrorObj,
+        'No se pudieron cargar los nombres de las tiendas'
+      );
+    }
+  }, [storeDetailsError, storeDetailsErrorObj]);
+
+  // Clear query cache on unmount
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ['products'], exact: false });
+    };
+  }, [queryClient]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.length === 0 || searchQuery.length >= MIN_SEARCH_LENGTH) {
+        setDebouncedSearch(searchQuery);
+        setCurrentPage(0); // Reset to first page on search
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [categoryFilter, pageSize]);
+
+  // Fetch products with pagination
+  const categoryIdNumber = categoryFilter ? Number(categoryFilter) : null;
+  const { data, isLoading } = useGetProductsPage(
     debouncedSearch,
-    categoryId,
-    page,
+    categoryIdNumber,
+    currentPage,
     pageSize
   );
-
-  // Derive store names from useBothStoreDetails
-  const { data: storeDetailsArray, isLoading: storeLoading } = useBothStoreDetails();
-  const store1Name = storeLoading
-    ? 'Cargando...'
-    : storeDetailsArray && storeDetailsArray.length >= 1
-    ? storeDetailsArray[0].name
-    : 'Tienda 1';
-  const store2Name = storeLoading
-    ? 'Cargando...'
-    : storeDetailsArray && storeDetailsArray.length >= 2
-    ? storeDetailsArray[1].name
-    : 'Tienda 2';
-
-  const handleEdit = useCallback((product: UIProduct) => {
-    // Pass product data without photo — modal fetches photo lazily
-    setEditProduct(product);
-    setUpsertOpen(true);
-  }, []);
-
-  const handleDelete = useCallback((product: UIProduct) => {
-    setDeleteProduct(product);
-  }, []);
-
-  const handleAddNew = () => {
-    setEditProduct(null);
-    setUpsertOpen(true);
-  };
-
-  const handleUpsertClose = (open: boolean) => {
-    setUpsertOpen(open);
-    if (!open) setEditProduct(null);
-  };
-
-  const handleCategoryChange = (val: number | null) => {
-    setCategoryId(val);
-    setPage(0);
-  };
 
   const products = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
 
+  const handleAddClick = () => {
+    setEditingProduct(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = (product: Product) => {
+    setDeletingProduct(product);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setDebouncedSearch('');
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">Productos</h1>
-        <Button onClick={handleAddNew} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          Nuevo producto
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Productos</h2>
+        <Button onClick={handleAddClick} size="icon" className="h-10 w-10">
+          <Plus className="h-5 w-5" />
+          <span className="sr-only">Agregar producto</span>
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      {/* Search and Filter */}
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, código..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
+            type="text"
+            placeholder="Buscar por código, nombre, descripción"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+              onClick={handleClearSearch}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Limpiar búsqueda</span>
+            </Button>
+          )}
         </div>
+
         <CategoryFilterSelect
-          value={categoryId}
-          onChange={handleCategoryChange}
+          value={categoryFilter ?? 'all'}
+          onValueChange={(value) => setCategoryFilter(value)}
+          className="w-full sm:w-64"
         />
-        <Button variant="ghost" size="icon" onClick={() => refetch()} title="Actualizar">
-          <RefreshCw className="w-4 h-4" />
-        </Button>
       </div>
 
-      {/* Content */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Cargando productos...</span>
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12 text-destructive">
-          <p>Error al cargar los productos.</p>
-          <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
-            Reintentar
-          </Button>
-        </div>
-      ) : isMobile ? (
+      {/* Products Table or Cards */}
+      {isMobile ? (
         <ProductsCards
           products={products}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          isLoading={isLoading}
           store1Name={store1Name}
           store2Name={store2Name}
         />
       ) : (
         <ProductsTable
           products={products}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          isLoading={isLoading}
           store1Name={store1Name}
           store2Name={store2Name}
         />
       )}
 
       {/* Pagination */}
-      {!isLoading && !isError && totalCount > 0 && (
+      {totalCount > 0 && (
         <ProductsPagination
-          currentPage={page}
+          currentPage={currentPage}
           pageSize={pageSize}
           totalCount={totalCount}
-          onPageChange={setPage}
-          onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(0); }}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
         />
       )}
 
-      {/* Modals */}
+      {/* Add/Edit Modal */}
       <ProductUpsertModal
-        open={upsertOpen}
-        onOpenChange={handleUpsertClose}
-        product={editProduct}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        editingProduct={editingProduct}
         store1Name={store1Name}
         store2Name={store2Name}
+        storeNamesLoading={storeDetailsLoading}
       />
 
-      {deleteProduct && (
-        <DeleteProductDialog
-          product={deleteProduct}
-          onClose={() => setDeleteProduct(null)}
-        />
-      )}
+      {/* Delete Confirmation Dialog */}
+      <DeleteProductDialog
+        product={deletingProduct}
+        onOpenChange={(open) => !open && setDeletingProduct(null)}
+      />
     </div>
   );
 }

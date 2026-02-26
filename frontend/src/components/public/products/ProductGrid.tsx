@@ -1,32 +1,28 @@
-import React from 'react';
-import type { ProductWithSale, StoreDetails } from '@/backend';
+import { memo } from 'react';
+import { useProductModalNavigation } from '../../../hooks/useProductModalNavigation';
 import ProductCard from './ProductCard';
-import { useProductModalStore } from '@/stores/productModalStore';
-import { getCachedPhotoUrl } from './LazyProductImage';
+import type { ProductWithSale, StoreDetails } from '../../../backend';
 
 interface ProductGridProps {
   products: ProductWithSale[];
-  storeDetails?: StoreDetails[];
+  storeDetails: StoreDetails[];
 }
 
-export default function ProductGrid({ products, storeDetails }: ProductGridProps) {
-  const openModal = useProductModalStore((s) => s.openModal);
-
-  const handleOpenModal = (productWithSale: ProductWithSale) => {
-    const cachedUrl = getCachedPhotoUrl(productWithSale.product.barcode);
-    openModal(productWithSale, cachedUrl);
-  };
+function ProductGrid({ products, storeDetails }: ProductGridProps) {
+  const { openModalWithHistory } = useProductModalNavigation();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-      {products.map((productWithSale) => (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {products.map((product) => (
         <ProductCard
-          key={productWithSale.product.barcode}
-          productWithSale={productWithSale}
+          key={product.product.barcode}
+          product={product}
           storeDetails={storeDetails}
-          onOpenModal={handleOpenModal}
+          onClick={() => openModalWithHistory(product, storeDetails, 'category-page')}
         />
       ))}
     </div>
   );
 }
+
+export default memo(ProductGrid);

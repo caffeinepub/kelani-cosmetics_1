@@ -1,80 +1,96 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useStableActorQuery } from './useStableActorQuery';
-import type { ProductV2Light, ProductWithSale, PaginatedResponse } from '../backend';
+import type { Product as BackendProduct, PaginatedResponse, ProductV2, ProductWithSale } from '../backend';
 import { reportErrorWithToast, reportSuccessWithToast } from '../utils/reportErrorWithToast';
 
-// UI-facing product type for list views (no photo field — fetched lazily)
-export interface UIProduct {
+export interface Product {
   barcode: string;
   name: string;
   categoryId: number;
-  categoryName: string;
+  categoryName?: string;
   description?: string;
   price?: number;
   inStock: boolean;
   isFeatured: boolean;
+  photo?: Uint8Array;
+  photoUrl?: string;
   createdDate: bigint;
   lastUpdatedDate: bigint;
   store1InStock: boolean;
   store2InStock: boolean;
-}
-
-// Flattened product type for product detail page (includes sale info)
-export interface FlatProduct {
-  barcode: string;
-  name: string;
-  categoryId: number;
-  description?: string;
-  price?: number;
-  inStock: boolean;
-  isFeatured: boolean;
-  createdDate: bigint;
-  lastUpdatedDate: bigint;
-  store1InStock: boolean;
-  store2InStock: boolean;
-  // Sale fields
-  isOnSale: boolean;
+  // Sale-aware fields
   salePrice?: number;
   discountPercentage?: number;
+  isOnSale: boolean;
 }
 
-// Keep legacy alias for components that still use Product
-export type Product = UIProduct;
-
-function mapProductV2LightToUI(p: ProductV2Light): UIProduct {
+function mapBackendProduct(backendProduct: BackendProduct, categoryName?: string, photoUrl?: string): Product {
   return {
-    barcode: p.barcode,
-    name: p.name,
-    categoryId: Number(p.categoryId),
-    categoryName: p.categoryName,
-    description: p.description,
-    price: p.price,
-    inStock: p.inStock,
-    isFeatured: p.isFeatured,
-    createdDate: p.createdDate,
-    lastUpdatedDate: p.lastUpdatedDate,
-    store1InStock: p.store1InStock,
-    store2InStock: p.store2InStock,
+    barcode: backendProduct.barcode,
+    name: backendProduct.name,
+    categoryId: Number(backendProduct.categoryId),
+    categoryName,
+    description: backendProduct.description,
+    price: backendProduct.price,
+    inStock: backendProduct.inStock,
+    isFeatured: backendProduct.isFeatured,
+    photo: backendProduct.photo,
+    photoUrl,
+    createdDate: backendProduct.createdDate,
+    lastUpdatedDate: backendProduct.lastUpdatedDate,
+    store1InStock: backendProduct.store1InStock,
+    store2InStock: backendProduct.store2InStock,
+    // Default sale fields - backend doesn't provide these for single product
+    salePrice: undefined,
+    discountPercentage: undefined,
+    isOnSale: false,
   };
 }
 
-function mapProductWithSaleToFlat(pws: ProductWithSale): FlatProduct {
+function mapProductWithSaleToProduct(productWithSale: ProductWithSale): Product {
   return {
-    barcode: pws.product.barcode,
-    name: pws.product.name,
-    categoryId: Number(pws.product.categoryId),
-    description: pws.product.description,
-    price: pws.product.price,
-    inStock: pws.product.inStock,
-    isFeatured: pws.product.isFeatured,
-    createdDate: pws.product.createdDate,
-    lastUpdatedDate: pws.product.lastUpdatedDate,
-    store1InStock: pws.product.store1InStock,
-    store2InStock: pws.product.store2InStock,
-    isOnSale: pws.isOnSale,
-    salePrice: pws.salePrice,
-    discountPercentage: pws.discountPercentage,
+    barcode: productWithSale.product.barcode,
+    name: productWithSale.product.name,
+    categoryId: Number(productWithSale.product.categoryId),
+    categoryName: undefined,
+    description: productWithSale.product.description,
+    price: productWithSale.product.price,
+    inStock: productWithSale.product.inStock,
+    isFeatured: productWithSale.product.isFeatured,
+    photo: productWithSale.product.photo,
+    photoUrl: undefined,
+    createdDate: productWithSale.product.createdDate,
+    lastUpdatedDate: productWithSale.product.lastUpdatedDate,
+    store1InStock: productWithSale.product.store1InStock,
+    store2InStock: productWithSale.product.store2InStock,
+    // Map sale fields from backend
+    salePrice: productWithSale.salePrice,
+    discountPercentage: productWithSale.discountPercentage,
+    isOnSale: productWithSale.isOnSale,
+  };
+}
+
+function mapProductV2ToProduct(productV2: ProductV2): Product {
+  return {
+    barcode: productV2.barcode,
+    name: productV2.name,
+    categoryId: Number(productV2.categoryId),
+    categoryName: productV2.categoryName,
+    description: productV2.description,
+    price: productV2.price,
+    inStock: productV2.inStock,
+    isFeatured: productV2.isFeatured,
+    photo: productV2.photo,
+    photoUrl: undefined,
+    createdDate: productV2.createdDate,
+    lastUpdatedDate: productV2.lastUpdatedDate,
+    store1InStock: productV2.store1InStock,
+    store2InStock: productV2.store2InStock,
+    // Default sale fields
+    salePrice: undefined,
+    discountPercentage: undefined,
+    isOnSale: false,
   };
 }
 
@@ -84,67 +100,62 @@ export function useGetProductsPage(
   page: number,
   pageSize: number
 ) {
-  return useStableActorQuery<{ items: UIProduct[]; totalCount: number }>(
-    async (actor) => {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<{ items: Product[]; totalCount: number }>({
+    queryKey: ['products', 'page', search, categoryId, page, pageSize],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+
       const response: PaginatedResponse = await actor.getProductsPage(
         search,
         categoryId !== null ? BigInt(categoryId) : null,
         BigInt(page),
         BigInt(pageSize)
       );
+
       return {
-        items: response.items.map(mapProductV2LightToUI),
+        items: response.items.map((item) => mapProductV2ToProduct(item)),
         totalCount: Number(response.totalCount),
       };
     },
-    ['products', 'page', search, categoryId, page, pageSize] as const,
-    {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-    }
-  );
+    enabled: !!actor && !actorFetching,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 }
 
 export function useGetProduct(barcode: string) {
-  const query = useStableActorQuery<FlatProduct>(
-    async (actor) => {
-      const pws = await actor.getProduct(barcode);
-      return mapProductWithSaleToFlat(pws);
-    },
-    ['product', barcode] as const,
-    {
-      enabled: !!barcode,
-      staleTime: 5 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  );
+  const { actor: rawActor, isFetching: actorFetching } = useActor();
+  const [stableActor, setStableActor] = useState<typeof rawActor>(null);
 
+  // Stabilize actor reference
+  useEffect(() => {
+    if (rawActor && !stableActor) {
+      setStableActor(rawActor);
+    }
+  }, [rawActor, stableActor]);
+
+  const query = useQuery<Product>({
+    queryKey: ['product', barcode],
+    queryFn: async () => {
+      if (!stableActor) throw new Error('Actor not available');
+      const productWithSale = await stableActor.getProduct(barcode);
+      return mapProductWithSaleToProduct(productWithSale);
+    },
+    enabled: !!stableActor && !!barcode,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+
+  // Return custom state that properly reflects actor dependency
   return {
     ...query,
-    isInitialLoading: query.isLoading,
+    isLoading: actorFetching || query.isLoading,
+    isInitialLoading: actorFetching || (!stableActor) || query.isLoading,
+    isFetched: !!stableActor && query.isFetched,
   };
-}
-
-export function useGetProductPhoto(barcode: string) {
-  return useStableActorQuery<Uint8Array>(
-    async (actor) => {
-      return actor.getProductPhoto(barcode);
-    },
-    ['product-photo', barcode] as const,
-    {
-      enabled: !!barcode,
-      staleTime: 5 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  );
 }
 
 export function useCreateProduct() {
@@ -152,38 +163,43 @@ export function useCreateProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
+    mutationFn: async (product: {
       barcode: string;
       name: string;
       categoryId: number;
-      description: string | null;
-      price: number | null;
-      inStock: boolean;
-      isFeatured: boolean;
-      photo: Uint8Array | null;
+      description?: string;
+      price?: number;
       store1InStock: boolean;
       store2InStock: boolean;
+      isFeatured: boolean;
+      photo?: Uint8Array;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.createProduct(
-        params.barcode,
-        params.name,
-        BigInt(params.categoryId),
-        params.description,
-        params.price,
-        params.inStock,
-        params.isFeatured,
-        params.photo,
-        params.store1InStock,
-        params.store2InStock
+
+      // Derive legacy inStock from store flags for transition compatibility
+      const inStock = product.store1InStock || product.store2InStock;
+
+      const backendProduct = await actor.createProduct(
+        product.barcode,
+        product.name,
+        BigInt(product.categoryId),
+        product.description ?? null,
+        product.price ?? null,
+        inStock,
+        product.isFeatured,
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
       );
+
+      return mapBackendProduct(backendProduct);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      reportSuccessWithToast('Producto creado correctamente');
+      reportSuccessWithToast('Producto creado exitosamente');
     },
-    onError: (error: unknown) => {
-      reportErrorWithToast(error, 'Error al crear producto');
+    onError: (error) => {
+      reportErrorWithToast(error, 'Error al crear el producto');
     },
   });
 }
@@ -193,38 +209,43 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
+    mutationFn: async (product: {
       barcode: string;
       name: string;
       categoryId: number;
-      description: string | null;
-      price: number | null;
-      inStock: boolean;
-      isFeatured: boolean;
-      photo: Uint8Array | null;
+      description?: string;
+      price?: number;
       store1InStock: boolean;
       store2InStock: boolean;
+      isFeatured: boolean;
+      photo?: Uint8Array;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateProduct(
-        params.barcode,
-        params.name,
-        BigInt(params.categoryId),
-        params.description,
-        params.price,
-        params.inStock,
-        params.isFeatured,
-        params.photo,
-        params.store1InStock,
-        params.store2InStock
+
+      // Derive legacy inStock from store flags for transition compatibility
+      const inStock = product.store1InStock || product.store2InStock;
+
+      const backendProduct = await actor.updateProduct(
+        product.barcode,
+        product.name,
+        BigInt(product.categoryId),
+        product.description ?? null,
+        product.price ?? null,
+        inStock,
+        product.isFeatured,
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
       );
+
+      return mapBackendProduct(backendProduct);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      reportSuccessWithToast('Producto actualizado correctamente');
+      reportSuccessWithToast('Producto actualizado exitosamente');
     },
-    onError: (error: unknown) => {
-      reportErrorWithToast(error, 'Error al actualizar producto');
+    onError: (error) => {
+      reportErrorWithToast(error, 'Error al actualizar el producto');
     },
   });
 }
@@ -234,84 +255,129 @@ export function useDeleteProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { barcode: string; password: string }) => {
+    mutationFn: async ({ barcode, password }: { barcode: string; password: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteProduct(params.barcode, params.password);
+      await actor.deleteProduct(barcode, password);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      reportSuccessWithToast('Producto eliminado correctamente');
+      reportSuccessWithToast('Producto eliminado exitosamente');
     },
-    onError: (error: unknown) => {
-      reportErrorWithToast(error, 'Error al eliminar producto');
+    onError: (error) => {
+      reportErrorWithToast(error, 'Error al eliminar el producto');
     },
   });
 }
 
-// Toggle store-specific stock without touching the photo
 export function useToggleStoreStock() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      product: UIProduct;
-      store: 1 | 2;
+    mutationFn: async ({
+      product,
+      storeNumber,
+    }: {
+      product: Product;
+      storeNumber: 1 | 2;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      const { product, store } = params;
 
-      // Fetch the current photo to preserve it during the update
-      let currentPhoto: Uint8Array | null = null;
-      try {
-        currentPhoto = await actor.getProductPhoto(product.barcode);
-      } catch {
-        currentPhoto = null;
-      }
+      // Toggle the specific store's stock
+      const newStore1InStock = storeNumber === 1 ? !product.store1InStock : product.store1InStock;
+      const newStore2InStock = storeNumber === 2 ? !product.store2InStock : product.store2InStock;
 
-      const newStore1InStock = store === 1 ? !product.store1InStock : product.store1InStock;
-      const newStore2InStock = store === 2 ? !product.store2InStock : product.store2InStock;
-      const newInStock = newStore1InStock || newStore2InStock;
+      // Derive legacy inStock from store flags
+      const inStock = newStore1InStock || newStore2InStock;
 
-      return actor.updateProduct(
+      const backendProduct = await actor.updateProduct(
         product.barcode,
         product.name,
         BigInt(product.categoryId),
         product.description ?? null,
         product.price ?? null,
-        newInStock,
+        inStock,
         product.isFeatured,
-        currentPhoto,
+        product.photo ?? null,
         newStore1InStock,
         newStore2InStock
       );
+
+      return mapBackendProduct(backendProduct);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      reportSuccessWithToast('Stock actualizado correctamente');
     },
-    onError: (error: unknown) => {
-      reportErrorWithToast(error, 'Error al actualizar el stock');
+    onError: (error) => {
+      reportErrorWithToast(error, 'Error al cambiar el estado de stock');
     },
   });
 }
 
-export function useUploadProductPhoto() {
+export function useToggleProductFeatured() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { barcode: string; photo: Uint8Array }) => {
+    mutationFn: async (product: Product) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.uploadProductPhoto(params.barcode, params.photo);
+
+      // Derive legacy inStock from store flags
+      const inStock = product.store1InStock || product.store2InStock;
+      
+      // Toggle the featured status by updating the product
+      const backendProduct = await actor.updateProduct(
+        product.barcode,
+        product.name,
+        BigInt(product.categoryId),
+        product.description ?? null,
+        product.price ?? null,
+        inStock,
+        !product.isFeatured, // Toggle featured status
+        product.photo ?? null,
+        product.store1InStock,
+        product.store2InStock
+      );
+
+      return mapBackendProduct(backendProduct);
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product-photo', variables.barcode] });
-      reportSuccessWithToast('Foto subida correctamente');
     },
-    onError: (error: unknown) => {
-      reportErrorWithToast(error, 'Error al subir la foto');
+    onError: (error) => {
+      reportErrorWithToast(error, 'Error al cambiar el estado destacado');
     },
+  });
+}
+
+export function useGetProductPhoto(barcode: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Uint8Array>({
+    queryKey: ['product', barcode, 'photo'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getProductPhoto(barcode);
+    },
+    enabled: !!actor && !actorFetching && !!barcode,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useGetFeaturedProducts() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Product[]>({
+    queryKey: ['products', 'featured'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      const backendProducts = await actor.getFeaturedProducts();
+      return backendProducts.map((item) => mapBackendProduct(item));
+    },
+    enabled: !!actor && !actorFetching,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
